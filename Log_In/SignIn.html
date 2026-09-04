@@ -1,0 +1,85 @@
+<!Doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Yesunim</title>
+    <link href="../Web_Design/Log_In.css" rel="stylesheet" />
+    <link rel="icon" href="../Logo/yesunim.png" type="image/png" />
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+  </head>
+
+  <body>
+    <div class="container">
+
+      <div class="left">
+        <div class="overlay"></div>
+        <div class="branding">
+          <img src="../Logo/yesunim.png" alt="Logo" />
+          <h1>
+            <span class="yellow">Bancheto</span><br />
+            <span class="red">De Bustos</span>
+          </h1>
+        </div>
+      </div>
+
+      <div class="right">
+        <div class="login">
+            <h1>Sign In</h1>
+            <p>Access the Sales & Inventory Monitoring System.</p>
+
+            <form id="signinForm">
+                <label>Email Address</label>
+                <div class="input-box">
+                    <i class='bx bxs-user' ></i>
+                    <input type="text" id="loginUsername" placeholder="Enter your email " required>
+                </div>
+
+                <label>Password</label>
+                <div class="input-box">
+                    <i class='bx bxs-lock-alt' ></i>
+                    <input type="password" id="loginPassword" placeholder="Enter your password" required>
+                </div>
+
+                <div class="option">
+                    <label class="remember" id="rememberMe">
+                        <input type="checkbox">Remember me
+                    </label>
+                    <a href="#">Forgot Password?</a>
+                </div>
+
+                <button type="submit" class="signin">Sign In</button>
+                <div class="divider"><span>or</span></div>
+                <a href="SignUp.html"><button type="button" class="signup">Create an account</button></a>
+            </form>
+            <hr>
+            <div class="security">
+                <i class='bx bxs-check-shield'></i>
+                <p>
+                    Authorized access only. System activity is monitored for security purposes.
+                    Restricted to <strong>Owners</strong>, <strong>Managers</strong>, and
+                    <strong>Cashiers</strong>.
+                </p>
+            </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer">
+        <hr>
+        <div class="footer-left">
+          <strong>Bancheto de Bustos</strong>
+          <span>© 2024 Bancheto de Bustos. All rights reserved.</span>
+        </div>
+        <div class="footer-right">
+            <a href="#">Privacy Policy</a>
+            <span>|</span>
+            <a href="#">Terms of Service</a>
+            <span>|</span>
+            <a href="#">Support</a>
+        </div>
+    </footer>
+    <script src="../Javascript/script.js"></script>
+    <script src="../Javascript/User.js"></script>
+  </body>
+</html>

@@ -1,0 +1,518 @@
+.users-content {
+    position: absolute;
+    left: 180px;
+    top: 0;
+    right: 0;
+    min-height: 100vh;
+    padding: 25px 20px 20px 16px;
+    box-sizing: border-box;
+    background: #ffffff;
+}
+
+
+/*************** Users - Log In History button *********************/
+.users-header {
+    width: 100%;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-sizing: border-box;
+}
+
+.users-header h1 {
+    margin: 0;
+    padding: 0;
+    font-size: 62px;
+    font-weight: 700;
+    color: #222;
+    line-height: 1;
+}
+
+
+.login-history-btn {
+    width: 250px;
+    height: 62px;
+    margin-top: 1px;
+    border: none;
+    border-radius: 20px;
+    background: #3d7f37;
+    color: #ffffff;
+    font-family: Arial, sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.login-history-btn:hover {
+    background: #346d2f;
+}
+
+/********** Users - Table **************/
+
+.users-table-container {
+    width: 100%;
+    margin-top: 20px;
+}
+
+.users-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-family: Arial, sans-serif;
+}
+
+/* Header */
+
+.users-table thead tr {
+    height: 100px;
+    background: #8b0000;
+}
+
+.users-table th {
+    padding: 0 78px;
+    text-align: left;
+    font-size: 32px;
+    font-weight: 700;
+    color: white;
+}
+
+/* Column widths */
+
+.users-table th:nth-child(1),
+.users-table td:nth-child(1) {
+    width: 19%;
+}
+
+.users-table th:nth-child(2),
+.users-table td:nth-child(2) {
+    width: 24%;
+}
+
+.users-table th:nth-child(3),
+.users-table td:nth-child(3) {
+    width: 20%;
+}
+
+.users-table th:nth-child(4),
+.users-table td:nth-child(4) {
+    width: 20%;
+}
+
+.users-table th:nth-child(5),
+.users-table td:nth-child(5) {
+    width: 19%;
+}
+
+/* Table rows */
+
+.users-table tbody tr {
+    height: 50px;
+}
+
+.users-table td {
+    padding: 30px 80px;
+    font-size: 24px;
+    font-weight: 400;
+    color: #111111;
+    align-items: center;
+}
+
+/* Action buttons */
+
+.action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    height: 80px;
+}
+
+.action-buttons button {
+    width: 14px;
+    height: 20px;
+    padding: 18px;
+    border: none;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.action-buttons i {
+    font-size: 30px;
+}
+
+.edit-btn {
+    color: #111111;
+}
+
+.edit-btn:hover {
+    color: #555555;
+}
+
+.delete-btn {
+    color: #b51b14;
+}
+
+.delete-btn:hover {
+    color: #8d100b;
+}
+
+/* Footer */
+
+.users-footer {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 330px;
+}
+
+.entries-text {
+    font-family: Arial, sans-serif;
+    font-size: 20px;
+    color: #888888;
+}
+
+
+/* =====================================================
+   LOGIN HISTORY MODAL
+   ===================================================== */
+
+.login-history-overlay {
+
+    display: none;
+
+    position: fixed;
+
+    top: 0;
+    left: 0;
+
+    width: 100%;
+    height: 100%;
+
+    background: rgba(0, 0, 0, 0.45);
+
+    z-index: 9999;
+
+    align-items: center;
+    justify-content: center;
+}
+
+
+/* Show modal */
+
+.login-history-overlay.show {
+
+    display: flex;
+
+}
+
+
+/* =====================================================
+   MODAL
+   ===================================================== */
+
+.login-history-modal {
+
+    width: 90%;
+
+    max-width: 1050px;
+
+    max-height: 80vh;
+
+    background: #ffffff;
+
+    border-radius: 7px;
+
+    box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.25);
+
+    overflow: hidden;
+
+    font-family: Arial, sans-serif;
+
+}
+
+
+/* =====================================================
+   MODAL HEADER
+   ===================================================== */
+
+.login-history-modal-header {
+
+    height: 55px;
+
+    padding: 0 20px;
+
+    background: #ffffff;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    border-bottom: 1px solid #dddddd;
+
+}
+
+
+.login-history-modal-header h2 {
+
+    margin: 0;
+
+    font-size: 20px;
+
+    color: #111111;
+
+}
+
+
+/* =====================================================
+   CLOSE BUTTON
+   ===================================================== */
+
+.close-history-btn {
+
+    width: 32px;
+
+    height: 32px;
+
+    border: none;
+
+    background: transparent;
+
+    color: #555555;
+
+    font-size: 24px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    cursor: pointer;
+
+}
+
+
+.close-history-btn:hover {
+
+    color: #b51b14;
+
+}
+
+
+/* =====================================================
+   TABLE CONTAINER
+   ===================================================== */
+
+.login-history-table-container {
+
+    width: 100%;
+
+    max-height: 55vh;
+
+    overflow-y: auto;
+
+    overflow-x: auto;
+
+}
+
+
+/* =====================================================
+   TABLE
+   ===================================================== */
+
+.login-history-table {
+
+    width: 100%;
+
+    border-collapse: collapse;
+
+    table-layout: fixed;
+
+    min-width: 800px;
+
+}
+
+.status {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.status strong {
+    font-size: 14px;
+}
+
+.status small {
+    font-size: 12px;
+    font-weight: 400;
+}
+
+.status.active {
+    color: #16a34a;
+}
+
+.status.inactive {
+    color: #dc2626;
+}
+
+
+
+
+/* =====================================================
+   TABLE HEADER
+   ===================================================== */
+
+.login-history-table thead {
+
+    position: sticky;
+
+    top: 0;
+
+    z-index: 2;
+
+}
+
+
+.login-history-table th {
+
+    height: 42px;
+
+    padding: 0 12px;
+
+    text-align: left;
+
+    background: #d7d7d7;
+
+    color: #111111;
+
+    font-size: 13px;
+
+    font-weight: 700;
+
+}
+
+
+/* =====================================================
+   TABLE CELLS
+   ===================================================== */
+
+.login-history-table td {
+
+    height: 42px;
+
+    padding: 0 12px;
+
+    font-size: 13px;
+
+    color: #111111;
+
+    border-bottom: 1px solid #eeeeee;
+
+}
+
+
+/* Column sizes */
+
+.login-history-table th:nth-child(1),
+.login-history-table td:nth-child(1) {
+    width: 19%;
+}
+
+.login-history-table th:nth-child(2),
+.login-history-table td:nth-child(2) {
+    width: 16%;
+}
+
+.login-history-table th:nth-child(3),
+.login-history-table td:nth-child(3) {
+    width: 14%;
+}
+
+.login-history-table th:nth-child(4),
+.login-history-table td:nth-child(4) {
+    width: 19%;
+}
+
+.login-history-table th:nth-child(5),
+.login-history-table td:nth-child(5) {
+    width: 15%;
+}
+
+.login-history-table th:nth-child(6),
+.login-history-table td:nth-child(6) {
+    width: 17%;
+}
+
+
+/* =====================================================
+   STATUS
+   ===================================================== */
+
+.login-success {
+
+    color: #3d7f37;
+
+    font-weight: 600;
+
+}
+
+
+.login-failed {
+
+    color: #b51b14;
+
+    font-weight: 600;
+
+}
+
+
+/* =====================================================
+   MODAL FOOTER
+   ===================================================== */
+
+.login-history-modal-footer {
+
+    height: 45px;
+
+    padding: 0 20px;
+
+    display: flex;
+
+    align-items: center;
+
+    color: #888888;
+
+    font-size: 13px;
+
+    border-top: 1px solid #eeeeee;
+
+}
+
+
+/* =====================================================
+   MOBILE
+   ===================================================== */
+
+@media screen and (max-width: 700px) {
+
+    .login-history-modal {
+
+        width: 95%;
+
+    }
+
+    .login-history-modal-header h2 {
+
+        font-size: 18px;
+
+    }
+
+}
+

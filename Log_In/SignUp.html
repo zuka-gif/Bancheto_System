@@ -1,0 +1,100 @@
+<!Doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Yesunim</title>
+    <link href="../Web_Design/Log_In.css" rel="stylesheet" />
+    <link rel="icon" href="../Logo/yesunim.png" type="image/png" />
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+  </head>
+
+  <body>
+    <div class="container">
+
+      <div class="left">
+        <div class="overlay"></div>
+        <div class="branding">
+          <img src="../Logo/yesunim.png" alt="Logo" />
+          <h1>
+            <span class="yellow">Bancheto</span><br />
+            <span class="red">De Bustos</span>
+          </h1>
+        </div>
+      </div>
+
+      <div class="right">
+        <div class="login">
+            <h1>Sign Up</h1>
+            <p>Create your account to access the Bancheto Management System.</p>
+
+            <form id="signupForm">
+                <label>Fullname</label>
+                <div class="input-box">
+                    <input type="text" placeholder="Enter your Fullname" required>
+                </div>
+
+                <label>Username</label>
+                <div class="input-box">
+                    <input type="text" placeholder="Enter your Username" required>
+                </div>
+
+                <label>Email Address or Phone Number</label>
+                <div class="input-box">
+                    <input type="text" placeholder="Enter your Email or Phone number" required >
+                </div>
+
+                <label>Password</label>
+                <div class="input-box">
+                    <input type="password" placeholder="Enter your Password" required>
+                </div>
+
+                <label>Confirm Password</label>
+                <div class="input-box">
+                    <input type="password" placeholder="Confirm your Password" required>
+                </div>
+
+                <label>Role</label>
+                <div class="input-box">
+                    <select required>
+                        <option selected disabled>Select your Role</option>
+                        <option>Owner</option>
+                        <option>Manager</option>
+                        <option>Cashier</option>
+                    </select>
+                </div>
+
+                <div class="option">
+                    <label class="remember">
+                        <input type="checkbox" required>I agree to the <span><a href="#">Terms of Service</a></span> and <span><a href="#">Privacy Policy</a></span>
+                    </label>
+                </div>
+
+                <button type="submit" class="signin">Sign Up</button>
+                <div class="divider"><span>or</span></div>
+                <div class="options">
+                    <p>Already have an account?<span><a href="SignIn.html">Sign In</a></span></p>
+                </div>
+            </form>
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer">
+        <hr>
+        <div class="footer-left">
+          <strong>Bancheto de Bustos</strong>
+          <span>© 2024 Bancheto de Bustos. All rights reserved.</span>
+        </div>
+        <div class="footer-right">
+            <a href="#">Privacy Policy</a>
+            <span>|</span>
+            <a href="#">Terms of Service</a>
+            <span>|</span>
+            <a href="#">Support</a>
+        </div>
+    </footer>
+    <script src="../Javascript/script.js"></script>
+    <script src="../Javascript/User.js"></script>
+  </body>
+</html>

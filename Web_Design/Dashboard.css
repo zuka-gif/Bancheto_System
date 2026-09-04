@@ -1,0 +1,637 @@
+.main {
+    flex: 1;
+
+    width: auto;
+    min-width: 0;
+    min-height: 100vh;
+
+    padding: 30px 35px;
+
+    background: #f7f8f9;
+
+    color: #222;
+}
+
+
+.header {
+    width: 100%;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+
+    margin-bottom: 28px;
+}
+
+
+.Dashboard-header h1 {
+    margin: 0;
+
+    color: #222;
+
+    font-size: 62px;
+    font-weight: 800;
+
+    line-height: 1;
+}
+
+.Dashboard-header p {
+    margin: 7px 0 0;
+
+    color: #222;
+
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.Dashboard-header p span {
+    color: red;
+}
+
+
+.Popup-icons {
+    display: flex;
+    align-items: center;
+
+    gap: 30px;
+}
+
+.Popup-icons button {
+    border: none;
+    outline: none;
+
+    background: transparent;
+
+    cursor: pointer;
+}
+
+
+.notifications {
+    width: 35px;
+    height: 40px;
+}
+
+.notifications i {
+    font-size: 45px;
+}
+
+
+.setting {
+    width: 35px;
+    height: 40px;
+}
+
+.setting i {
+    font-size: 45px;
+}
+
+
+.profile {
+    height: 50px;
+
+    padding: 0 25px 0 9px;
+
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+
+    background: #dedede !important;
+
+    border-radius: 50px;
+
+    color: #222;
+
+    font-size: 26px;
+    font-weight: bold;
+}
+
+.profile-icon {
+    width: 39px;
+    height: 44px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    border-radius: 100%;
+
+    background: #d3d3d3;
+}
+
+.profile-icon i {
+    font-size: 45px;
+}
+
+
+.stat-grid {
+    width: 100%;
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+    gap: 80px;
+
+    margin-bottom: 25px;
+    margin-top: 50px;
+}
+
+.stat-card {
+    min-height: 150px;
+
+    position: relative;
+
+    display: flex;
+    justify-content: space-between;
+
+    padding: 10px 14px;
+
+    overflow: hidden;
+
+    border-radius: 14px;
+
+    color: white;
+}
+
+.stat-green {
+    background: #2e8034;
+}
+
+.stat-yellow {
+    background: #dda50d;
+}
+
+.stat-red {
+    background: #cc292d;
+}
+
+
+/* STAT CONTENT */
+
+.stat-value {
+    font-size: 27px;
+    font-weight: 800;
+
+    line-height: 30px;
+}
+
+.stat-title {
+    margin-top: 1px;
+
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.stat-change {
+    margin-top: 12px;
+
+    display: flex;
+    align-items: center;
+
+    gap: 3px;
+
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.stat-change i {
+    font-size: 18px;
+}
+
+
+/* STAT ICON */
+
+.stat-icon {
+    position: absolute;
+
+    right: 10px;
+    bottom: 5px;
+
+    color: #ffd000;
+
+    font-size: 36px;
+
+    opacity: .9;
+}
+
+
+/* VIEW ALL */
+
+.view-all-button {
+    border: none;
+
+    background: transparent;
+
+    color: #ffdc00;
+
+    font-size: 13px;
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+.stat-card .view-all-button {
+    position: absolute;
+
+    right: 13px;
+    bottom: 15px;
+}
+
+
+/* =========================================
+   DASHBOARD CONTENT
+========================================= */
+
+.dashboard-content {
+    width: 100%;
+
+    display: grid;
+
+    grid-template-columns:
+        1.8fr
+        1fr
+        1fr;
+
+    gap: 17px;
+}
+
+
+/* =========================================
+   SECTION TITLE
+========================================= */
+
+.section-title {
+    height: 30px;
+
+    display: flex;
+    align-items: center;
+
+    font-size: 14px;
+}
+
+
+/* =========================================
+   SALES
+========================================= */
+
+.sales-card {
+    height: 230px;
+
+    position: relative;
+
+    padding: 8px;
+
+    background: white;
+
+    border: 1px solid #bd3939;
+
+    border-radius: 9px;
+}
+
+
+/* CHART CONTAINER */
+
+.chart-container {
+    height: 195px;
+
+    display: flex;
+}
+
+
+/* Y AXIS */
+
+.chart-y-axis {
+    width: 38px;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+
+    padding: 0 5px 0 0;
+
+    text-align: right;
+
+    font-size: 8px;
+    font-weight: bold;
+}
+
+
+/* CHART */
+
+.chart {
+    flex: 1;
+
+    position: relative;
+
+    overflow: hidden;
+}
+
+.chart-grid {
+    position: absolute;
+
+    inset: 0;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.chart-grid span {
+    width: 100%;
+    height: 1px;
+
+    background: #e1e1e1;
+}
+
+
+/* SVG */
+
+.sales-chart {
+    position: absolute;
+
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+}
+
+.sales-chart polyline {
+    fill: none;
+
+    stroke: #8d0808;
+
+    stroke-width: 3;
+
+    stroke-linejoin: round;
+    stroke-linecap: round;
+}
+
+
+/* X AXIS */
+
+.chart-x-axis {
+    margin-left: 38px;
+
+    display: flex;
+    justify-content: space-around;
+
+    font-size: 9px;
+
+    font-weight: bold;
+}
+
+
+/* =========================================
+   GENERAL PANELS
+========================================= */
+
+.panel {
+    height: 230px;
+
+    background: white;
+
+    border: 1px solid #bd3939;
+
+    border-radius: 9px;
+
+    overflow: hidden;
+}
+
+.panel-header {
+    height: 32px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.panel-header h2 {
+    font-size: 12px;
+}
+
+
+/* =========================================
+   PRODUCTS
+========================================= */
+
+.product-list {
+    padding: 0 15px;
+}
+
+.product-item {
+    min-height: 47px;
+
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+
+    border-bottom: 2px solid #eeeeee;
+}
+
+.product-number {
+    width: 13px;
+
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.product-image {
+    width: 35px;
+    height: 30px;
+
+    flex-shrink: 0;
+
+    background: #ddd;
+
+    border-radius: 2px;
+}
+
+.product-info {
+    display: flex;
+    flex-direction: column;
+
+    font-size: 12px;
+    font-weight: bold;
+}
+
+
+/* =========================================
+   STOCK
+========================================= */
+
+.stock-list {
+    padding: 0 15px;
+}
+
+.stock-item {
+    min-height: 47px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    border-bottom: 2px solid #eeeeee;
+}
+
+.stock-image {
+    width: 35px;
+    height: 30px;
+
+    background: #ddd;
+}
+
+.stock-info {
+    text-align: right;
+
+    font-size: 9px;
+    font-weight: bold;
+}
+
+.stock-quantity {
+    color: red;
+
+    font-size: 13px;
+}
+
+
+/* =========================================
+   RECENT ACTIVITIES
+========================================= */
+
+.activities {
+    width: 100%;
+
+    margin-top: 30px;
+
+    background: white;
+
+    border: 1px solid #bd3939;
+}
+
+
+/* HEADER */
+
+.activities-header {
+    height: 28px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0 7px;
+
+    background: #fff8f4;
+
+    border-bottom: 1px solid #bd3939;
+}
+
+.activities-header h2 {
+    font-size: 18px;
+}
+
+.activities-header .view-all-button {
+    color: red;
+}
+
+
+/* =========================================
+   TABLE
+========================================= */
+
+.table-container {
+    width: 100%;
+
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+
+    border-collapse: collapse;
+
+    table-layout: fixed;
+}
+
+thead th {
+    height: 28px;
+
+    padding: 5px 20px;
+
+    text-align: left;
+
+    color: #111;
+
+    font-size: 11px;
+}
+
+tbody td {
+    height: 26px;
+
+    padding: 5px 20px;
+
+    border-bottom: 1px solid #ddd;
+
+    color: #111;
+
+    font-size: 11px;
+    font-weight: 600;
+}
+
+
+/* =========================================
+   RESPONSIVE
+========================================= */
+
+@media (max-width: 1100px) {
+
+    .main {
+        width: calc(100% - 180px);
+
+        margin-left: 180px;
+    }
+
+    .stat-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .dashboard-content {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .sales-section {
+        grid-column: 1 / -1;
+    }
+}
+
+
+@media (max-width: 700px) {
+
+    .main {
+        width: 100%;
+
+        margin-left: 0;
+
+        padding: 15px;
+    }
+
+    .header {
+        flex-direction: column;
+
+        gap: 15px;
+    }
+
+    .stat-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-content {
+        grid-template-columns: 1fr;
+    }
+
+    .sales-section {
+        grid-column: auto;
+    }
+}

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yesunim</title>
+    <link href="../Web_Design/User.css" rel="stylesheet" />
+    <link href="../Web_Design/Side_Bar.css" rel="stylesheet" />
+    <link rel="icon" href="../Logo/yesunim.png" type="image/png" />
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+</head>
+<body>
+    <div id="sidebar-container"></div>
+    <main class="users-content">
+
+        <div class="users-header">
+            <h1>Users</h1>
+
+            <button class="login-history-btn" onclick="showLoginHistory()">
+                Log In History
+            </button>
+        </div>
+
+        <div class="users-table-container">
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Username</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody"></tbody>
+            </table>
+        </div>
+
+        <div class="users-footer">
+            <span
+                class="entries-text"
+                id="entriesText">
+                Showing 0 entries
+            </span>
+        </div>
+        
+    </main>
+     <div
+        class="login-history-overlay"
+        id="loginHistoryModal">
+        <div class="login-history-modal">
+            <div class="login-history-modal-header">
+                <h2>Log In History</h2>
+                <button
+                    class="close-history-btn"
+                    onclick="closeLoginHistory()">
+                    <i class='bx bx-x'></i>
+                </button>
+            </div>
+
+            <div class="login-history-table-container">
+                <table class="login-history-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Username</th>
+                            <th>Role</th>
+                            <th>Login Date</th>
+                            <th>Login Time</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="loginHistoryTableBody"></tbody>
+                </table>
+
+            </div>
+
+            <div class="login-history-modal-footer">
+                <span id="loginHistoryEntries">Showing 0 entries</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="../Javascript/sidebar.js"></script>
+    <script src="../Javascript/User.js"></script>
+</body>
+</html>
+
+

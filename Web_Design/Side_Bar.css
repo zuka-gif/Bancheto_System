@@ -1,0 +1,164 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body {
+    width: 100%;
+    min-height: 100vh;
+}
+
+body {
+    background: #fff;
+    font-family: Arial, Helvetica, sans-serif;
+    display: flex;
+}
+
+
+.sidebar {
+    width: 180px;
+    min-height: 100vh;
+    min-width: 180px;
+    background: #8f0000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 15px;
+    color: white;
+}
+
+
+.logo {
+    width: 70px;
+    height: 82px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+
+.logo img {
+    width: 150px;
+}
+
+
+.nav {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding-top: 80px;
+}
+
+.nav-item {
+    width: 100%;
+    height: 90px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-decoration: none;
+    color: white;
+    font-size: 20px;
+    font-weight: bold;
+    position: relative;
+    transition: background 0.2s ease;
+}
+
+.nav-item:hover {
+    background: #ebc7157c;
+    border-radius: 10px;
+}
+
+.nav-item i {
+    font-size: 30px;
+    margin-bottom: 5px;
+    stroke: #ffc400;
+}
+
+
+.nav-label {
+    line-height: 1;
+}
+
+
+
+/* ==========================================
+   COMMON LOADING SCREEN
+========================================== */
+
+.loading-screen {
+    position: fixed;
+    inset: 0;
+
+    background: rgba(255, 255, 255, 0.95);
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    z-index: 999999;
+
+    /* HIDDEN BY DEFAULT */
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+
+    transition:
+        opacity 0.3s ease,
+        visibility 0.3s ease;
+}
+
+
+/* SHOW LOADING */
+
+.loading-screen.show {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: all;
+}
+
+
+/* Loading content */
+
+.loading-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+
+    color: #e39149;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+
+/* Spinner */
+
+.loading-spinner {
+    width: 45px;
+    height: 45px;
+
+    border: 4px solid #f1dfce;
+    border-top: 4px solid #e39149;
+
+    border-radius: 50%;
+
+    animation: loadingSpin 0.8s linear infinite;
+}
+
+
+@keyframes loadingSpin {
+
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+
+}
+

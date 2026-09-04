@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yesunim</title>
+    <link href="../Web_Design/Side_Bar.css" rel="stylesheet" />
+    <link href="../Web_Design/Dashboard.css" rel="stylesheet" />
+    <link rel="icon" href="../Logo/yesunim.png" type="image/png" />
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+</head>
+<body>
+    <div id="sidebar-container"></div>
+
+    <main class="main">
+
+        <header class="header">
+
+            <div class="Dashboard-header">
+                <h1>Dashboard</h1>
+                <p>Good evening, <span>ADMIN!</span> Here's what's happening today.</p>
+            </div>
+
+            <div class="Popup-icons">
+                <button class="notifications"><i class='bx bxs-bell' style='color:#46700b'  ></i></button>
+                <button class="setting"><i class='bx bxs-cog' style='color:#777777'  ></i></button>
+                <button class="profile"><div class="profile-icon"><i class='bx bxs-user-circle' style='color:#0d83f0'  ></i></div>Profile</button>
+            </div>
+        </header>
+
+        <section class="stat-grid">
+
+            <!-- CARD -->
+
+            <article class="stat-card stat-green">
+
+                <div class="stat-content">
+
+                    <div class="stat-value">
+                        <span data-stat="sales">—</span>
+                    </div>
+
+                    <div class="stat-title">
+                        Total Sales
+                    </div>
+
+                    <div class="stat-change">
+                        <i class="bx bx-up-arrow-alt"></i>
+                        <span data-stat="sales-change">—</span>
+                    </div>
+
+                </div>
+
+                <div class="stat-icon">
+                    <i class="bx bx-line-chart"></i>
+                </div>
+
+            </article>
+
+
+            <!-- CARD -->
+
+            <article class="stat-card stat-yellow">
+
+                <div class="stat-content">
+
+                    <div class="stat-value">
+                        <span data-stat="orders">—</span>
+                    </div>
+
+                    <div class="stat-title">
+                        Total Orders
+                    </div>
+
+                    <div class="stat-change">
+                        <i class="bx bx-up-arrow-alt"></i>
+                        <span data-stat="orders-change">—</span>
+                    </div>
+
+                </div>
+
+                <div class="stat-icon">
+                    <i class="bx bx-cart"></i>
+                </div>
+
+            </article>
+
+
+            <!-- CARD -->
+
+            <article class="stat-card stat-green">
+
+                <div class="stat-content">
+
+                    <div class="stat-value">
+                        <span data-stat="items">—</span>
+                    </div>
+
+                    <div class="stat-title">
+                        Available Items
+                    </div>
+
+                    <div class="stat-change">
+                        <i class="bx bx-check"></i>
+                    </div>
+
+                </div>
+
+            </article>
+
+
+            <!-- CARD -->
+
+            <article class="stat-card stat-red">
+
+                <div class="stat-content">
+
+                    <div class="stat-value">
+                        <span data-stat="low-stock">—</span>
+                    </div>
+
+                    <div class="stat-title">
+                        Low Stock
+                    </div>
+
+                    <div class="stat-change warning">
+                        <i class="bx bx-error"></i>
+                    </div>
+
+                </div>
+
+                <button class="view-all-button">
+                    View All
+                </button>
+
+            </article>
+
+        </section>
+
+
+
+        <!-- =========================
+             MIDDLE CONTENT
+        ========================== -->
+
+        <section class="dashboard-content">
+
+
+            <!-- =====================
+                 SALES OVERVIEW
+            ====================== -->
+
+            <article class="sales-section">
+
+                <h2 class="section-title">
+                    Sales Overview
+                </h2>
+
+                <div class="sales-card">
+
+                    <div class="chart-container">
+
+                        <!-- Y AXIS -->
+
+                        <div class="chart-y-axis">
+
+                            <span>—</span>
+                            <span>—</span>
+                            <span>—</span>
+                            <span>—</span>
+                            <span>—</span>
+                            <span>—</span>
+                            <span>—</span>
+
+                        </div>
+
+
+                        <!-- CHART -->
+
+                        <div class="chart">
+
+                            <div class="chart-grid">
+
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                                <span></span>
+
+                            </div>
+
+                            <svg
+                                class="sales-chart"
+                                viewBox="0 0 600 250"
+                                preserveAspectRatio="none"
+                            >
+
+                                <polyline
+                                    id="sales-line"
+                                    points=""
+                                />
+
+                            </svg>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- X AXIS -->
+
+                    <div class="chart-x-axis">
+
+                        <span>—</span>
+                        <span>—</span>
+                        <span>—</span>
+                        <span>—</span>
+                        <span>—</span>
+                        <span>—</span>
+                        <span>—</span>
+
+                    </div>
+
+                </div>
+
+            </article>
+
+
+
+            <!-- =====================
+                 BEST SELLING PRODUCTS
+            ====================== -->
+
+            <article class="panel">
+
+                <div class="panel-header">
+                    <h2>Best Selling Products</h2>
+                </div>
+
+
+                <div
+                    class="product-list"
+                    id="best-selling-list"
+                >
+
+                    <!-- JavaScript will populate this -->
+
+                </div>
+
+            </article>
+
+
+
+            <!-- =====================
+                 LOW STOCK
+            ====================== -->
+
+            <article class="panel">
+
+                <div class="panel-header">
+                    <h2>Low Stock Alert</h2>
+                </div>
+
+
+                <div
+                    class="stock-list"
+                    id="low-stock-list"
+                >
+
+                    <!-- JavaScript will populate this -->
+
+                </div>
+
+            </article>
+
+        </section>
+
+
+
+        <!-- =========================
+             RECENT ACTIVITIES
+        ========================== -->
+
+        <section class="activities">
+
+            <div class="activities-header">
+
+                <h2>
+                    Recent Activities
+                </h2>
+
+                <button class="view-all-button">
+                    View All
+                </button>
+
+            </div>
+
+
+            <div class="table-container">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>Time</th>
+                            <th>User</th>
+                            <th>Action</th>
+                            <th>Module</th>
+                            <th>Details</th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody id="activities-body">
+
+                        <!-- JavaScript will populate rows -->
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <script src="../Javascript/sidebar.js"></script>
+    <script src="../Javascript/Dashboard.js"></script>
+</body>
+</html>
+
+
