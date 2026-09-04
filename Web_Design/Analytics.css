@@ -1,0 +1,13 @@
+.main {
+    flex: 1;
+
+    width: auto;
+    min-width: 0;
+    min-height: 100vh;
+
+    padding: 30px 35px;
+
+    background: #f7f8f9;
+
+    color: #222;
+}
