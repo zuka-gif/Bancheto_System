@@ -27,7 +27,7 @@
 .Dashboard-header h1 {
     margin: 0;
 
-    color: #222;
+    color: #5C1D1D;
 
     font-size: 62px;
     font-weight: 800;
@@ -226,7 +226,7 @@
 
     color: #ffdc00;
 
-    font-size: 13px;
+    font-size: 18px;
     font-weight: bold;
 
     cursor: pointer;
@@ -235,7 +235,7 @@
 .stat-card .view-all-button {
     position: absolute;
 
-    right: 13px;
+    right: 20px;
     bottom: 15px;
 }
 
@@ -263,12 +263,13 @@
 ========================================= */
 
 .section-title {
-    height: 30px;
+    height: 10px;
 
     display: flex;
     align-items: center;
 
-    font-size: 14px;
+    font-size: 16px;
+    margin-bottom: 10px;
 }
 
 
@@ -277,7 +278,7 @@
 ========================================= */
 
 .sales-card {
-    height: 230px;
+    height: 330px;
 
     position: relative;
 
@@ -294,7 +295,7 @@
 /* CHART CONTAINER */
 
 .chart-container {
-    height: 195px;
+    height: 322px;
 
     display: flex;
 }
@@ -303,7 +304,7 @@
 /* Y AXIS */
 
 .chart-y-axis {
-    width: 38px;
+    width: auto;
 
     display: flex;
     flex-direction: column;
@@ -388,7 +389,7 @@
 ========================================= */
 
 .panel {
-    height: 230px;
+    height: 330px;
 
     background: white;
 
@@ -397,6 +398,7 @@
     border-radius: 9px;
 
     overflow: hidden;
+    margin-top: 20px;
 }
 
 .panel-header {
@@ -408,7 +410,7 @@
 }
 
 .panel-header h2 {
-    font-size: 12px;
+    font-size: 16px;
 }
 
 
@@ -504,18 +506,18 @@
 .activities {
     width: 100%;
 
-    margin-top: 30px;
+    margin-top: 40px;
 
     background: white;
 
-    border: 1px solid #bd3939;
+    border: 2px solid #bd3939;
 }
 
 
 /* HEADER */
 
 .activities-header {
-    height: 28px;
+    height: 40px;
 
     display: flex;
     align-items: center;
@@ -529,7 +531,7 @@
 }
 
 .activities-header h2 {
-    font-size: 18px;
+    font-size: 20px;
 }
 
 .activities-header .view-all-button {
@@ -556,7 +558,7 @@ table {
 }
 
 thead th {
-    height: 28px;
+    height: 38px;
 
     padding: 5px 20px;
 
@@ -564,7 +566,7 @@ thead th {
 
     color: #111;
 
-    font-size: 11px;
+    font-size: 14px;
 }
 
 tbody td {
