@@ -6,6 +6,7 @@
     <title>Yesunim</title>
     <link href="../Web_Design/Side_Bar.css" rel="stylesheet" />
     <link href="../Web_Design/Dashboard.css" rel="stylesheet" />
+    <link href="../Web_Design/Profile_Setting.css" rel="stylesheet" />
     <link rel="icon" href="../Logo/yesunim.png" type="image/png" />
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 </head>
@@ -24,7 +25,10 @@
             <div class="Popup-icons">
                 <button class="notifications"><i class='bx bxs-bell' style='color:#46700b'  ></i></button>
                 <button class="setting"><i class='bx bxs-cog' style='color:#777777'  ></i></button>
-                <button class="profile"><div class="profile-icon"><i class='bx bxs-user-circle' style='color:#0d83f0'  ></i></div>Profile</button>
+                <button class="profile">
+                    <div class="dashboard-profile">
+                        <img id="dashboardProfileImage" src="" alt="Profile Picture" > <i class='bx bxs-user-circle' id="dashboardProfileIcon"></i>
+                    </div>Profile</button>
             </div>
         </header>
 
@@ -331,8 +335,451 @@
 
     </main>
 
+    <!-- =====================================================
+     ACCOUNT PROFILE POPUP
+===================================================== -->
+
+<div class="popup-overlay" id="profileOverlay">
+
+    <div class="profile-popup">
+
+        <div class="popup-header">
+
+            <div class="header-bg">
+                <h2>Account Profile</h2>
+                <p>Manage your account information and security.</p>
+            </div>
+
+            <button
+                class="popup-close"
+                id="closeProfileBtn"
+            >
+                <i class='bx bx-x'></i>
+            </button>
+
+        </div>
+
+
+        <div class="profile-body">
+
+            <!-- PROFILE ICON -->
+
+            <div class="profile-avatar" id="profileAvatar">
+                <img id="profileAvatarImage" src="" alt="Profile Picture">
+                <i class='bx bxs-user' id="profileAvatarIcon"></i>
+                <div class="avatar-edit">
+                    <i class='bx bx-camera'></i>
+                </div>
+                <input type="file" id="profilePictureInput" accept="image/*" hidden >
+            </div>
+
+            <!-- PROFILE FIELDS -->
+
+            <div class="profile-fields">
+
+                <div class="profile-field">
+
+                    <label>Full Name</label>
+
+                    <div class="profile-input">
+
+                        <i class='bx bxs-user'></i>
+
+                        <input
+                            type="text"
+                            id="profileFullname"
+                            placeholder="Full name"
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <div class="profile-field">
+
+                    <label>Username</label>
+
+                    <div class="profile-input">
+
+                        <i class='bx bxs-user-circle'></i>
+
+                        <input
+                            type="text"
+                            id="profileUsername"
+                            placeholder="Username"
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <div class="profile-field">
+
+                    <label>Email Address or Phone Number</label>
+
+                    <div class="profile-input">
+
+                        <i class='bx bxs-envelope'></i>
+
+                        <input
+                            type="text"
+                            id="profileEmailPhone"
+                            placeholder="Email or phone number"
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <div class="profile-field">
+
+                    <label>Role</label>
+
+                    <div class="profile-input profile-disabled">
+
+                        <i class='bx bxs-shield'></i>
+
+                        <input
+                            type="text"
+                            id="profileRole"
+                            readonly
+                        >
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="profile-actions">
+
+            <button
+                class="change-password-btn"
+                id="openPasswordBtn"
+            >
+                <i class='bx bxs-lock-alt'></i>
+                Change Password
+            </button>
+
+            <button
+                class="save-profile-btn"
+                id="saveProfileBtn"
+            >
+                <i class='bx bx-save'></i>
+                Save Changes
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<!-- =====================================================
+     CHANGE PASSWORD POPUP
+===================================================== -->
+
+<div class="popup-overlay" id="passwordOverlay">
+
+    <div class="password-popup">
+
+        <div class="popup-header">
+
+            <div>
+                <h2>Change Password</h2>
+                <p>Update your account password.</p>
+            </div>
+
+            <button
+                class="popup-close"
+                id="closePasswordBtn"
+            >
+                <i class='bx bx-x'></i>
+            </button>
+
+        </div>
+
+
+        <div class="password-body">
+
+            <div class="password-field">
+
+                <label>Current Password</label>
+
+                <div class="profile-input">
+
+                    <i class='bx bxs-lock-alt'></i>
+
+                    <input
+                        type="password"
+                        id="currentPassword"
+                        placeholder="Enter current password"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <div class="password-field">
+
+                <label>New Password</label>
+
+                <div class="profile-input">
+
+                    <i class='bx bxs-lock-alt'></i>
+
+                    <input
+                        type="password"
+                        id="newPassword"
+                        placeholder="Enter new password"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <div class="password-field">
+
+                <label>Confirm New Password</label>
+
+                <div class="profile-input">
+
+                    <i class='bx bxs-lock-alt'></i>
+
+                    <input
+                        type="password"
+                        id="confirmNewPassword"
+                        placeholder="Confirm new password"
+                    >
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="profile-actions">
+
+            <button
+                class="cancel-btn"
+                id="cancelPasswordBtn"
+            >
+                Cancel
+            </button>
+
+            <button
+                class="save-profile-btn"
+                id="changePasswordBtn"
+            >
+                <i class='bx bx-save'></i>
+                Update Password
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<!-- =====================================================
+     SYSTEM SETTINGS POPUP
+===================================================== -->
+
+<div class="popup-overlay" id="settingsOverlay">
+
+    <div class="settings-popup">
+
+        <div class="popup-header">
+
+            <div>
+                <h2>System Setting</h2>
+                <p>Manage system preferences.</p>
+            </div>
+
+            <button
+                class="popup-close"
+                id="closeSettingsBtn"
+            >
+                <i class='bx bx-x'></i>
+            </button>
+
+        </div>
+
+
+        <div class="settings-body">
+
+
+            <!-- NOTIFICATIONS -->
+
+            <div class="setting-row">
+
+                <div class="setting-icon">
+
+                    <i class='bx bxs-bell'></i>
+
+                </div>
+
+
+                <div class="setting-information">
+
+                    <strong>Notifications</strong>
+
+                    <span>
+                        Receive system notifications and alerts.
+                    </span>
+
+                </div>
+
+
+                <label class="switch">
+
+                    <input
+                        type="checkbox"
+                        id="notificationToggle"
+                    >
+
+                    <span class="slider"></span>
+
+                </label>
+
+            </div>
+
+
+
+            <!-- ABOUT SYSTEM -->
+
+            <div class="setting-section">
+
+                <div class="setting-section-title">
+
+                    <i class='bx bx-info-circle'></i>
+
+                    <strong>About System</strong>
+
+                </div>
+
+
+                <div class="system-information">
+
+                    <div>
+
+                        <span>System</span>
+
+                        <strong>
+                            Bancheto De Bustos
+                        </strong>
+
+                    </div>
+
+
+                    <div>
+
+                        <span>Version</span>
+
+                        <strong>
+                            1.0.0
+                        </strong>
+
+                    </div>
+
+
+                    <div>
+
+                        <span>Database</span>
+
+                        <strong>
+                            Local Storage
+                        </strong>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- BACKUP DATABASE -->
+
+            <div class="setting-section">
+
+                <div class="setting-section-title">
+
+                    <i class='bx bx-data'></i>
+
+                    <strong>Backup Database</strong>
+
+                </div>
+
+
+                <p class="backup-description">
+
+                    Create a backup of your registered
+                    users, login history, and settings.
+
+                </p>
+
+
+                <div class="backup-information">
+
+                    <span id="lastBackupText">
+                        Last Backup: Never
+                    </span>
+
+
+                    <button
+                        class="backup-btn"
+                        id="backupBtn"
+                    >
+
+                        <i class='bx bx-cloud-upload'></i>
+
+                        Backup
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="settings-footer">
+
+            <button
+                class="save-profile-btn"
+                id="saveSettingsBtn"
+            >
+
+                <i class='bx bx-save'></i>
+
+                Save Settings
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
     <script src="../Javascript/sidebar.js"></script>
     <script src="../Javascript/Dashboard.js"></script>
+    <script src="../Javascript/Profile_Setting.js"></script>
 </body>
 </html>
 

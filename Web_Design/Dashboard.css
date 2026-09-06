@@ -96,32 +96,16 @@
 
     gap: 12px;
 
-    background: #dedede !important;
+    background: #0D83F0 !important;
 
     border-radius: 50px;
 
-    color: #222;
+    color: white;
 
     font-size: 26px;
     font-weight: bold;
 }
 
-.profile-icon {
-    width: 39px;
-    height: 44px;
-
-    display: flex;
-    justify-content: center;
-    align-items: center;
-
-    border-radius: 100%;
-
-    background: #d3d3d3;
-}
-
-.profile-icon i {
-    font-size: 45px;
-}
 
 
 .stat-grid {
