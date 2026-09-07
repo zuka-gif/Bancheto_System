@@ -188,8 +188,9 @@
 }
 
 .dashboard-profile i {
-    font-size: 25px;
-    color: #8b0000;
+    font-size: 55px;
+    color: #D9D9D9;
+    background-color: #0D83F0;
 }
 
 .profile-avatar {
@@ -197,7 +198,7 @@
     width: 120px;
     height: 120px;
     border-radius: 50%;
-    background-color: #f1f1f1;
+    background-color: #D9D9D9;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -206,8 +207,8 @@
 }
 
 .profile-avatar > i.bxs-user {
-    font-size: 55px;
-    color: #8b0000;
+    font-size: 70px;
+    color: #0D83F0;
 }
 
 .profile-avatar img {
@@ -406,7 +407,7 @@
 
     padding: 12px 20px;
 
-    border-top: 1px solid #e5e5e5;
+    border-top: 1px solid #5C1D1D;
 
 }
 
@@ -420,9 +421,9 @@
 
     border-radius: 4px;
 
-    padding: 8px 12px;
+    padding: 10px 15px;
 
-    font-size: 10px;
+    font-size: 14px;
 
     font-weight: 600;
 
@@ -439,7 +440,7 @@
 
 .save-profile-btn {
 
-    background: #198754;
+    background: #2E7D32;
 
     color: white;
 
@@ -457,14 +458,16 @@
 
     background: #eeeeee;
 
-    color: #333;
+    color: black;
+    border: 1px solid black;
 
 }
 
 
 .change-password-btn:hover {
 
-    background: #dddddd;
+    background: #5C1D1D;
+    color: white;
 
 }
 
@@ -473,8 +476,14 @@
 
     background: #eeeeee;
 
-    color: #555;
+    color: black;
+    border: 1px solid black;
 
+}
+
+.cancel-btn:hover {
+    background: #5C1D1D;
+    color: white;
 }
 
 
@@ -502,7 +511,7 @@
 
 .settings-body {
 
-    padding: 5px 20px 15px;
+    padding: 5px 25px 10px;
 
 }
 
@@ -517,16 +526,16 @@
 
     padding: 16px 0;
 
-    border-bottom: 1px solid #e8e8e8;
+    border-bottom: 1px solid black;
 
 }
 
 
 .setting-icon {
 
-    width: 32px;
+    width: 45px;
 
-    height: 32px;
+    height: 45px;
 
     border-radius: 5px;
 
@@ -540,6 +549,11 @@
 
     color: #666;
 
+}
+
+.setting-icon i {
+    font-size: 30px;
+    color: #46700b;
 }
 
 
@@ -560,7 +574,7 @@
 
     color: #333;
 
-    font-size: 11px;
+    font-size: 18px;
 
 }
 
@@ -569,7 +583,7 @@
 
     color: #888;
 
-    font-size: 9px;
+    font-size: 12px;
 
 }
 
@@ -584,7 +598,7 @@
 
     width: 34px;
 
-    height: 18px;
+    height: 17.5px;
 
 }
 
@@ -660,9 +674,9 @@
 
 .setting-section {
 
-    padding: 16px 0;
+    padding: 10px 8px 10px;
 
-    border-bottom: 1px solid #e8e8e8;
+    border-bottom: 1px solid black;
 
 }
 
@@ -673,11 +687,11 @@
 
     align-items: center;
 
-    gap: 7px;
+    gap: 17px;
 
     color: #333;
 
-    font-size: 11px;
+    font-size: 18px;
 
 }
 
@@ -686,7 +700,7 @@
 
     color: #777;
 
-    font-size: 16px;
+    font-size: 30px;
 
 }
 
@@ -698,7 +712,7 @@
     grid-template-columns:
         repeat(3, 1fr);
 
-    gap: 10px;
+    gap: 60px;
 
     margin-top: 12px;
 
@@ -711,7 +725,7 @@
 
     flex-direction: column;
 
-    gap: 3px;
+    gap: 5px;
 
 }
 
@@ -720,7 +734,7 @@
 
     color: #999;
 
-    font-size: 8px;
+    font-size: 14px;
 
 }
 
@@ -729,7 +743,7 @@
 
     color: #444;
 
-    font-size: 9px;
+    font-size: 12px;
 
 }
 
@@ -744,7 +758,7 @@
 
     color: #888;
 
-    font-size: 9px;
+    font-size: 12px;
 
     line-height: 1.5;
 
@@ -766,14 +780,14 @@
 
     color: #777;
 
-    font-size: 9px;
+    font-size: 12px;
 
 }
 
 
 .backup-btn {
 
-    background: #198754;
+    background: #2E7D32;
 
     color: white;
 
