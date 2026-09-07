@@ -142,6 +142,96 @@ label{
     appearance: auto;
 }
 
+
+.password-box {
+    position: relative !important;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+
+.password-box input {
+    width: 100%;
+    box-sizing: border-box;
+
+    padding-right: 50px !important;
+
+    flex: 1;
+}
+
+
+.password-box .toggle-password {
+    position: absolute !important;
+
+    right: 10px !important;
+    left: auto !important;
+
+    top: 50% !important;
+
+    transform: translateY(-50%) !important;
+
+    width: 30px !important;
+    height: 30px !important;
+
+    min-width: 30px !important;
+
+    padding: 0 !important;
+    margin: 0 !important;
+
+    border: none !important;
+    outline: none !important;
+
+    background: transparent !important;
+
+    color: #555 !important;
+
+    cursor: pointer;
+
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+
+    z-index: 10;
+
+    box-shadow: none !important;
+}
+
+
+.password-box .toggle-password:hover {
+    color: #000 !important;
+    background: transparent !important;
+}
+
+
+.password-box .toggle-password:focus {
+    outline: none !important;
+    background: transparent !important;
+    color: #555 !important;
+    box-shadow: none !important;
+}
+
+
+.password-box .toggle-password:active {
+    background: transparent !important;
+    color: #000 !important;
+    box-shadow: none !important;
+}
+
+
+.password-box .toggle-password i {
+    margin: 0 !important;
+
+    padding: 0 !important;
+
+    font-size: 20px !important;
+
+    color: inherit !important;
+
+    pointer-events: none;
+}
+
+
+
 .option{
     display:flex;
     justify-content:space-between;
@@ -343,3 +433,615 @@ hr{
 .footer-right span{
     color:#ccc;
 }
+
+
+.policy-modal {
+    display: none;
+
+    position: fixed;
+    z-index: 9999;
+
+    top: 0;
+    left: 0;
+
+    width: 100%;
+    height: 100%;
+
+    background: rgba(0, 0, 0, 0.65);
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+
+    box-sizing: border-box;
+}
+
+
+.policy-modal.show {
+    display: flex;
+}
+
+
+.policy-content {
+
+    position: relative;
+
+    width: 100%;
+    max-width: 480px;
+
+    max-height: 90vh;
+
+    overflow-y: auto;
+
+    background: #ffffff;
+
+    border-radius: 15px;
+
+    padding: 30px;
+
+
+    box-shadow:
+        0 10px 40px rgba(0, 0, 0, 0.25);
+
+    animation: modalOpen 0.2s ease;
+}
+
+
+
+@keyframes modalOpen {
+
+    from {
+        opacity: 0;
+        transform: translateY(-15px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+}
+
+
+.policy-content h2 {
+
+    margin: 0 0 8px 0;
+
+    color: #222;
+
+    font-size: 26px;
+
+    font-weight: 700;
+}
+
+
+.policy-content > p {
+
+    margin: 0 0 22px 0;
+
+    color: #666;
+
+    font-size: 14px;
+
+    line-height: 1.6;
+}
+
+
+.close-modal {
+
+    position: absolute;
+
+    top: 12px;
+    right: 15px;
+
+    width: 36px;
+    height: 36px;
+
+    padding: 0;
+
+    border: none;
+
+    background: transparent;
+
+    color: #555;
+
+    font-size: 29px;
+
+    line-height: 36px;
+
+    text-align: center;
+
+    cursor: pointer;
+
+    border-radius: 50%;
+
+    transition: all 0.2s ease;
+}
+
+
+.close-modal:hover {
+
+    background: #f1f1f1;
+
+    color: #a40000;
+
+}
+
+
+.policy-content form label {
+
+    display: block;
+
+    margin-bottom: 7px;
+
+    color: #333;
+
+    font-size: 14px;
+
+    font-weight: 600;
+}
+
+
+
+.policy-content button.signin {
+
+    width: 100%;
+
+    height: 45px;
+
+    margin-top: 5px;
+
+    border: none;
+
+    border-radius: 8px;
+
+    background: #a40000;
+
+    color: #ffffff;
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: all 0.2s ease;
+}
+
+
+.policy-content button.signin:hover {
+
+    background: #850000;
+
+    transform: translateY(-1px);
+
+}
+
+
+.policy-content button.signin:active {
+
+    transform: translateY(0);
+
+}
+
+
+#forgotPasswordMessage,
+#resetPasswordMessage {
+
+    margin-top: 15px;
+
+    font-size: 14px;
+
+    line-height: 1.5;
+
+}
+
+
+.modal-error {
+
+    color: #842029;
+
+    background: #f8d7da;
+
+    border: 1px solid #f5c2c7;
+
+    padding: 10px 12px;
+
+    border-radius: 7px;
+
+    margin-top: 12px;
+}
+
+
+.modal-success {
+
+    color: #198754;
+
+    background: #d1e7dd;
+
+    border: 1px solid #badbcc;
+
+    padding: 10px 12px;
+
+    border-radius: 7px;
+
+    margin-top: 12px;
+}
+
+
+
+.policy-content::-webkit-scrollbar {
+
+    width: 7px;
+}
+
+
+.policy-content::-webkit-scrollbar-track {
+
+    background: #f1f1f1;
+
+    border-radius: 10px;
+}
+
+
+.policy-content::-webkit-scrollbar-thumb {
+
+    background: #c5c5c5;
+
+    border-radius: 10px;
+}
+
+
+.policy-content::-webkit-scrollbar-thumb:hover {
+
+    background: #999;
+}
+
+
+.modal-content {
+
+    position: relative;
+
+    width: 100%;
+    max-width: 480px;
+
+    max-height: 90vh;
+
+    overflow-y: auto;
+
+    background: #ffffff;
+
+    border-radius: 15px;
+
+    padding: 30px;
+
+    box-sizing: border-box;
+
+    box-shadow:
+        0 10px 40px rgba(0, 0, 0, 0.25);
+
+    animation: modalOpen 0.2s ease;
+}
+
+
+.policy-content {
+    max-width: 700px;
+}
+
+
+.policy-content h2 {
+
+    color: #780707;
+
+    margin-top: 0;
+    margin-bottom: 15px;
+
+    font-size: 25px;
+}
+
+
+.policy-content h3 {
+
+    color: black;
+
+    margin-top: 22px;
+    margin-bottom: 8px;
+
+    font-size: 17px;
+}
+
+
+.policy-content p {
+
+    color: #555;
+
+    line-height: 1.6;
+
+    font-size: 14px;
+
+    margin-bottom: 12px;
+}
+
+
+/* =====================================================
+   CLOSE BUTTON
+   ===================================================== */
+
+.modal-close {
+
+    position: absolute;
+
+    top: 12px;
+    right: 15px;
+
+    width: 35px;
+    height: 35px;
+
+    border: none;
+
+    background: transparent;
+
+    color: #555;
+
+    font-size: 28px;
+
+    line-height: 35px;
+
+    cursor: pointer;
+
+    border-radius: 50%;
+
+    transition: 0.2s;
+}
+
+
+.modal-close:hover {
+
+    background: #f1f1f1;
+
+    color: #a40000;
+
+}
+
+
+
+.modal-message {
+
+    margin: 10px 0;
+
+    font-size: 14px;
+
+    line-height: 1.4;
+}
+
+
+
+.support-info {
+
+    background: #f7f7f7;
+
+    border-radius: 10px;
+
+    padding: 15px;
+
+    margin-top: 15px;
+
+    border: 1px solid #eeeeee;
+}
+
+
+.support-info p {
+
+    margin: 0 0 12px 0;
+
+    color: #555;
+
+    line-height: 1.6;
+}
+
+
+.support-info p:last-child {
+
+    margin-bottom: 0;
+
+}
+
+
+.modal-content form {
+
+    width: 100%;
+}
+
+
+.modal-content label {
+
+    display: block;
+
+    color: #333;
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+    margin-bottom: 7px;
+}
+
+
+.modal-content input {
+
+    width: 100%;
+
+    height: 45px;
+
+    padding: 0 12px;
+
+    box-sizing: border-box;
+
+    border: 1px solid #d5d5d5;
+
+    border-radius: 8px;
+
+    outline: none;
+
+    font-size: 14px;
+
+    color: #333;
+
+    margin-bottom: 15px;
+
+    transition: 0.2s;
+}
+
+
+.modal-content input:focus {
+
+    border-color: #a40000;
+
+    box-shadow:
+        0 0 0 2px rgba(164, 0, 0, 0.08);
+
+}
+
+
+/* =====================================================
+   MODAL BUTTON
+   ===================================================== */
+
+.modal-content button[type="submit"] {
+
+    width: 100%;
+
+    height: 45px;
+
+    border: none;
+
+    border-radius: 8px;
+
+    background: #a40000;
+
+    color: white;
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+}
+
+
+.modal-content button[type="submit"]:hover {
+
+    background: #850000;
+
+}
+
+
+
+/* =====================================================
+   SCROLLBAR
+   ===================================================== */
+
+.modal-content::-webkit-scrollbar {
+
+    width: 7px;
+
+}
+
+
+.modal-content::-webkit-scrollbar-track {
+
+    background: #f1f1f1;
+
+    border-radius: 10px;
+
+}
+
+
+.modal-content::-webkit-scrollbar-thumb {
+
+    background: #c5c5c5;
+
+    border-radius: 10px;
+
+}
+
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+
+    background: #999;
+
+}
+
+
+/* =====================================================
+   MOBILE
+   ===================================================== */
+
+@media (max-width: 600px) {
+
+    .policy-modal {
+
+        padding: 15px;
+
+    }
+
+
+    .modal-content {
+
+        padding: 25px 20px;
+
+        max-height: 85vh;
+
+        border-radius: 12px;
+
+    }
+
+
+    .policy-content {
+
+        max-width: 100%;
+
+    }
+
+
+    .policy-content h2 {
+
+        font-size: 22px;
+
+    }
+
+
+    .policy-content h3 {
+
+        font-size: 16px;
+
+    }
+
+
+    .policy-content p {
+
+        font-size: 13px;
+
+    }
+
+
+    .modal-icon {
+
+        font-size: 42px;
+
+    }
+
+
+    .modal-close {
+
+        top: 8px;
+
+        right: 10px;
+
+    }
+
+}
+

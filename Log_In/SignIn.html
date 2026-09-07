@@ -36,16 +36,18 @@
                 </div>
 
                 <label>Password</label>
-                <div class="input-box">
+                <div class="input-box password-box">
                     <i class='bx bxs-lock-alt' ></i>
                     <input type="password" id="loginPassword" placeholder="Enter your password" required>
+                    <button type="button" class="toggle-password" data-target="loginPassword" aria-label="Show password" >
+                        <i class='bx bx-show'></i></button>
                 </div>
 
                 <div class="option">
                     <label class="remember" id="rememberMe">
                         <input type="checkbox">Remember me
                     </label>
-                    <a href="#">Forgot Password?</a>
+                    <a href="#" id="forgotPasswordLink">Forgot Password?</a>
                 </div>
 
                 <button type="submit" class="signin">Sign In</button>
@@ -72,13 +74,317 @@
           <span>© 2024 Bancheto de Bustos. All rights reserved.</span>
         </div>
         <div class="footer-right">
-            <a href="#">Privacy Policy</a>
+            <a href="#" id="privacyPolicyLink">Privacy Policy</a>
             <span>|</span>
-            <a href="#">Terms of Service</a>
+            <a href="#" id="termsLink">Terms of Service</a>
             <span>|</span>
-            <a href="#">Support</a>
+            <a href="#" id="supportLink">Support</a>
         </div>
     </footer>
+
+    <!-- Forgot Password Modal -->
+<div id="forgotPasswordModal" class="policy-modal">
+    <div class="policy-content">
+        <button class="close-modal" id="closeForgotPassword">&times;</button>
+
+        <h2>Forgot Password</h2>
+        <p>Enter your registered email address or phone number.</p>
+
+        <form id="forgotPasswordForm">
+
+            <label>Email Address or Phone Number</label>
+
+            <div class="input-box">
+                <input
+                    type="text"
+                    id="forgotContact"
+                    placeholder="Enter your email or phone number"
+                    required
+                >
+            </div>
+
+            <button type="submit" class="signin">
+                Continue
+            </button>
+
+        </form>
+
+        <div id="forgotPasswordMessage"></div>
+    </div>
+</div>
+
+<!-- Reset Password Modal -->
+<div id="resetPasswordModal" class="policy-modal">
+    <div class="policy-content">
+        <button class="close-modal" id="closeResetPassword">&times;</button>
+
+        <h2>Reset Password</h2>
+        <p>Create a new password for your account.</p>
+
+        <form id="resetPasswordForm">
+
+            <label>New Password</label>
+
+            <div class="input-box password-box">
+                <input
+                    type="password"
+                    id="newPassword"
+                    placeholder="Enter your new password"
+                    required
+                >
+
+                <button type="button" class="toggle-password" data-target="newPassword" aria-label="Show password">
+                    <i class='bx bx-show'></i>
+            </div>
+
+            <label>Confirm New Password</label>
+
+            <div class="input-box password-box">
+                <input
+                    type="password"
+                    id="confirmNewPassword"
+                    placeholder="Confirm your new password"
+                    required
+                >
+
+                <button type="button" class="toggle-password" data-target="confirmNewPassword" aria-label="Show password" >
+                    <i class='bx bx-show'></i>
+            </div>
+
+            <button type="submit" class="signin">
+                Reset Password
+            </button>
+
+        </form>
+
+        <div id="resetPasswordMessage"></div>
+    </div>
+</div>
+
+
+    <div
+        class="policy-modal" id="termsModal" >
+
+        <div class="modal-content policy-content">
+
+            <button
+                type="button"
+                class="modal-close"
+                id="closeTerms"
+            >
+                &times;
+            </button>
+
+
+            <h2>Terms of Service</h2>
+
+            <p>
+                <strong>
+                    Last Updated: September 7, 2026
+                </strong>
+            </p>
+
+
+            <h3>1. Acceptance of Terms</h3>
+
+            <p>
+                By creating an account or using the
+                Bancheto De Bustos Sales & Inventory
+                Monitoring System, you agree to follow
+                these Terms of Service.
+            </p>
+
+
+            <h3>2. Authorized Access</h3>
+
+            <p>
+                Access to the system is restricted to
+                authorized Owners, Managers, and Cashiers.
+            </p>
+
+
+            <h3>3. Account Responsibility</h3>
+
+            <p>
+                Users must provide accurate information
+                and are responsible for protecting their
+                account credentials.
+            </p>
+
+
+            <h3>4. System Usage</h3>
+
+            <p>
+                The system must only be used for authorized
+                Bancheto De Bustos business operations.
+            </p>
+
+
+            <h3>5. Security</h3>
+
+            <p>
+                Users must not attempt to access another
+                user's account or bypass system security.
+            </p>
+
+
+            <h3>6. Account Termination</h3>
+
+            <p>
+                Accounts may be removed or disabled when
+                necessary because of misuse or violation
+                of these terms.
+            </p>
+
+
+            <h3>7. Changes</h3>
+
+            <p>
+                These terms may be updated when necessary.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div
+        class="policy-modal" id="privacyModal">
+
+        <div class="modal-content policy-content">
+
+            <button
+                type="button"
+                class="modal-close"
+                id="closePrivacy"
+            >
+                &times;
+            </button>
+
+
+            <h2>Privacy Policy</h2>
+
+            <p>
+                <strong>
+                    Last Updated: September 7, 2026
+                </strong>
+            </p>
+
+
+            <h3>1. Information We Collect</h3>
+
+            <p>
+                The system may collect fullname, username,
+                email address or phone number, password,
+                and user role during account registration.
+            </p>
+
+
+            <h3>2. Use of Information</h3>
+
+            <p>
+                Information is used to authenticate users
+                and provide appropriate system access.
+            </p>
+
+
+            <h3>3. Login Activity</h3>
+
+            <p>
+                Login date, time, username, role, and
+                login status may be recorded for security
+                and monitoring.
+            </p>
+
+
+            <h3>4. Local Storage</h3>
+
+            <p>
+                This front-end version stores account and
+                session information in the browser.
+            </p>
+
+
+            <h3>5. Information Protection</h3>
+
+            <p>
+                Users should keep their account credentials
+                private and secure.
+            </p>
+
+
+            <h3>6. Data Removal</h3>
+
+            <p>
+                Authorized users may remove accounts when
+                permitted by the system.
+            </p>
+
+
+            <h3>7. Updates</h3>
+
+            <p>
+                This Privacy Policy may be updated when
+                necessary.
+            </p>
+
+        </div>
+
+    </div>
+
+<div class="policy-modal" id="supportModal">
+
+    <div class="modal-content policy-content">
+
+        <button
+            type="button"
+            class="modal-close"
+            id="closeSupport"
+        >
+            &times;
+        </button>
+
+        <h2>Support</h2>
+
+        <p>
+            Need help with the Bancheto De Bustos
+            Sales & Inventory Monitoring System?
+        </p>
+
+        <h3>Contact Support</h3>
+
+        <div class="support-info">
+
+            <p>
+                <strong>Email:</strong><br>
+                support@banchetodebustos.com
+            </p>
+
+            <p>
+                <strong>Phone:</strong><br>
+                +63 900 000 0000
+            </p>
+
+            <p>
+                <strong>Support Hours:</strong><br>
+                Monday - Friday, 8:00 AM - 5:00 PM
+            </p>
+
+        </div>
+
+        <h3>Need Assistance?</h3>
+
+        <p>
+            If you are experiencing problems with your account,
+            login, inventory, sales, or other system features,
+            please contact the system administrator.
+        </p>
+
+    </div>
+
+</div>
+
+
     <script src="../Javascript/script.js"></script>
     <script src="../Javascript/User.js"></script>
   </body>
