@@ -11,6 +11,32 @@
 </head>
 <body>
     <div id="sidebar-container"></div>
+    <main>
+        <div class="report-tabs">
+
+        <button class="report-tab active"
+                onclick="showReport('sales', this)">
+            Sales Reports
+        </button>
+
+        <button class="report-tab"
+                onclick="showReport('inventory', this)">
+            Inventory Reports
+        </button>
+
+    </div>
+    
+    <!-- SALES REPORT -->
+     <div id="sales" class="report-content"></div>
+        
+    <!-- INVENTORY REPORT -->
+     <div id="inventory" class="report-content" style="display: none;"></div>
+
+    </main>
+
+
+
+
     <script src="../Javascript/sidebar.js"></script>
     <script src="../Javascript/Reports.js"></script>
 </body>

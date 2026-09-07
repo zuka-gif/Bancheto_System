@@ -12,3 +12,25 @@
     color: #222;
     display: flex;
 }
+
+.header {
+    width: 100%;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+
+    margin-bottom: 28px;
+}
+
+
+.analytics-header h1 {
+    margin: 0;
+
+    color: #5C1D1D;
+
+    font-size: 58px;
+    font-weight: 800;
+
+    line-height: 1;
+}

@@ -1,0 +1,31 @@
+.report-tabs {
+    display: flex;
+    align-items: center;
+    gap: 100px;
+
+    margin-left: 550px;
+}
+
+.report-tab {
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+
+    color: #111;
+
+    font-family: Arial, sans-serif;
+    font-size: 30px;
+
+    padding: 50px 50px 10px;
+
+    cursor: pointer;
+}
+
+.report-tab.active {
+    font-weight: bold;
+    border-bottom: 10px solid #8b0000;
+}
+
+.report-tab:hover {
+    color: #5c1d1d;
+}
