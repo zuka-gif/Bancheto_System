@@ -616,36 +616,51 @@ function saveProfile() {
 
 
 // =====================================================
-// UPDATE DASHBOARD USER NAME
+// UPDATE DASHBOARD USER + GREETING
 // =====================================================
 
 function updateDashboardUser() {
 
-    const currentUser =
-        getCurrentUser();
-
+    const currentUser = getCurrentUser();
 
     if (!currentUser) {
-
         return;
-
     }
 
+    const dashboardP = document.querySelector(
+        ".Dashboard-header p"
+    );
 
-    const dashboardSpan =
-        document.querySelector(
-            ".Dashboard-header p span"
-        );
+    const dashboardSpan = document.querySelector(
+        ".Dashboard-header p span"
+    );
 
-
+    // Update user role
     if (dashboardSpan) {
-
         dashboardSpan.textContent =
-            currentUser.fullname || "ADMIN";
-
+            (currentUser.role || "ADMIN") + "!";
     }
 
+    // Update greeting based on current time
+    if (dashboardP) {
+
+        const hour = new Date().getHours();
+
+        let greeting;
+
+        if (hour >= 5 && hour < 12) {
+            greeting = "Good morning";
+        } else if (hour >= 12 && hour < 18) {
+            greeting = "Good afternoon";
+        } else {
+            greeting = "Good evening";
+        }
+
+        // Update only the text before the <span>
+        dashboardP.firstChild.textContent = greeting + ", ";
+    }
 }
+
 
 
 
