@@ -89,9 +89,9 @@
     border-bottom: 1px solid #780707;
     background-color: #8b0000;
     width: 100%;
-    height: 100px;
+    height: 80px;
     margin: 0;
-    padding: 20px 25px;
+    padding: 18px 25px;
     box-sizing: border-box;
 
 }
@@ -103,7 +103,7 @@
 
     color: #ffffff;
 
-    font-size: 30px;
+    font-size: 20px;
 
     font-weight: 600;
 
@@ -116,7 +116,7 @@
 
     color: #ffffff;
 
-    font-size: 14px;
+    font-size: 13px;
 
 }
 
@@ -131,7 +131,7 @@
 
     cursor: pointer;
 
-    font-size: 26px;
+    font-size: 20px;
 
     line-height: 1;
 
@@ -170,8 +170,6 @@
     border-radius: 50%;
     overflow: hidden;
 
-    background-color: #f1f1f1;
-
     display: flex;
     align-items: center;
     justify-content: center;
@@ -188,7 +186,7 @@
 }
 
 .dashboard-profile i {
-    font-size: 55px;
+    font-size: 24px;
     color: #D9D9D9;
     background-color: #0D83F0;
 }
@@ -207,7 +205,7 @@
 }
 
 .profile-avatar > i.bxs-user {
-    font-size: 70px;
+    font-size: 60px;
     color: #0D83F0;
 }
 
@@ -238,7 +236,7 @@
 
     border: 3px solid white;
 
-    font-size: 18px;
+    font-size: 16px;
 
     transition: 0.2s ease;
 }
@@ -279,7 +277,7 @@
 }
 
 .profile-avatar i {
-    font-size: 20px;
+    font-size: 18px;
     color: whi;
 }
 
@@ -314,7 +312,7 @@
 
     color: #555;
 
-    font-size: 18px;
+    font-size: 13px;
 
     font-weight: 400;
 
@@ -327,7 +325,7 @@
 
     align-items: center;
 
-    height: 50px;
+    height: 42px;
 
     border: 1px solid black;
 
@@ -353,7 +351,7 @@
 
     color: #888;
 
-    font-size: 24px;
+    font-size: 16px;
 
 }
 
@@ -533,9 +531,9 @@
 
 .setting-icon {
 
-    width: 45px;
+    width: 38px;
 
-    height: 45px;
+    height: 38px;
 
     border-radius: 5px;
 
@@ -552,7 +550,7 @@
 }
 
 .setting-icon i {
-    font-size: 30px;
+    font-size: 20px;
     color: #46700b;
 }
 
@@ -574,7 +572,7 @@
 
     color: #333;
 
-    font-size: 18px;
+    font-size: 14px;
 
 }
 
@@ -687,11 +685,11 @@
 
     align-items: center;
 
-    gap: 17px;
+    gap: 12px;
 
     color: #333;
 
-    font-size: 18px;
+    font-size: 14px;
 
 }
 
@@ -700,7 +698,7 @@
 
     color: #777;
 
-    font-size: 30px;
+    font-size: 20px;
 
 }
 
@@ -712,7 +710,7 @@
     grid-template-columns:
         repeat(3, 1fr);
 
-    gap: 60px;
+    gap: 30px;
 
     margin-top: 12px;
 
@@ -734,7 +732,7 @@
 
     color: #999;
 
-    font-size: 14px;
+    font-size: 13px;
 
 }
 

@@ -1,0 +1,524 @@
+/* =====================================================
+   YESUNIM — INVENTORY PAGE LOGIC
+   Handles: category tabs, sectioned card grid, quantity
+   +/-, In Stock/Low Stock/Out of Stock status decision,
+   Add/Edit/Delete Product (with confirm), and activity
+   logging for the Reports page.
+===================================================== */
+
+(function () {
+
+    const STORAGE_KEY = "yesunim_inventoryItems";
+    const LOGS_KEY = "yesunim_inventoryLogs";
+    const LOW_STOCK_THRESHOLD = 5; // stock at or below this (but above 0) = "Low on Stock"
+
+    // Base categories that always show up first, even with no items yet.
+    // The Category field on the form is now free text, so any category
+    // typed there will automatically get its own tab too.
+    const baseCategories = ["Meat", "Sea Food", "Vegetables", "Others"];
+
+    // ---------- DEFAULT SEED DATA (used only the first time) ----------
+    const defaultItems = [
+        { id: "i1", name: "Pork Belly",    category: "Meat",       stock: 25, unit: "kg", price: 320, image: "" },
+        { id: "i2", name: "Pork Ribs",     category: "Meat",       stock: 2,  unit: "kg", price: 280, image: "" },
+        { id: "i3", name: "Chicken Thigh", category: "Meat",       stock: 0,  unit: "kg", price: 180, image: "" },
+        { id: "i4", name: "Beef Slices",   category: "Meat",       stock: 15, unit: "kg", price: 380, image: "" },
+
+        { id: "i5", name: "Shrimp",        category: "Sea Food",   stock: 10, unit: "kg", price: 420, image: "" },
+        { id: "i6", name: "Squid",         category: "Sea Food",   stock: 1,  unit: "kg", price: 350, image: "" },
+        { id: "i7", name: "Bangus",        category: "Sea Food",   stock: 0,  unit: "kg", price: 220, image: "" },
+        { id: "i8", name: "Crab",          category: "Sea Food",   stock: 5,  unit: "kg", price: 450, image: "" },
+
+        { id: "i9",  name: "Cabbage",      category: "Vegetables", stock: 8,  unit: "kg", price: 60,  image: "" },
+        { id: "i10", name: "Carrot",       category: "Vegetables", stock: 1,  unit: "kg", price: 80,  image: "" },
+        { id: "i11", name: "Potato",       category: "Vegetables", stock: 0,  unit: "kg", price: 90,  image: "" },
+        { id: "i12", name: "Lettuce",      category: "Vegetables", stock: 6,  unit: "kg", price: 70,  image: "" },
+
+        { id: "i13", name: "Cooking Oil",  category: "Others",     stock: 5,  unit: "L",  price: 110, image: "" },
+        { id: "i14", name: "Rice",         category: "Others",     stock: 20, unit: "kg", price: 55,  image: "" }
+    ];
+
+    // ---------- STATE ----------
+    let items = [];
+    let activeCategory = "All";
+    let editingItemId = null; // null = adding a new product, otherwise editing this item's id
+    let pendingImageDataUrl = "";
+
+    // ---------- ELEMENTS ----------
+    const categoryTabsEl = document.getElementById("categoryTabs");
+    const sectionsEl = document.getElementById("inventorySections");
+    const tableEl = document.getElementById("inventoryTable");
+    const tableBodyEl = document.getElementById("inventoryTableBody");
+
+    const totalItemsValueEl = document.getElementById("totalItemsValue");
+    const lowStockValueEl = document.getElementById("lowStockValue");
+    const outOfStockValueEl = document.getElementById("outOfStockValue");
+
+    const bottomBarEl = document.getElementById("inventoryBottomBar");
+    const openAddProductBtn = document.getElementById("openAddProductBtn");
+    const closeAddProductBtn = document.getElementById("closeAddProductBtn");
+    const cancelAddProductBtn = document.getElementById("cancelAddProductBtn");
+    const addProductOverlay = document.getElementById("addProductOverlay");
+    const addProductForm = document.getElementById("addProductForm");
+    const productPopupTitle = document.getElementById("productPopupTitle");
+    const saveProductBtn = document.getElementById("saveProductBtn");
+
+    const productImageUploadBox = document.getElementById("productImageUploadBox");
+    const productImageInput = document.getElementById("productImageInput");
+    const productImagePreview = document.getElementById("productImagePreview");
+    const productImageUploadText = document.getElementById("productImageUploadText");
+
+    const productNameInput = document.getElementById("productNameInput");
+    const productCategoryInput = document.getElementById("productCategoryInput");
+    const productStockInput = document.getElementById("productStockInput");
+    const productUnitInput = document.getElementById("productUnitInput");
+    const productPriceInput = document.getElementById("productPriceInput");
+    const categoryListEl = document.getElementById("categoryList");
+
+    // ---------- STORAGE ----------
+
+    function saveItems() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    }
+
+    function logInventoryActivity(action, item, change) {
+        const saved = localStorage.getItem(LOGS_KEY);
+        const logs = saved ? JSON.parse(saved) : [];
+
+        logs.push({
+            id: "log_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
+            date: new Date().toISOString(),
+            itemName: item.name,
+            category: item.category,
+            action: action, // "Stock In" | "Stock Out" | "Added" | "Edited" | "Deleted"
+            change: change, // positive = added, negative = removed
+            resultingStock: item.stock
+        });
+
+        localStorage.setItem(LOGS_KEY, JSON.stringify(logs));
+    }
+
+    function loadItems() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            try {
+                items = JSON.parse(saved);
+                return;
+            } catch (e) {
+                // fall through to default
+            }
+        }
+        items = defaultItems;
+        saveItems();
+    }
+
+    // ---------- CATEGORY LIST (dynamic: base categories + any typed in by the user) ----------
+
+    function getAllCategories() {
+        const result = [...baseCategories];
+
+        items.forEach(item => {
+            const cat = (item.category || "").trim();
+            if (cat && !result.includes(cat)) {
+                result.push(cat);
+            }
+        });
+
+        return result;
+    }
+
+    function refreshCategoryDatalist() {
+        if (!categoryListEl) return;
+        categoryListEl.innerHTML = "";
+        getAllCategories().forEach(cat => {
+            const option = document.createElement("option");
+            option.value = cat;
+            categoryListEl.appendChild(option);
+        });
+    }
+
+    // ---------- STOCK STATUS DECISION ----------
+
+    function getStatus(stock) {
+        if (stock === 0) return { label: "Out of Stock", className: "status-out" };
+        if (stock <= LOW_STOCK_THRESHOLD) return { label: "Low on Stock", className: "status-low" };
+        return { label: "In Stock", className: "status-in" };
+    }
+
+    // ---------- STATS ----------
+
+    function updateStats() {
+        const totalItems = items.length;
+        const inStock = items.filter(i => i.stock > 0).length;
+        const lowStock = items.filter(i => i.stock > 0 && i.stock <= LOW_STOCK_THRESHOLD).length;
+        const outOfStock = items.filter(i => i.stock === 0).length;
+
+        totalItemsValueEl.textContent = `${inStock}/${totalItems}`;
+        lowStockValueEl.textContent = lowStock;
+        outOfStockValueEl.textContent = outOfStock;
+    }
+
+    // ---------- CATEGORY TABS ----------
+
+    function renderTabs() {
+        categoryTabsEl.innerHTML = "";
+
+        const allCategories = getAllCategories();
+        const allTab = ["All Items", ...allCategories.map(c => c === "Others" ? "Others..." : c)];
+        const values = ["All", ...allCategories];
+
+        allTab.forEach((label, index) => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "category-tab" + (values[index] === activeCategory ? " active" : "");
+            btn.textContent = label;
+
+            btn.addEventListener("click", () => {
+                activeCategory = values[index];
+                renderTabs();
+                renderView();
+            });
+
+            categoryTabsEl.appendChild(btn);
+        });
+    }
+
+    // ---------- VIEW ROUTER: "All" = card sections, specific category = table ----------
+
+    function renderView() {
+        // Add Product only makes sense inside a specific category
+        // (Meat / Sea Food / Vegetables / Others / custom), not on "All".
+        bottomBarEl.style.display = activeCategory === "All" ? "none" : "flex";
+
+        if (activeCategory === "All") {
+            sectionsEl.style.display = "flex";
+            tableEl.style.display = "none";
+            renderSections();
+        } else {
+            sectionsEl.style.display = "none";
+            tableEl.style.display = "table";
+            renderTable();
+        }
+    }
+
+    // ---------- SECTIONS / CARDS ----------
+
+    function renderSections() {
+        sectionsEl.innerHTML = "";
+
+        const categoriesToShow = activeCategory === "All" ? getAllCategories() : [activeCategory];
+
+        categoriesToShow.forEach(category => {
+            const categoryItems = items.filter(i => i.category === category);
+            if (categoryItems.length === 0) return;
+
+            const section = document.createElement("div");
+            section.className = "inventory-section";
+
+            const titleBar = document.createElement("div");
+            titleBar.className = "section-title-bar";
+            titleBar.textContent = category;
+            section.appendChild(titleBar);
+
+            const grid = document.createElement("div");
+            grid.className = "inventory-grid";
+
+            categoryItems.forEach(item => {
+                grid.appendChild(buildCard(item));
+            });
+
+            section.appendChild(grid);
+            sectionsEl.appendChild(section);
+        });
+
+        if (sectionsEl.children.length === 0) {
+            sectionsEl.innerHTML = `<p style="color:#999;font-size:13px;">No products in this category yet.</p>`;
+        }
+    }
+
+    function renderTable() {
+        tableBodyEl.innerHTML = "";
+
+        const rows = items.filter(i => i.category === activeCategory);
+
+        if (rows.length === 0) {
+            tableBodyEl.innerHTML = `<tr class="empty-row"><td colspan="7">No products in this category yet.</td></tr>`;
+            return;
+        }
+
+        rows.forEach(item => {
+            const status = getStatus(item.stock);
+
+            const tr = document.createElement("tr");
+            tr.dataset.id = item.id;
+
+            const thumbHtml = item.image
+                ? `<img class="inventory-thumb" src="${item.image}" alt="${item.name}">`
+                : `<div class="inventory-thumb"><i class='bx bx-image'></i></div>`;
+
+            tr.innerHTML = `
+                <td>
+                    <div class="inventory-product-cell">
+                        ${thumbHtml}
+                        <span>${item.name}</span>
+                    </div>
+                </td>
+                <td>${item.category}</td>
+                <td>${item.stock}</td>
+                <td>${item.unit}</td>
+                <td>₱${Number(item.price || 0).toFixed(2)}</td>
+                <td class="status-cell ${status.className}">${status.label}</td>
+                <td>
+                    <div class="action-cell">
+                        <button type="button" class="edit-product-btn" title="Edit"><i class='bx bx-edit'></i></button>
+                        <button type="button" class="delete-product-btn" title="Delete"><i class='bx bx-trash'></i></button>
+                    </div>
+                </td>
+            `;
+
+            tr.querySelector(".edit-product-btn").addEventListener("click", () => openEditProductPopup(item));
+            tr.querySelector(".delete-product-btn").addEventListener("click", () => deleteProduct(item));
+
+            tableBodyEl.appendChild(tr);
+        });
+    }
+
+    function buildCard(item) {
+        const status = getStatus(item.stock);
+
+        const card = document.createElement("div");
+        card.className = `inventory-card ${status.className}`;
+        card.dataset.id = item.id;
+
+        const imageHtml = item.image
+            ? `<img class="inventory-image" src="${item.image}" alt="${item.name}" style="object-fit:cover;">`
+            : `<div class="inventory-image"><i class='bx bx-image'></i></div>`;
+
+        card.innerHTML = `
+            <div class="card-actions">
+                <button type="button" class="edit-product-btn" title="Edit"><i class='bx bx-edit'></i></button>
+                <button type="button" class="delete-product-btn" title="Delete"><i class='bx bx-trash'></i></button>
+            </div>
+            <div class="inventory-card-top">
+                ${imageHtml}
+                <div class="inventory-info">
+                    <div class="inventory-name">${item.name}</div>
+                    <div class="inventory-qty">${item.stock} ${item.unit}</div>
+                    <div class="status-tag ${status.className}">${status.label}</div>
+                </div>
+            </div>
+            <div class="qty-controls">
+                <button type="button" class="qty-btn minus-btn">−</button>
+                <span class="qty-label">Quantity</span>
+                <button type="button" class="qty-btn plus-btn">+</button>
+            </div>
+        `;
+
+        card.querySelector(".minus-btn").addEventListener("click", () => changeStock(item.id, -1));
+        card.querySelector(".plus-btn").addEventListener("click", () => changeStock(item.id, 1));
+
+        card.querySelector(".edit-product-btn").addEventListener("click", (e) => {
+            e.stopPropagation();
+            openEditProductPopup(item);
+        });
+
+        card.querySelector(".delete-product-btn").addEventListener("click", (e) => {
+            e.stopPropagation();
+            deleteProduct(item);
+        });
+
+        return card;
+    }
+
+    function changeStock(itemId, delta) {
+        const item = items.find(i => i.id === itemId);
+        if (!item) return;
+
+        const previousStock = item.stock;
+        item.stock = Math.max(0, item.stock + delta);
+        const actualChange = item.stock - previousStock;
+
+        if (actualChange !== 0) {
+            logInventoryActivity(actualChange > 0 ? "Stock In" : "Stock Out", item, actualChange);
+        }
+
+        saveItems();
+        renderView();
+        updateStats();
+    }
+
+    function deleteProduct(item) {
+        const confirmed = confirm(`Delete "${item.name}" from Inventory? This can't be undone.`);
+        if (!confirmed) return;
+
+        if (item.stock > 0) {
+            logInventoryActivity("Deleted", item, -item.stock);
+        }
+
+        items = items.filter(i => i.id !== item.id);
+        saveItems();
+        renderTabs();
+        renderView();
+        updateStats();
+    }
+
+    // ---------- ADD / EDIT PRODUCT POPUP ----------
+
+    function openAddProductPopup() {
+        editingItemId = null;
+        productPopupTitle.textContent = "Add Product";
+        saveProductBtn.textContent = "Save Product";
+
+        addProductForm.reset();
+        productStockInput.value = 0;
+        productUnitInput.value = "kg";
+        productPriceInput.value = 0;
+
+        refreshCategoryDatalist();
+
+        // Pre-fill the category the user is currently viewing,
+        // since Add Product is now only shown inside a category tab.
+        productCategoryInput.value = activeCategory !== "All" ? activeCategory : "";
+
+        pendingImageDataUrl = "";
+        productImagePreview.src = "";
+        productImagePreview.style.display = "none";
+        productImageUploadText.style.display = "flex";
+
+        addProductOverlay.classList.add("show");
+    }
+
+    function openEditProductPopup(item) {
+        editingItemId = item.id;
+        productPopupTitle.textContent = "Edit Product";
+        saveProductBtn.textContent = "Update Product";
+
+        refreshCategoryDatalist();
+
+        productNameInput.value = item.name;
+        productCategoryInput.value = item.category;
+        productStockInput.value = item.stock;
+        productUnitInput.value = item.unit;
+        productPriceInput.value = item.price || 0;
+
+        pendingImageDataUrl = item.image || "";
+
+        if (pendingImageDataUrl) {
+            productImagePreview.src = pendingImageDataUrl;
+            productImagePreview.style.display = "block";
+            productImageUploadText.style.display = "none";
+        } else {
+            productImagePreview.src = "";
+            productImagePreview.style.display = "none";
+            productImageUploadText.style.display = "flex";
+        }
+
+        addProductOverlay.classList.add("show");
+    }
+
+    function closeAddProductPopup() {
+        addProductOverlay.classList.remove("show");
+        editingItemId = null;
+    }
+
+    function handleImageUpload(file) {
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            pendingImageDataUrl = e.target.result;
+            productImagePreview.src = pendingImageDataUrl;
+            productImagePreview.style.display = "block";
+            productImageUploadText.style.display = "none";
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function handleAddProductSubmit(e) {
+        e.preventDefault();
+
+        const name = productNameInput.value.trim();
+        const category = productCategoryInput.value.trim();
+        const stock = parseInt(productStockInput.value, 10);
+        const unit = productUnitInput.value.trim();
+        const price = parseFloat(productPriceInput.value);
+
+        if (!name || !category || isNaN(stock) || stock < 0 || !unit || isNaN(price) || price < 0) {
+            alert("Please enter a valid product name, category, stock quantity, unit, and price.");
+            return;
+        }
+
+        if (editingItemId) {
+            const item = items.find(i => i.id === editingItemId);
+            if (item) {
+                const previousStock = item.stock;
+
+                item.name = name;
+                item.category = category;
+                item.stock = stock;
+                item.unit = unit;
+                item.price = price;
+                item.image = pendingImageDataUrl;
+
+                const netChange = stock - previousStock;
+                if (netChange !== 0) {
+                    logInventoryActivity("Edited", item, netChange);
+                }
+            }
+        } else {
+            const newItem = {
+                id: "i_" + Date.now(),
+                name: name,
+                category: category,
+                stock: stock,
+                unit: unit,
+                price: price,
+                image: pendingImageDataUrl
+            };
+
+            items.push(newItem);
+
+            if (stock > 0) {
+                logInventoryActivity("Added", newItem, stock);
+            }
+        }
+
+        saveItems();
+
+        // A brand-new category may have just been typed in, so the tab
+        // list (and active tab, if it changed) needs to be rebuilt too.
+        renderTabs();
+        renderView();
+        updateStats();
+
+        closeAddProductPopup();
+    }
+
+    // ---------- INIT ----------
+
+    function init() {
+        loadItems();
+        renderTabs();
+        renderView();
+        updateStats();
+        refreshCategoryDatalist();
+
+        openAddProductBtn.addEventListener("click", openAddProductPopup);
+        closeAddProductBtn.addEventListener("click", closeAddProductPopup);
+        cancelAddProductBtn.addEventListener("click", closeAddProductPopup);
+
+        addProductOverlay.addEventListener("click", (e) => {
+            if (e.target === addProductOverlay) closeAddProductPopup();
+        });
+
+        productImageUploadBox.addEventListener("click", () => productImageInput.click());
+        productImageInput.addEventListener("change", (e) => {
+            handleImageUpload(e.target.files[0]);
+        });
+
+        addProductForm.addEventListener("submit", handleAddProductSubmit);
+    }
+
+    document.addEventListener("DOMContentLoaded", init);
+
+})();

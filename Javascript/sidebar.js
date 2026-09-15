@@ -7,7 +7,36 @@ fetch("A_Main_sidebar.html")
         return response.text();
     })
     .then(data => {
+        // Insert sidebar
         document.getElementById("sidebar-container").innerHTML = data;
+
+        // ==========================================
+        // ACTIVE SIDEBAR ITEM
+        // ==========================================
+
+        const currentPage =
+            window.location.pathname
+                .split("/")
+                .pop()
+                .toLowerCase();
+
+        document.querySelectorAll(".nav-item").forEach(function (item) {
+
+            const href = item.getAttribute("href");
+
+            // Ignore Logout
+            if (!href || href === "#") {
+                return;
+            }
+
+            const linkPage =
+                href.split("/").pop().toLowerCase();
+
+            if (linkPage === currentPage) {
+                item.classList.add("active");
+            }
+
+        });
     })
     .catch(error => {
         console.error("Sidebar error:", error);
@@ -140,5 +169,4 @@ function hideLoading() {
 
     loadingScreen.classList.remove("show");
 }
-
 

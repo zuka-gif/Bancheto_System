@@ -12,21 +12,188 @@
 <body>
     <div id="sidebar-container"></div>
 
-    <main class="main">
+    <main class="sales-main">
 
-        <header class="header">
+                <!-- TOP BAR -->
+        <div class="sales-top">
 
-            <div class="sales-header">
-                <h1>Sales</h1>
+            <div class="search-box">
+                <i class='bx bx-search'></i>
+                <input type="text" id="menuSearchInput" placeholder="Search here...">
             </div>
 
-        </header>
+            <button class="add-menu-btn" id="openAddMenuBtn">
+                <i class='bx bx-plus'></i>
+                Add Menu
+            </button>
+
+            <div class="date-box-wrapper">
+                <div class="date-box">
+                    <i class='bx bx-calendar'></i>
+                    <span id="currentDate">—</span>
+
+                    <i class='bx bx-time'></i>
+                    <span id="currentTime">—</span>
+                </div>
+            </div>
+
+        </div>
+
+
+        <!-- SALES CONTENT -->
+        <div class="sales-content">
+
+            <!-- MENU AREA -->
+            <section class="menu-area">
+
+                <div class="menu-grid" id="menuGrid">
+
+                    <!--
+                    MENU CARDS ARE GENERATED
+                    BY Sales.js
+                    -->
+
+                </div>
+
+            </section>
+
+
+            <!-- CURRENT ORDER -->
+            <section class="current-order">
+
+                <div class="order-title">
+                    <i class='bx bx-cart'></i>
+                    <span>Current Order</span>
+                </div>
+
+
+                <!-- ORDER TABLE -->
+                <div class="order-table">
+
+                    <div class="order-table-header">
+                        <span>Order</span>
+                        <span>No. Pax</span>
+                        <span>Price</span>
+                        <span></span>
+                    </div>
+
+                    <div class="order-list" id="orderList">
+
+                        <!-- ORDER ITEMS ADDED BY Sales.js -->
+
+                    </div>
+
+                </div>
+
+
+                <!-- SUMMARY -->
+                <div class="order-summary">
+
+                    <div class="summary-item">
+                        <span>Subtotal</span>
+                        <span id="subtotal">₱ 0.00</span>
+                    </div>
+
+                    <div class="summary-item">
+                        <span>Discount</span>
+                        <input type="text" id="discountInput" class="discount-input" value="₱ 0.00">
+                    </div>
+
+                    <div class="summary-item total">
+                        <span>Total</span>
+                        <span id="total">₱ 0.00</span>
+                    </div>
+
+                </div>
+
+
+                <!-- CASH -->
+                <div class="cash-area">
+
+                    <div class="cash-field">
+                        <label>Cash Received</label>
+                        <input type="text" id="cashReceived" value="₱ 0.00">
+                    </div>
+
+                    <div class="cash-field">
+                        <label>Change</label>
+                        <input type="text" id="change" value="₱ 0.00" readonly>
+                    </div>
+
+                </div>
+
+
+                <!-- BUTTONS -->
+                <div class="order-buttons">
+
+                    <button class="record-btn" id="recordTransactionBtn">
+                        Record Transaction
+                    </button>
+
+                    <button class="clear-btn" id="clearOrderBtn">
+                        Clear Order
+                    </button>
+
+                </div>
+
+            </section>
+
+        </div>
+
 
     </main>
+
+    <!-- ADD MENU POPUP -->
+    <div class="popup-overlay" id="addMenuOverlay">
+
+        <div class="add-menu-popup">
+
+            <div class="popup-header">
+                <h2>Add Menu Item</h2>
+                <button class="popup-close" id="closeAddMenuBtn" type="button">
+                    <i class='bx bx-x'></i>
+                </button>
+            </div>
+
+            <form id="addMenuForm" class="add-menu-form">
+
+                <label>Menu Image</label>
+                <div class="image-upload" id="imageUploadBox">
+                    <img id="menuImagePreview" src="" alt="" style="display:none;">
+                    <span id="imageUploadText">
+                        <i class='bx bx-image-add'></i>
+                        Click to upload image
+                    </span>
+                    <input type="file" id="menuImageInput" accept="image/*" hidden>
+                </div>
+
+                <label>Menu Name</label>
+                <div class="input-box">
+                    <input type="text" id="menuNameInput" placeholder="e.g. Unli Samgyup" required>
+                </div>
+
+                <label>Price (₱)</label>
+                <div class="input-box">
+                    <input type="number" id="menuPriceInput" placeholder="e.g. 199" min="0" step="1" required>
+                </div>
+
+                <label>Description</label>
+                <div class="input-box textarea-box">
+                    <textarea id="menuDescriptionInput" placeholder="e.g. Unlimited pork samgyup, good for 2-3 pax, includes rice and drinks"></textarea>
+                </div>
+
+                <div class="add-menu-actions">
+                    <button type="button" class="cancel-btn" id="cancelAddMenuBtn">Cancel</button>
+                    <button type="submit" class="save-menu-btn" id="saveMenuBtn">Save Menu</button>
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
 
     <script src="../Javascript/sidebar.js"></script>
     <script src="../Javascript/Sales.js"></script>
 </body>
 </html>
-
-

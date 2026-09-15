@@ -20,7 +20,6 @@ body {
 .sidebar {
     width: 180px;
     min-height: 100vh;
-    min-width: 180px;
     background: #8f0000;
     display: flex;
     flex-direction: column;
@@ -40,7 +39,7 @@ body {
 }
 
 .logo img {
-    width: 150px;
+    width: 60px;
 }
 
 
@@ -49,38 +48,45 @@ body {
     display: flex;
     flex-direction: column;
     gap: 5px;
-    padding-top: 80px;
+    padding-top: 40px;
 }
+
 
 .nav-item {
     width: 100%;
-    height: 90px;
+    height: 64px;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     text-decoration: none;
     color: white;
-    font-size: 20px;
+    font-size: 13px;
     font-weight: bold;
     position: relative;
     transition: background 0.2s ease;
 }
 
 .nav-item:hover {
-    background: #ebc7157c;
+    background: #ebc71552;
+    border-radius: 10px;
+
+}
+
+.nav-item.active {
+    background: #ebc71579;
     border-radius: 10px;
 }
 
 .nav-item i {
-    font-size: 30px;
+    font-size: 20px;
     margin-bottom: 5px;
     stroke: #ffc400;
 }
 
 
 .nav-label {
-    line-height: 1;
+    line-height: 1.2;
 }
 
 
@@ -161,4 +167,3 @@ body {
     }
 
 }
-

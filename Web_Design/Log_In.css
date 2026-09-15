@@ -1,4 +1,3 @@
-
 *{
     margin:0;
     padding:0;
@@ -46,26 +45,26 @@ body{
 }
 
 .branding img{
-    width:500px;
+    width:220px;
 }
 
 .branding h1{
     margin-top:15px;
     text-align:center;
-    line-height:80px;
+    line-height:1.2;
     font-family:Georgia, serif;
 }
 
 .yellow{
     color: rgb(255, 251, 0);
-    font-size:150px;
+    font-size:56px;
     font-family: 'Cormorant Unicase', serif;
     font-style: italic;
 }
 
 .red{
     color:rgb(255, 2, 2);
-    font-size:150px;
+    font-size:56px;
     font-family: 'Cormorant Unicase', serif;
     font-style: italic;
 }
@@ -79,40 +78,41 @@ body{
 }
 
 .login{
-    width:580px;
+    width:440px;
     background:#fffaf8;
     border:1px solid #c0392b;
     border-top:4px solid #900;
     border-radius:10px;
-    padding:50px;
+    padding:36px;
 }
 
 .login h1{
-    font-size:50px;
+    font-size:28px;
     font-weight:500;
 }
 
 .login p{
     margin-top:5px;
     color:#555;
-    margin-bottom:30px;
+    margin-bottom:24px;
+    font-size:14px;
 }
 
 label{
     display:block;
-    font-size:15px;
+    font-size:13px;
     font-weight:600;
     margin-bottom:8px;
 }
 
 .input-box{
     border:1px solid #999;
-    height:48px;
+    height:44px;
     border-radius:5px;
     display:flex;
     align-items:center;
     padding:0 15px;
-    margin-bottom:20px;
+    margin-bottom:16px;
     background: #fff;
 }
 
@@ -121,12 +121,12 @@ label{
     border:none;
     outline:none;
     padding:12px;
-    font-size:15px;
+    font-size:14px;
     background:transparent;
 }
 
 .input-box i{
-    font-size: 20px;
+    font-size: 17px;
     color: #333;
     margin-right: 10px;
 }
@@ -136,7 +136,7 @@ label{
     border: none;
     outline: none;
     background: transparent;
-    font-size: 15px;
+    font-size: 14px;
     color: #555;
     cursor: pointer;
     appearance: auto;
@@ -223,7 +223,7 @@ label{
 
     padding: 0 !important;
 
-    font-size: 20px !important;
+    font-size: 18px !important;
 
     color: inherit !important;
 
@@ -236,7 +236,7 @@ label{
     display:flex;
     justify-content:space-between;
     align-items:center;
-    margin-bottom:20px;
+    margin-bottom:16px;
 }
 
 .option input[type="checkbox"] {
@@ -278,7 +278,7 @@ label{
     align-items: center;
     gap: 10px;
     color: #444;
-    font-size: 18px;
+    font-size: 14px;
     width: 100%;
     justify-content: center;
 }
@@ -293,6 +293,7 @@ label{
     align-items:center;
     gap:8px;
     font-weight:400;
+    font-size: 14px;
     cursor: pointer;
 }
 
@@ -307,12 +308,12 @@ label{
 
 button{
     width:100%;
-    height:48px;
+    height:44px;
     border:none;
     border-radius:20px;
     background:#be0c0c;
     color:#fff;
-    font-size:20px;
+    font-size:15px;
     font-weight:600;
     cursor:pointer;
 }
@@ -324,9 +325,9 @@ button{
 .divider {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 16px;
     color: #444;
-    font-size: 18px;
+    font-size: 14px;
     width: 100%;
 }
 
@@ -339,12 +340,12 @@ button{
 
 .signup {
     width:100%;
-    height:50px;
+    height:44px;
     background:#fff;
     color:#8b0000;
     border:1.5px solid #8b0000;
     border-radius:10px;
-    font-size:18px;
+    font-size:14px;
     font-weight:600;
     cursor:pointer;
     transition:.3s;
@@ -358,7 +359,7 @@ button:hover{
 }
 
 hr{
-    margin:25px 0;
+    margin:20px 0;
     border:none;
     border-top:1px solid #b22222;
 }
@@ -370,13 +371,14 @@ hr{
 }
 
 .security i{
-    font-size:22px;
+    font-size:20px;
     margin-top:3px;
 }
 
 .security p{
     margin:0;
-    line-height:25px;
+    font-size: 13px;
+    line-height:20px;
 }
 
 .security strong{
@@ -510,7 +512,7 @@ hr{
 
     color: #222;
 
-    font-size: 26px;
+    font-size: 22px;
 
     font-weight: 700;
 }
@@ -546,7 +548,7 @@ hr{
 
     color: #555;
 
-    font-size: 29px;
+    font-size: 24px;
 
     line-height: 36px;
 
@@ -577,7 +579,7 @@ hr{
 
     color: #333;
 
-    font-size: 14px;
+    font-size: 13px;
 
     font-weight: 600;
 }
@@ -737,7 +739,7 @@ hr{
     margin-top: 0;
     margin-bottom: 15px;
 
-    font-size: 25px;
+    font-size: 22px;
 }
 
 
@@ -748,7 +750,7 @@ hr{
     margin-top: 22px;
     margin-bottom: 8px;
 
-    font-size: 17px;
+    font-size: 16px;
 }
 
 
@@ -784,7 +786,7 @@ hr{
 
     color: #555;
 
-    font-size: 28px;
+    font-size: 24px;
 
     line-height: 35px;
 
@@ -860,7 +862,7 @@ hr{
 
     color: #333;
 
-    font-size: 14px;
+    font-size: 13px;
 
     font-weight: 600;
 
@@ -872,7 +874,7 @@ hr{
 
     width: 100%;
 
-    height: 45px;
+    height: 44px;
 
     padding: 0 12px;
 
@@ -912,7 +914,7 @@ hr{
 
     width: 100%;
 
-    height: 45px;
+    height: 44px;
 
     border: none;
 
@@ -1009,14 +1011,14 @@ hr{
 
     .policy-content h2 {
 
-        font-size: 22px;
+        font-size: 20px;
 
     }
 
 
     .policy-content h3 {
 
-        font-size: 16px;
+        font-size: 15px;
 
     }
 
@@ -1044,4 +1046,3 @@ hr{
     }
 
 }
-

@@ -29,10 +29,10 @@
 
     color: #5C1D1D;
 
-    font-size: 62px;
+    font-size: 32px;
     font-weight: 800;
 
-    line-height: 1;
+    line-height: 1.2;
 }
 
 .Dashboard-header p {
@@ -40,7 +40,7 @@
 
     color: #222;
 
-    font-size: 16px;
+    font-size: 14px;
     font-weight: bold;
 }
 
@@ -53,7 +53,7 @@
     display: flex;
     align-items: center;
 
-    gap: 30px;
+    gap: 20px;
 }
 
 .Popup-icons button {
@@ -67,34 +67,34 @@
 
 
 .notifications {
-    width: 35px;
-    height: 40px;
+    width: 24px;
+    height: 28px;
 }
 
 .notifications i {
-    font-size: 45px;
+    font-size: 22px;
 }
 
 
 .setting {
-    width: 35px;
-    height: 40px;
+    width: 24px;
+    height: 28px;
 }
 
 .setting i {
-    font-size: 45px;
+    font-size: 22px;
 }
 
 
 .profile {
-    height: 50px;
+    height: 40px;
 
-    padding: 0 25px 0 9px;
+    padding: 0 18px 0 7px;
 
     display: flex;
     align-items: center;
 
-    gap: 12px;
+    gap: 8px;
 
     background: #0D83F0 !important;
 
@@ -102,7 +102,7 @@
 
     color: white;
 
-    font-size: 26px;
+    font-size: 14px;
     font-weight: bold;
 }
 
@@ -116,14 +116,14 @@
     grid-template-columns:
         repeat(4, minmax(0, 1fr));
 
-    gap: 80px;
+    gap: 24px;
 
     margin-bottom: 25px;
-    margin-top: 50px;
+    margin-top: 30px;
 }
 
 .stat-card {
-    min-height: 150px;
+    min-height: 110px;
 
     position: relative;
 
@@ -155,16 +155,16 @@
 /* STAT CONTENT */
 
 .stat-value {
-    font-size: 27px;
+    font-size: 20px;
     font-weight: 800;
 
-    line-height: 30px;
+    line-height: 24px;
 }
 
 .stat-title {
     margin-top: 1px;
 
-    font-size: 14px;
+    font-size: 13px;
     font-weight: bold;
 }
 
@@ -176,12 +176,12 @@
 
     gap: 3px;
 
-    font-size: 14px;
+    font-size: 13px;
     font-weight: bold;
 }
 
 .stat-change i {
-    font-size: 18px;
+    font-size: 15px;
 }
 
 
@@ -195,7 +195,7 @@
 
     color: #ffd000;
 
-    font-size: 36px;
+    font-size: 24px;
 
     opacity: .9;
 }
@@ -210,7 +210,7 @@
 
     color: #ffdc00;
 
-    font-size: 18px;
+    font-size: 13px;
     font-weight: bold;
 
     cursor: pointer;
@@ -252,7 +252,7 @@
     display: flex;
     align-items: center;
 
-    font-size: 16px;
+    font-size: 15px;
     margin-bottom: 10px;
 }
 
@@ -394,7 +394,7 @@
 }
 
 .panel-header h2 {
-    font-size: 16px;
+    font-size: 15px;
 }
 
 
@@ -515,7 +515,7 @@
 }
 
 .activities-header h2 {
-    font-size: 20px;
+    font-size: 18px;
 }
 
 .activities-header .view-all-button {
@@ -550,7 +550,7 @@ thead th {
 
     color: #111;
 
-    font-size: 14px;
+    font-size: 13px;
 }
 
 tbody td {
