@@ -3,9 +3,18 @@
 
     width: auto;
     min-width: 0;
-    min-height: 100vh;
+
+    /* Locked to the viewport so the page itself never scrolls —
+       only the Recent Activities table scrolls internally. */
+    height: 100vh;
 
     padding: 30px 35px;
+    box-sizing: border-box;
+
+    display: flex;
+    flex-direction: column;
+
+    overflow: hidden;
 
     background: #f7f8f9;
 
@@ -20,7 +29,9 @@
     justify-content: space-between;
     align-items: flex-start;
 
-    margin-bottom: 28px;
+    margin-bottom: 20px;
+
+    flex-shrink: 0;
 }
 
 
@@ -118,8 +129,10 @@
 
     gap: 24px;
 
-    margin-bottom: 25px;
-    margin-top: 30px;
+    margin-bottom: 20px;
+    margin-top: 0;
+
+    flex-shrink: 0;
 }
 
 .stat-card {
@@ -239,6 +252,8 @@
         1fr;
 
     gap: 17px;
+
+    flex-shrink: 0;
 }
 
 
@@ -247,13 +262,14 @@
 ========================================= */
 
 .section-title {
-    height: 10px;
+    height: 22px;
+
+    margin: 0 0 10px;
 
     display: flex;
     align-items: center;
 
     font-size: 15px;
-    margin-bottom: 10px;
 }
 
 
@@ -261,12 +277,27 @@
    SALES
 ========================================= */
 
+.sales-section {
+    display: flex;
+    flex-direction: column;
+
+    min-width: 0;
+}
+
 .sales-card {
-    height: 330px;
+    /* Match the panels: 22px title + 10px margin = 32px offset,
+       so 330px - 32px keeps the three columns bottom-aligned. */
+    height: 298px;
+
+    flex: 1;
 
     position: relative;
 
-    padding: 8px;
+    padding: 10px 12px 8px;
+    box-sizing: border-box;
+
+    display: flex;
+    flex-direction: column;
 
     background: white;
 
@@ -279,27 +310,37 @@
 /* CHART CONTAINER */
 
 .chart-container {
-    height: 322px;
+    flex: 1;
+    min-height: 0;
 
     display: flex;
 }
 
 
-/* Y AXIS */
+/* Y AXIS
+   Fixed width so the X-axis labels below can be offset by the
+   exact same amount and stay lined up with the chart area. */
 
 .chart-y-axis {
-    width: auto;
+    width: 46px;
+    flex-shrink: 0;
 
     display: flex;
     flex-direction: column;
     justify-content: space-between;
 
-    padding: 0 5px 0 0;
+    padding: 0 8px 0 0;
+    box-sizing: border-box;
 
     text-align: right;
 
-    font-size: 8px;
+    color: #666;
+
+    font-size: 10px;
     font-weight: bold;
+
+    /* Nudge up by half a line so each label centres on its grid line */
+    transform: translateY(-5px);
 }
 
 
@@ -307,10 +348,11 @@
 
 .chart {
     flex: 1;
+    min-width: 0;
 
     position: relative;
 
-    overflow: hidden;
+    overflow: visible;
 }
 
 .chart-grid {
@@ -327,7 +369,12 @@
     width: 100%;
     height: 1px;
 
-    background: #e1e1e1;
+    background: #e8e8e8;
+}
+
+/* Bottom-most grid line doubles as the baseline */
+.chart-grid span:last-child {
+    background: #c9c9c9;
 }
 
 
@@ -340,6 +387,13 @@
 
     width: 100%;
     height: 100%;
+
+    /* Keeps the stroke an even thickness even though the viewBox is
+       stretched by preserveAspectRatio="none" — this is the main
+       reason the line looked thin and washed out before. */
+    vector-effect: non-scaling-stroke;
+
+    overflow: visible;
 }
 
 .sales-chart polyline {
@@ -347,23 +401,33 @@
 
     stroke: #8d0808;
 
-    stroke-width: 3;
+    stroke-width: 2.5;
 
     stroke-linejoin: round;
     stroke-linecap: round;
+
+    vector-effect: non-scaling-stroke;
 }
 
 
-/* X AXIS */
+/* X AXIS
+   margin-left matches .chart-y-axis width exactly. */
 
 .chart-x-axis {
-    margin-left: 38px;
+    height: 16px;
+
+    margin-left: 46px;
+
+    padding-top: 4px;
 
     display: flex;
-    justify-content: space-around;
+    justify-content: space-between;
 
-    font-size: 9px;
+    flex-shrink: 0;
 
+    color: #666;
+
+    font-size: 10px;
     font-weight: bold;
 }
 
@@ -375,6 +439,11 @@
 .panel {
     height: 330px;
 
+    display: flex;
+    flex-direction: column;
+
+    min-width: 0;
+
     background: white;
 
     border: 1px solid #bd3939;
@@ -382,18 +451,25 @@
     border-radius: 9px;
 
     overflow: hidden;
-    margin-top: 20px;
+
+    margin-top: 32px;
 }
 
 .panel-header {
     height: 32px;
 
+    flex-shrink: 0;
+
     display: flex;
     align-items: center;
     justify-content: center;
+
+    border-bottom: 1px solid #f0dcdc;
 }
 
 .panel-header h2 {
+    margin: 0;
+
     font-size: 15px;
 }
 
@@ -403,7 +479,12 @@
 ========================================= */
 
 .product-list {
+    flex: 1;
+    min-height: 0;
+
     padding: 0 15px;
+
+    overflow-y: auto;
 }
 
 .product-item {
@@ -449,7 +530,12 @@
 ========================================= */
 
 .stock-list {
+    flex: 1;
+    min-height: 0;
+
     padding: 0 15px;
+
+    overflow-y: auto;
 }
 
 .stock-item {
@@ -490,11 +576,23 @@
 .activities {
     width: 100%;
 
-    margin-top: 40px;
+    /* Takes whatever height is left over, then scrolls inside
+       instead of pushing the page down. */
+    flex: 1;
+    min-height: 140px;
+
+    margin-top: 25px;
+
+    display: flex;
+    flex-direction: column;
+
+    overflow: hidden;
 
     background: white;
 
     border: 2px solid #bd3939;
+
+    border-radius: 6px;
 }
 
 
@@ -503,11 +601,13 @@
 .activities-header {
     height: 40px;
 
+    flex-shrink: 0;
+
     display: flex;
     align-items: center;
     justify-content: space-between;
 
-    padding: 0 7px;
+    padding: 0 12px;
 
     background: #fff8f4;
 
@@ -515,6 +615,8 @@
 }
 
 .activities-header h2 {
+    margin: 0;
+
     font-size: 18px;
 }
 
@@ -530,6 +632,10 @@
 .table-container {
     width: 100%;
 
+    flex: 1;
+    min-height: 0;
+
+    overflow-y: auto;
     overflow-x: auto;
 }
 
@@ -548,9 +654,18 @@ thead th {
 
     text-align: left;
 
+    background: #ffffff;
+
     color: #111;
 
     font-size: 13px;
+
+    /* Header stays visible while the rows scroll underneath */
+    position: sticky;
+    top: 0;
+    z-index: 2;
+
+    box-shadow: inset 0 -1px 0 #ddd;
 }
 
 tbody td {
@@ -573,10 +688,13 @@ tbody td {
 
 @media (max-width: 1100px) {
 
+    /* Not enough room to fit everything on one screen anymore,
+       so let the page scroll normally again. */
     .main {
-        width: calc(100% - 180px);
+        height: auto;
+        min-height: 100vh;
 
-        margin-left: 180px;
+        overflow: visible;
     }
 
     .stat-grid {
@@ -589,6 +707,18 @@ tbody td {
 
     .sales-section {
         grid-column: 1 / -1;
+    }
+
+    .sales-card {
+        height: 300px;
+    }
+
+    .activities {
+        flex: none;
+    }
+
+    .table-container {
+        max-height: 320px;
     }
 }
 
@@ -619,5 +749,9 @@ tbody td {
 
     .sales-section {
         grid-column: auto;
+    }
+
+    .panel {
+        margin-top: 0;
     }
 }

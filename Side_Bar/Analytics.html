@@ -12,24 +12,119 @@
 <body>
     <div id="sidebar-container"></div>
 
-    <main class="main">
+    <main class="analytics-main">
 
         <header class="header">
 
             <div class="analytics-header">
                 <h1>Data Analytics</h1>
+                <p>Track your restaurant's sales, cost, and inventory performance.</p>
             </div>
 
         </header>
-        
+
+        <!-- FILTER BAR -->
+        <section class="analytics-filters">
+            <div class="range-select-box">
+                <select id="analyticsPeriodSelect">
+                    <option value="monthly" selected>Monthly</option>
+                    <option value="yearly">Yearly</option>
+                </select>
+            </div>
+
+            <div class="date-picker-box">
+                <i class='bx bx-calendar'></i>
+                <input type="month" id="analyticsMonthInput">
+            </div>
+
+            <button type="button" class="filter-btn" id="analyticsFilterBtn">Filter</button>
+        </section>
+
+        <section class="analytics-scroll" id="analyticsScroll">
+
+            <!-- STAT CARDS -->
+            <section class="analytics-stats">
+
+                <div class="analytics-stat-card">
+                    <i class='bx bx-money stat-bg-icon'></i>
+                    <strong class="analytics-stat-value" id="totalSalesValue">₱0.00</strong>
+                    <span class="analytics-stat-label">Total Sales</span>
+                </div>
+
+                <div class="analytics-stat-card">
+                    <i class='bx bx-receipt stat-bg-icon'></i>
+                    <strong class="analytics-stat-value" id="totalOrdersValue">0</strong>
+                    <span class="analytics-stat-label">Total Orders</span>
+                </div>
+
+                <div class="analytics-stat-card">
+                    <i class='bx bx-wallet stat-bg-icon'></i>
+                    <strong class="analytics-stat-value" id="totalCostValue">₱0.00</strong>
+                    <span class="analytics-stat-label">Total Cost (est.)</span>
+                </div>
+
+                <div class="analytics-stat-card">
+                    <i class='bx bx-error-circle stat-bg-icon'></i>
+                    <strong class="analytics-stat-value" id="lowStockValue">0</strong>
+                    <span class="analytics-stat-label">Low Stock Items</span>
+                </div>
+
+            </section>
+
+            <!-- CHARTS ROW -->
+            <section class="analytics-charts-row">
+
+                <div class="analytics-panel sales-trend-panel">
+                    <div class="panel-header">
+                        <h2>Sales Trend</h2>
+                        <select id="trendGranularitySelect">
+                            <option value="daily" selected>Daily</option>
+                            <option value="weekly">Weekly</option>
+                        </select>
+                    </div>
+                    <div class="chart-wrap">
+                        <canvas id="salesTrendChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="analytics-panel best-selling-panel">
+                    <div class="panel-header">
+                        <h2>Best Selling Products</h2>
+                    </div>
+                    <div class="chart-wrap donut-wrap">
+                        <canvas id="bestSellingChart"></canvas>
+                    </div>
+                    <ul class="legend-list" id="bestSellingLegend"></ul>
+                </div>
+
+            </section>
+
+            <!-- BOTTOM ROW -->
+            <section class="analytics-bottom-row">
+
+                <div class="analytics-panel panel-pink">
+                    <h2>Slow Moving Products</h2>
+                    <ul class="simple-list" id="slowMovingList"></ul>
+                </div>
+
+                <div class="analytics-panel panel-green">
+                    <h2>Revenue Summary</h2>
+                    <ul class="summary-list">
+                        <li><span>Gross Revenue:</span> <strong id="grossRevenueValue">₱0.00</strong></li>
+                        <li><span>Total Cost:</span> <strong id="totalCostSummaryValue">₱0.00</strong></li>
+                        <li><span>Net Revenue:</span> <strong id="netRevenueValue">₱0.00</strong></li>
+                        <li><span>Profit Margin:</span> <strong id="profitMarginValue">0%</strong></li>
+                    </ul>
+                </div>
+
+            </section>
+
+        </section>
+
     </main>
 
-
-
-
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="../Javascript/sidebar.js"></script>
     <script src="../Javascript/Analytics.js"></script>
 </body>
 </html>
-
-
