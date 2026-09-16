@@ -39,7 +39,7 @@ body {
 }
 
 .logo img {
-    width: 60px;
+    width: 100px;
 }
 
 
@@ -56,11 +56,13 @@ body {
     width: 100%;
     height: 64px;
     display: flex;
-    flex-direction: column;
-    justify-content: center;
+    flex-direction: row;
+    justify-content: flex-start;
     align-items: center;
     text-decoration: none;
     color: white;
+    gap: 12px;
+    padding: 0 40px;
     font-size: 13px;
     font-weight: bold;
     position: relative;
@@ -70,7 +72,6 @@ body {
 .nav-item:hover {
     background: #ebc71552;
     border-radius: 10px;
-
 }
 
 .nav-item.active {
@@ -83,7 +84,6 @@ body {
     margin-bottom: 5px;
     stroke: #ffc400;
 }
-
 
 .nav-label {
     line-height: 1.2;

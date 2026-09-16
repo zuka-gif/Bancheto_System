@@ -19,11 +19,6 @@
     const INVENTORY_LOGS_KEY = "yesunim_inventoryLogs";
     const LOW_STOCK_THRESHOLD = 5; // must match Inventory.js
 
-    // How many previous days to average when working out the
-    // "vs. previous" percentage on the stat cards. Averaging over a
-    // week stops one quiet day from producing a 1600% swing.
-    const BASELINE_DAYS = 7;
-
     // ---------- ELEMENTS ----------
 
     const statEls = {
@@ -149,55 +144,42 @@
         }
     }
 
-    /* Average daily figure across the BASELINE_DAYS days *before* today. */
-    function computeBaseline(transactions, valueFn) {
-        const now = new Date();
-        let total = 0;
+    /* Sum/count over a whole date range, not just a single day —
+       used to build the comparison window below. */
+    function totalsInRange(transactions, rangeStart, rangeEnd) {
+        const inRange = transactions.filter(t => {
+            const d = new Date(t.date);
+            return d >= rangeStart && d <= rangeEnd;
+        });
 
-        for (let i = 1; i <= BASELINE_DAYS; i++) {
-            const day = new Date(now);
-            day.setDate(day.getDate() - i);
-
-            const dayStart = startOfDay(day);
-            const dayEnd = endOfDay(day);
-
-            const dayTx = transactions.filter(t => {
-                const d = new Date(t.date);
-                return d >= dayStart && d <= dayEnd;
-            });
-
-            total += valueFn(dayTx);
-        }
-
-        return total / BASELINE_DAYS;
+        return {
+            sales: inRange.reduce((s, t) => s + (Number(t.total) || 0), 0),
+            orders: inRange.length
+        };
     }
 
     function renderStatCards(items, transactions) {
         const now = new Date();
-        const todayStart = startOfDay(now);
-        const todayEnd = endOfDay(now);
 
-        const todaysTx = transactions.filter(t => {
-            const d = new Date(t.date);
-            return d >= todayStart && d <= todayEnd;
-        });
+        // The card itself shows TODAY's total, refreshed daily.
+        const today = totalsInRange(transactions, startOfDay(now), endOfDay(now));
 
-        const sumTotals = list => list.reduce((s, t) => s + (Number(t.total) || 0), 0);
-        const countOrders = list => list.length;
+        // For the small percentage underneath, compare today against the
+        // average of the past 7 days (not counting today) rather than a
+        // single previous day — a lone quiet or busy day no longer swings
+        // the percentage to an unreadable number.
+        const priorStart = startOfDay(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7));
+        const priorEnd = endOfDay(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1));
+        const priorWeek = totalsInRange(transactions, priorStart, priorEnd);
 
-        const todaySales = sumTotals(todaysTx);
-        const todayOrders = countOrders(todaysTx);
+        const avgDailySales = priorWeek.sales / 7;
+        const avgDailyOrders = priorWeek.orders / 7;
 
-        // Compare today against the 7-day daily average rather than
-        // against yesterday alone.
-        const baselineSales = computeBaseline(transactions, sumTotals);
-        const baselineOrders = computeBaseline(transactions, countOrders);
+        if (statEls.sales) statEls.sales.textContent = currency(today.sales);
+        renderStatChange(statEls.salesChange, formatChange(today.sales, avgDailySales));
 
-        if (statEls.sales) statEls.sales.textContent = currency(todaySales);
-        renderStatChange(statEls.salesChange, formatChange(todaySales, baselineSales));
-
-        if (statEls.orders) statEls.orders.textContent = todayOrders;
-        renderStatChange(statEls.ordersChange, formatChange(todayOrders, baselineOrders));
+        if (statEls.orders) statEls.orders.textContent = today.orders;
+        renderStatChange(statEls.ordersChange, formatChange(today.orders, avgDailyOrders));
 
         const availableItems = items.filter(i => getStock(i) > 0).length;
         if (statEls.items) statEls.items.textContent = availableItems;
