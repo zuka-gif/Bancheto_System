@@ -2,8 +2,8 @@
    YESUNIM — INVENTORY PAGE LOGIC
    Handles: category tabs, sectioned card grid, quantity
    +/-, In Stock/Low Stock/Out of Stock status decision,
-   Add/Edit/Delete Product (with confirm), and activity
-   logging for the Reports page.
+   Add/Edit/Delete Product (with confirm), search/filter,
+   and activity logging for the Reports page.
 ===================================================== */
 
 (function () {
@@ -41,6 +41,7 @@
     // ---------- STATE ----------
     let items = [];
     let activeCategory = "All";
+    let searchQuery = "";
     let editingItemId = null; // null = adding a new product, otherwise editing this item's id
     let pendingImageDataUrl = "";
 
@@ -49,10 +50,15 @@
     const sectionsEl = document.getElementById("inventorySections");
     const tableEl = document.getElementById("inventoryTable");
     const tableBodyEl = document.getElementById("inventoryTableBody");
+    const noResultsNoteEl = document.getElementById("noResultsNote");
+    const noResultsQueryEl = document.getElementById("noResultsQuery");
 
     const totalItemsValueEl = document.getElementById("totalItemsValue");
     const lowStockValueEl = document.getElementById("lowStockValue");
     const outOfStockValueEl = document.getElementById("outOfStockValue");
+
+    const searchInputEl = document.getElementById("inventorySearchInput");
+    const clearSearchBtn = document.getElementById("clearSearchBtn");
 
     const bottomBarEl = document.getElementById("inventoryBottomBar");
     const openAddProductBtn = document.getElementById("openAddProductBtn");
@@ -112,6 +118,26 @@
         saveItems();
     }
 
+    // ---------- FORMATTING ----------
+
+    function formatPrice(value) {
+        return "₱" + Number(value || 0).toLocaleString("en-PH", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+
+    // Wraps the part of `text` that matches the current search query in a
+    // <mark>-style highlight span, so a match is easy to spot at a glance.
+    function highlightMatch(text) {
+        if (!searchQuery) return text;
+
+        const escaped = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const regex = new RegExp("(" + escaped + ")", "ig");
+
+        return text.replace(regex, "<span class=\"search-highlight\">$1</span>");
+    }
+
     // ---------- CATEGORY LIST (dynamic: base categories + any typed in by the user) ----------
 
     function getAllCategories() {
@@ -134,6 +160,30 @@
             const option = document.createElement("option");
             option.value = cat;
             categoryListEl.appendChild(option);
+        });
+    }
+
+    // ---------- CATEGORY ICON (for "All Items" section headers) ----------
+
+    function getCategoryIcon(category) {
+        const map = {
+            "Meat": "bx-restaurant",
+            "Sea Food": "bx-water",
+            "Vegetables": "bx-leaf",
+            "Others": "bx-category-alt"
+        };
+        return map[category] || "bx-category";
+    }
+
+    // ---------- SEARCH FILTER ----------
+
+    function getVisibleItems(categoryFilter) {
+        const query = searchQuery.trim().toLowerCase();
+
+        return items.filter(item => {
+            const matchesCategory = categoryFilter === "All" || item.category === categoryFilter;
+            const matchesSearch = !query || item.name.toLowerCase().includes(query);
+            return matchesCategory && matchesSearch;
         });
     }
 
@@ -190,13 +240,19 @@
         // (Meat / Sea Food / Vegetables / Others / custom), not on "All".
         bottomBarEl.style.display = activeCategory === "All" ? "none" : "flex";
 
+        const visibleCount = getVisibleItems(activeCategory).length;
+        const hasQuery = searchQuery.trim().length > 0;
+
+        noResultsNoteEl.style.display = (hasQuery && visibleCount === 0) ? "block" : "none";
+        if (hasQuery) noResultsQueryEl.textContent = searchQuery.trim();
+
         if (activeCategory === "All") {
-            sectionsEl.style.display = "flex";
+            sectionsEl.style.display = visibleCount === 0 && hasQuery ? "none" : "flex";
             tableEl.style.display = "none";
             renderSections();
         } else {
             sectionsEl.style.display = "none";
-            tableEl.style.display = "table";
+            tableEl.style.display = visibleCount === 0 && hasQuery ? "none" : "table";
             renderTable();
         }
     }
@@ -209,7 +265,7 @@
         const categoriesToShow = activeCategory === "All" ? getAllCategories() : [activeCategory];
 
         categoriesToShow.forEach(category => {
-            const categoryItems = items.filter(i => i.category === category);
+            const categoryItems = getVisibleItems(category);
             if (categoryItems.length === 0) return;
 
             const section = document.createElement("div");
@@ -217,7 +273,11 @@
 
             const titleBar = document.createElement("div");
             titleBar.className = "section-title-bar";
-            titleBar.textContent = category;
+            titleBar.innerHTML = `
+                <i class='bx ${getCategoryIcon(category)}'></i>
+                <span class="section-title-name">${category}</span>
+                <span class="section-count">${categoryItems.length} item${categoryItems.length === 1 ? "" : "s"}</span>
+            `;
             section.appendChild(titleBar);
 
             const grid = document.createElement("div");
@@ -231,7 +291,7 @@
             sectionsEl.appendChild(section);
         });
 
-        if (sectionsEl.children.length === 0) {
+        if (sectionsEl.children.length === 0 && !searchQuery.trim()) {
             sectionsEl.innerHTML = `<p style="color:#999;font-size:13px;">No products in this category yet.</p>`;
         }
     }
@@ -239,10 +299,12 @@
     function renderTable() {
         tableBodyEl.innerHTML = "";
 
-        const rows = items.filter(i => i.category === activeCategory);
+        const rows = getVisibleItems(activeCategory);
 
         if (rows.length === 0) {
-            tableBodyEl.innerHTML = `<tr class="empty-row"><td colspan="7">No products in this category yet.</td></tr>`;
+            if (!searchQuery.trim()) {
+                tableBodyEl.innerHTML = `<tr class="empty-row"><td colspan="7">No products in this category yet.</td></tr>`;
+            }
             return;
         }
 
@@ -260,13 +322,13 @@
                 <td>
                     <div class="inventory-product-cell">
                         ${thumbHtml}
-                        <span>${item.name}</span>
+                        <span>${highlightMatch(item.name)}</span>
                     </div>
                 </td>
                 <td>${item.category}</td>
                 <td>${item.stock}</td>
                 <td>${item.unit}</td>
-                <td>₱${Number(item.price || 0).toFixed(2)}</td>
+                <td>${formatPrice(item.price)}</td>
                 <td class="status-cell ${status.className}">${status.label}</td>
                 <td>
                     <div class="action-cell">
@@ -302,8 +364,9 @@
             <div class="inventory-card-top">
                 ${imageHtml}
                 <div class="inventory-info">
-                    <div class="inventory-name">${item.name}</div>
+                    <div class="inventory-name">${highlightMatch(item.name)}</div>
                     <div class="inventory-qty">${item.stock} ${item.unit}</div>
+                    <div class="inventory-price">${formatPrice(item.price)} / ${item.unit}</div>
                     <div class="status-tag ${status.className}">${status.label}</div>
                 </div>
             </div>
@@ -343,6 +406,7 @@
         }
 
         saveItems();
+        renderTabs();
         renderView();
         updateStats();
     }
@@ -360,6 +424,24 @@
         renderTabs();
         renderView();
         updateStats();
+    }
+
+    // ---------- SEARCH ----------
+
+    function handleSearchInput() {
+        searchQuery = searchInputEl.value;
+        clearSearchBtn.style.display = searchQuery ? "flex" : "none";
+        renderTabs();
+        renderView();
+    }
+
+    function clearSearch() {
+        searchInputEl.value = "";
+        searchQuery = "";
+        clearSearchBtn.style.display = "none";
+        searchInputEl.focus();
+        renderTabs();
+        renderView();
     }
 
     // ---------- ADD / EDIT PRODUCT POPUP ----------
@@ -571,6 +653,9 @@
         });
 
         addProductForm.addEventListener("submit", handleAddProductSubmit);
+
+        searchInputEl.addEventListener("input", handleSearchInput);
+        clearSearchBtn.addEventListener("click", clearSearch);
     }
 
     document.addEventListener("DOMContentLoaded", init);
