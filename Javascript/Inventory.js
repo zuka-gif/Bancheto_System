@@ -494,14 +494,68 @@
         closeAddProductPopup();
     }
 
+    // ---------- DEEP LINK (arriving from a Dashboard notification) ----------
+
+    /* Dashboard.js links to this page as Inventory.html?category=X&highlight=itemId
+       when someone clicks a low-stock alert. This jumps to that category's
+       tab and briefly highlights the matching row/card so it's easy to spot. */
+
+    function applyDeepLinkCategory() {
+        const params = new URLSearchParams(window.location.search);
+        const category = params.get("category");
+        if (!category) return;
+
+        if (getAllCategories().includes(category)) {
+            activeCategory = category;
+        }
+    }
+
+    function highlightDeepLinkItem() {
+        const params = new URLSearchParams(window.location.search);
+        const highlightId = params.get("highlight");
+        if (!highlightId) return;
+
+        const target = (activeCategory === "All" ? sectionsEl : tableEl)
+            .querySelector(`[data-id="${CSS.escape(highlightId)}"]`);
+
+        if (!target) return;
+
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+
+        target.style.transition = "box-shadow 0.3s ease, outline 0.3s ease";
+        target.style.outline = "2px solid #cc292d";
+        target.style.outlineOffset = "2px";
+        target.style.boxShadow = "0 0 0 4px rgba(204, 41, 45, 0.15)";
+
+        setTimeout(() => {
+            target.style.outline = "";
+            target.style.outlineOffset = "";
+            target.style.boxShadow = "";
+        }, 2400);
+
+        // Clean the URL so refreshing the page doesn't re-trigger the flash
+        params.delete("highlight");
+        params.delete("category");
+        const cleanUrl = window.location.pathname + (params.toString() ? `?${params}` : "");
+        window.history.replaceState({}, "", cleanUrl);
+    }
+
     // ---------- INIT ----------
 
     function init() {
         loadItems();
+
+        applyDeepLinkCategory();
+
         renderTabs();
         renderView();
         updateStats();
         refreshCategoryDatalist();
+
+        if (new URLSearchParams(window.location.search).get("highlight")) {
+            // Give the DOM a tick to finish painting before we scroll/flash.
+            setTimeout(highlightDeepLinkItem, 50);
+        }
 
         openAddProductBtn.addEventListener("click", openAddProductPopup);
         closeAddProductBtn.addEventListener("click", closeAddProductPopup);

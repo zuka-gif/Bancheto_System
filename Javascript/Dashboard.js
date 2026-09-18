@@ -17,6 +17,7 @@
     const TRANSACTIONS_KEY = "yesunim_transactions";
     const INVENTORY_ITEMS_KEY = "yesunim_inventoryItems";
     const INVENTORY_LOGS_KEY = "yesunim_inventoryLogs";
+    const DISMISSED_NOTIFICATIONS_KEY = "yesunim_dismissedNotifications";
     const LOW_STOCK_THRESHOLD = 5; // must match Inventory.js
 
     // ---------- ELEMENTS ----------
@@ -31,12 +32,22 @@
     };
 
     const salesLine = document.getElementById("sales-line");
+    const salesArea = document.getElementById("sales-area");
+    const salesPointsGroup = document.getElementById("sales-points");
     const chartYAxis = document.querySelector(".chart-y-axis");
     const chartXAxis = document.querySelector(".chart-x-axis");
 
     const bestSellingListEl = document.getElementById("best-selling-list");
     const lowStockListEl = document.getElementById("low-stock-list");
     const activitiesBodyEl = document.getElementById("activities-body");
+
+    const notificationWrapEl = document.getElementById("notificationWrap");
+    const notificationBtnEl = document.getElementById("notificationBtn");
+    const notificationBadgeEl = document.getElementById("notificationBadge");
+    const notificationDropdownEl = document.getElementById("notificationDropdown");
+    const notificationListEl = document.getElementById("notificationList");
+    const notificationCountTextEl = document.getElementById("notificationCountText");
+    const notificationViewAllEl = document.getElementById("notificationViewAll");
 
     // ---------- DATA LOADERS ----------
 
@@ -103,25 +114,36 @@
         return Number(lineItem.qty ?? lineItem.quantity ?? 1) || 1;
     }
 
-    /* Turns a current-vs-baseline pair into something a human can read.
-       Returns { text, direction } where direction is 1, -1 or 0. */
-    function formatChange(current, baseline) {
-        // Nothing to compare against — a percentage would be meaningless
-        // (dividing by zero), so say so plainly instead of inventing 100%.
-        if (!baseline || baseline <= 0) {
-            return {
-                text: current > 0 ? "New" : "—",
-                direction: current > 0 ? 1 : 0
-            };
+    /* Today vs YESTERDAY only. Rules:
+         - No sales today AND none yesterday  -> "Stable 0%"
+         - Sales today, none yesterday        -> capped at +100% (can't
+           divide by zero, and any growth from nothing is treated as
+           the maximum the card can show)
+         - Otherwise, plain percent change, clamped to ±100% so one
+           unusually huge day never blows out the card, and shown with
+           its own sign (negative stays negative, e.g. "-25%")
+       direction: 1 = up, -1 = down, 0 = flat/stable */
+    function computeDailyChange(current, yesterday) {
+        if (current === 0 && yesterday === 0) {
+            return { text: "Stable 0%", direction: 0 };
         }
 
-        const pct = ((current - baseline) / baseline) * 100;
-        const direction = pct > 0 ? 1 : (pct < 0 ? -1 : 0);
+        if (yesterday === 0) {
+            return { text: "100%", direction: 1 };
+        }
 
-        return {
-            text: Math.round(Math.abs(pct)) + "%",
-            direction: direction
-        };
+        let pct = ((current - yesterday) / yesterday) * 100;
+
+        if (pct > 100) pct = 100;
+        if (pct < -100) pct = -100;
+
+        const rounded = Math.round(pct);
+
+        if (rounded === 0) {
+            return { text: "0%", direction: 0 };
+        }
+
+        return { text: `${rounded}%`, direction: rounded > 0 ? 1 : -1 };
     }
 
     // ---------- STAT CARDS ----------
@@ -142,10 +164,18 @@
                 iconEl.className = "bx bx-minus";
             }
         }
+
+        // The badge itself (the pill wrapping the icon + text) turns solid
+        // red when the change is negative, so a drop reads as a clear
+        // warning at a glance instead of blending into the card color.
+        const badgeEl = el.closest(".stat-change");
+        if (badgeEl) {
+            badgeEl.classList.toggle("stat-change-negative", change.direction < 0);
+        }
     }
 
-    /* Sum/count over a whole date range, not just a single day —
-       used to build the comparison window below. */
+    /* Sum/count over a whole date range — used for both "today" and
+       "yesterday" below (a range of one day each). */
     function totalsInRange(transactions, rangeStart, rangeEnd) {
         const inRange = transactions.filter(t => {
             const d = new Date(t.date);
@@ -164,22 +194,16 @@
         // The card itself shows TODAY's total, refreshed daily.
         const today = totalsInRange(transactions, startOfDay(now), endOfDay(now));
 
-        // For the small percentage underneath, compare today against the
-        // average of the past 7 days (not counting today) rather than a
-        // single previous day — a lone quiet or busy day no longer swings
-        // the percentage to an unreadable number.
-        const priorStart = startOfDay(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7));
-        const priorEnd = endOfDay(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1));
-        const priorWeek = totalsInRange(transactions, priorStart, priorEnd);
-
-        const avgDailySales = priorWeek.sales / 7;
-        const avgDailyOrders = priorWeek.orders / 7;
+        // The percentage compares today directly against YESTERDAY.
+        const yesterdayDate = new Date(now);
+        yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+        const yesterday = totalsInRange(transactions, startOfDay(yesterdayDate), endOfDay(yesterdayDate));
 
         if (statEls.sales) statEls.sales.textContent = currency(today.sales);
-        renderStatChange(statEls.salesChange, formatChange(today.sales, avgDailySales));
+        renderStatChange(statEls.salesChange, computeDailyChange(today.sales, yesterday.sales));
 
         if (statEls.orders) statEls.orders.textContent = today.orders;
-        renderStatChange(statEls.ordersChange, formatChange(today.orders, avgDailyOrders));
+        renderStatChange(statEls.ordersChange, computeDailyChange(today.orders, yesterday.orders));
 
         const availableItems = items.filter(i => getStock(i) > 0).length;
         if (statEls.items) statEls.items.textContent = availableItems;
@@ -238,13 +262,29 @@
             const height = 250;
             const stepX = width / (dailyTotals.length - 1 || 1);
 
-            const points = dailyTotals.map((val, idx) => {
+            const coords = dailyTotals.map((val, idx) => {
                 const x = idx * stepX;
                 const y = height - (val / niceMax) * height;
-                return `${x},${Math.max(0, Math.min(height, y))}`;
-            }).join(" ");
+                return { x, y: Math.max(0, Math.min(height, y)) };
+            });
 
-            salesLine.setAttribute("points", points);
+            const pointsAttr = coords.map(p => `${p.x},${p.y}`).join(" ");
+            salesLine.setAttribute("points", pointsAttr);
+
+            // The area fill closes the shape by dropping down to the
+            // baseline at the last point and back along the bottom edge.
+            if (salesArea) {
+                const areaPoints = `${pointsAttr} ${width},${height} 0,${height}`;
+                salesArea.setAttribute("points", areaPoints);
+            }
+
+            // A small dot at each day makes individual values legible
+            // instead of leaving people to guess from the line alone.
+            if (salesPointsGroup) {
+                salesPointsGroup.innerHTML = coords.map(p => `
+                    <circle class="sales-point" cx="${p.x}" cy="${p.y}" r="4"></circle>
+                `).join("");
+            }
         }
     }
 
@@ -373,6 +413,15 @@
         return feed.sort((a, b) => b.date - a.date).slice(0, 8);
     }
 
+    const ACTION_BADGE_CLASS = {
+        "New Order": "action-badge-order",
+        "Stock In": "action-badge-in",
+        "Stock Out": "action-badge-out",
+        "Added": "action-badge-in",
+        "Edited": "action-badge-edit",
+        "Deleted": "action-badge-out"
+    };
+
     function renderActivities(transactions, logs) {
         if (!activitiesBodyEl) return;
 
@@ -383,15 +432,167 @@
             return;
         }
 
-        activitiesBodyEl.innerHTML = feed.map(entry => `
-            <tr>
-                <td>${formatActivityTime(entry.date)}</td>
-                <td>${entry.user}</td>
-                <td>${entry.action}</td>
-                <td>${entry.module}</td>
-                <td>${entry.details}</td>
-            </tr>
-        `).join("");
+        activitiesBodyEl.innerHTML = feed.map(entry => {
+            const badgeClass = ACTION_BADGE_CLASS[entry.action] || "action-badge-default";
+            return `
+                <tr>
+                    <td>${formatActivityTime(entry.date)}</td>
+                    <td>${entry.user}</td>
+                    <td><span class="action-badge ${badgeClass}">${entry.action}</span></td>
+                    <td>${entry.module}</td>
+                    <td>${entry.details}</td>
+                </tr>
+            `;
+        }).join("");
+    }
+
+    // ---------- NOTIFICATION BELL ----------
+
+    // Remembers which alerts the user has already acted on/seen, so they
+    // don't keep reappearing every time the dashboard reloads. Keyed by
+    // "itemId:stock" — if the stock level changes again (drops further,
+    // or gets restocked and goes low again later), that's a new signature
+    // and the alert will resurface, which is what you'd actually want.
+    let lastKnownItems = [];
+
+    function loadDismissedSignatures() {
+        try {
+            const saved = localStorage.getItem(DISMISSED_NOTIFICATIONS_KEY);
+            return saved ? new Set(JSON.parse(saved)) : new Set();
+        } catch (e) {
+            return new Set();
+        }
+    }
+
+    function markNotificationDismissed(signature) {
+        const dismissed = loadDismissedSignatures();
+        dismissed.add(signature);
+        localStorage.setItem(DISMISSED_NOTIFICATIONS_KEY, JSON.stringify([...dismissed]));
+    }
+
+    function notificationSignature(item) {
+        const id = item.id != null ? String(item.id) : (item.name || "");
+        return `${id}:${getStock(item)}`;
+    }
+
+    /* The bell surfaces the same low-stock/out-of-stock situation the
+       Low Stock panel already shows — it's the one thing on this
+       dashboard that's actually actionable and worth interrupting for. */
+    function renderNotifications(items) {
+        if (!notificationBadgeEl || !notificationListEl) return;
+
+        lastKnownItems = items;
+
+        const dismissed = loadDismissedSignatures();
+
+        const alerts = items
+            .filter(i => getStock(i) <= LOW_STOCK_THRESHOLD)
+            .filter(i => !dismissed.has(notificationSignature(i)))
+            .sort((a, b) => getStock(a) - getStock(b));
+
+        if (notificationBadgeEl) {
+            if (alerts.length > 0) {
+                notificationBadgeEl.textContent = alerts.length > 9 ? "9+" : String(alerts.length);
+                notificationBadgeEl.style.display = "flex";
+            } else {
+                notificationBadgeEl.style.display = "none";
+            }
+        }
+
+        if (notificationCountTextEl) {
+            notificationCountTextEl.textContent = alerts.length > 0 ? `${alerts.length} alert${alerts.length === 1 ? "" : "s"}` : "";
+        }
+
+        if (alerts.length === 0) {
+            notificationListEl.innerHTML = `<div class="notification-empty">No alerts right now — everything is well stocked.</div>`;
+            return;
+        }
+
+        notificationListEl.innerHTML = alerts.map(i => {
+            const stock = getStock(i);
+            const isOut = stock === 0;
+            const message = isOut ? "is out of stock" : `is low — ${stock} ${getUnit(i)} left`;
+            const id = i.id != null ? String(i.id) : "";
+            const category = i.category || "";
+
+            return `
+                <div class="notification-item" role="button" tabindex="0"
+                     data-item-id="${id}" data-category="${category}" data-signature="${notificationSignature(i)}">
+                    <i class='bx ${isOut ? "bxs-error-circle" : "bxs-error"}'></i>
+                    <div class="notification-item-text">
+                        <strong>${i.name || "Unnamed item"}</strong>
+                        <span>${message}</span>
+                    </div>
+                    <button type="button" class="notification-dismiss-btn" title="Mark as read">
+                        <i class='bx bx-check'></i>
+                    </button>
+                </div>
+            `;
+        }).join("");
+
+        // Clicking (or pressing Enter/Space on) an alert marks it read and
+        // jumps to that product's category in Inventory, highlighting the
+        // exact row/card so it's easy to find.
+        notificationListEl.querySelectorAll(".notification-item[data-item-id]").forEach(el => {
+            const goToItem = () => {
+                markNotificationDismissed(el.dataset.signature);
+
+                const params = new URLSearchParams();
+                if (el.dataset.category) params.set("category", el.dataset.category);
+                if (el.dataset.itemId) params.set("highlight", el.dataset.itemId);
+                window.location.href = "Inventory.html" + (params.toString() ? `?${params.toString()}` : "");
+            };
+
+            el.addEventListener("click", goToItem);
+            el.addEventListener("keydown", (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    goToItem();
+                }
+            });
+
+            // The check button dismisses the alert in place, without
+            // leaving the dashboard — "I've already seen this."
+            const dismissBtn = el.querySelector(".notification-dismiss-btn");
+            if (dismissBtn) {
+                dismissBtn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    markNotificationDismissed(el.dataset.signature);
+
+                    el.classList.add("notification-item-removing");
+                    el.addEventListener("transitionend", () => {
+                        renderNotifications(lastKnownItems);
+                    }, { once: true });
+                });
+            }
+        });
+    }
+
+    function toggleNotificationDropdown(forceState) {
+        if (!notificationDropdownEl) return;
+        const shouldShow = typeof forceState === "boolean" ? forceState : !notificationDropdownEl.classList.contains("show");
+        notificationDropdownEl.classList.toggle("show", shouldShow);
+    }
+
+    function wireNotificationBell() {
+        if (!notificationBtnEl) return;
+
+        notificationBtnEl.addEventListener("click", (e) => {
+            e.stopPropagation();
+            toggleNotificationDropdown();
+        });
+
+        document.addEventListener("click", (e) => {
+            if (notificationWrapEl && !notificationWrapEl.contains(e.target)) {
+                toggleNotificationDropdown(false);
+            }
+        });
+
+        if (notificationViewAllEl) {
+            notificationViewAllEl.addEventListener("click", () => {
+                window.location.href = "Inventory.html";
+            });
+        }
     }
 
     // ---------- VIEW ALL BUTTON NAVIGATION ----------
@@ -418,12 +619,14 @@
         renderSalesChart(transactions);
         renderBestSelling(transactions);
         renderLowStock(items);
+        renderNotifications(items);
         renderActivities(transactions, logs);
     }
 
     function init() {
         refresh();
         wireViewAllButtons();
+        wireNotificationBell();
     }
 
     document.addEventListener("DOMContentLoaded", init);

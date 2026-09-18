@@ -16,7 +16,7 @@
 
     overflow: hidden;
 
-    background: #f7f8f9;
+    background: #eef1f5;
 
     color: #222;
 }
@@ -77,13 +77,235 @@
 }
 
 
+.notification-wrap {
+    position: relative;
+}
+
 .notifications {
     width: 24px;
     height: 28px;
+
+    position: relative;
 }
 
 .notifications i {
     font-size: 22px;
+}
+
+.notification-badge {
+    position: absolute;
+
+    top: -4px;
+    right: -6px;
+
+    min-width: 16px;
+    height: 16px;
+
+    padding: 0 4px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: #cc292d;
+
+    border-radius: 999px;
+
+    color: white;
+
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1;
+
+    box-shadow: 0 0 0 2px #ffffff;
+}
+
+.notification-dropdown {
+    display: none;
+
+    position: absolute;
+
+    top: 40px;
+    right: -10px;
+
+    width: 300px;
+
+    background: #ffffff;
+
+    border: 1px solid #e2e2e2;
+    border-radius: 10px;
+
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.14);
+
+    overflow: hidden;
+
+    z-index: 30;
+}
+
+.notification-dropdown.show {
+    display: block;
+}
+
+.notification-dropdown-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 12px 14px;
+
+    border-bottom: 1px solid #eee;
+
+    font-size: 13px;
+}
+
+.notification-dropdown-header strong {
+    color: #222;
+}
+
+.notification-dropdown-header span {
+    color: #999;
+    font-size: 11px;
+}
+
+.notification-list {
+    max-height: 260px;
+
+    overflow-y: auto;
+}
+
+.notification-item {
+    display: flex;
+    align-items: flex-start;
+
+    gap: 10px;
+
+    padding: 10px 14px;
+
+    border-bottom: 1px solid #f2f2f2;
+
+    text-align: left;
+
+    cursor: pointer;
+
+    max-height: 80px;
+
+    overflow: hidden;
+
+    transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.25s ease, border-color 0.25s ease;
+}
+
+.notification-item:hover,
+.notification-item:focus-visible {
+    background: #fbf4f4;
+    outline: none;
+}
+
+.notification-item:last-child {
+    border-bottom: none;
+}
+
+.notification-item i {
+    margin-top: 1px;
+
+    font-size: 16px;
+
+    color: #cc292d;
+
+    flex-shrink: 0;
+}
+
+/* Applied right before a dismissed alert is removed from the DOM —
+   collapses it out of the list instead of just vanishing. */
+.notification-item-removing {
+    max-height: 0;
+
+    padding-top: 0;
+    padding-bottom: 0;
+
+    opacity: 0;
+
+    border-color: transparent;
+
+    pointer-events: none;
+}
+
+.notification-dismiss-btn {
+    flex-shrink: 0;
+
+    width: 22px;
+    height: 22px;
+
+    margin-left: auto;
+    align-self: center;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 1px solid #ddd;
+    border-radius: 999px;
+
+    background: #ffffff;
+
+    color: #aaa;
+
+    cursor: pointer;
+}
+
+.notification-dismiss-btn i {
+    color: inherit !important;
+    font-size: 14px !important;
+    margin: 0 !important;
+}
+
+.notification-dismiss-btn:hover {
+    background: #2e8034;
+    border-color: #2e8034;
+    color: #ffffff;
+}
+
+.notification-item-text strong {
+    display: block;
+
+    font-size: 12px;
+    color: #222;
+}
+
+.notification-item-text span {
+    font-size: 11px;
+    color: #888;
+}
+
+.notification-empty {
+    padding: 22px 14px;
+
+    text-align: center;
+
+    color: #999;
+
+    font-size: 12px;
+}
+
+.notification-view-all {
+    width: 100%;
+
+    padding: 10px;
+
+    border: none;
+    border-top: 1px solid #eee;
+
+    background: #fafafa;
+
+    color: #8b0000;
+
+    font-size: 12px;
+    font-weight: 700;
+
+    cursor: pointer;
+}
+
+.notification-view-all:hover {
+    background: #f2f2f2;
 }
 
 
@@ -136,65 +358,138 @@
 }
 
 .stat-card {
-    min-height: 110px;
+    min-height: 118px;
 
     position: relative;
 
     display: flex;
     justify-content: space-between;
 
-    padding: 10px 14px;
+    padding: 18px 20px;
 
     overflow: hidden;
 
-    border-radius: 14px;
+    border-radius: 16px;
 
     color: white;
+
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
+}
+
+/* Soft decorative glow in the corner — adds depth without needing an image */
+.stat-card::before {
+    content: "";
+
+    position: absolute;
+
+    top: -40px;
+    right: -40px;
+
+    width: 130px;
+    height: 130px;
+
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 70%);
+
+    pointer-events: none;
 }
 
 .stat-green {
-    background: #2e8034;
+    background: linear-gradient(135deg, #379a3e, #1f5c25);
 }
 
 .stat-yellow {
-    background: #dda50d;
+    background: linear-gradient(135deg, #eab40f, #b3800a);
 }
 
 .stat-red {
-    background: #cc292d;
+    background: linear-gradient(135deg, #d93b3f, #9f1f22);
 }
 
 
 /* STAT CONTENT */
 
+.stat-content {
+    position: relative;
+    z-index: 1;
+
+    display: flex;
+    flex-direction: column;
+}
+
 .stat-value {
-    font-size: 20px;
+    font-size: 26px;
     font-weight: 800;
 
-    line-height: 24px;
+    letter-spacing: -0.3px;
+    line-height: 30px;
 }
 
 .stat-title {
-    margin-top: 1px;
+    margin-top: 3px;
+
+    color: rgba(255, 255, 255, 0.88);
 
     font-size: 13px;
-    font-weight: bold;
+    font-weight: 700;
+
+    letter-spacing: 0.2px;
 }
 
 .stat-change {
-    margin-top: 12px;
+    margin-top: 14px;
+
+    width: fit-content;
 
     display: flex;
     align-items: center;
 
-    gap: 3px;
+    gap: 4px;
 
-    font-size: 13px;
-    font-weight: bold;
+    padding: 3px 9px 3px 7px;
+
+    background: rgba(255, 255, 255, 0.16);
+
+    border-radius: 999px;
+
+    font-size: 12px;
+    font-weight: 700;
+
+    transition: background 0.15s ease, color 0.15s ease;
 }
 
 .stat-change i {
-    font-size: 15px;
+    font-size: 14px;
+}
+
+.stat-change-label {
+    margin-left: 2px;
+
+    font-weight: 500;
+    opacity: 0.85;
+}
+
+/* Negative change — solid red pill instead of the default translucent
+   white one, so a drop reads as a clear warning at a glance regardless
+   of which card color it's sitting on. */
+.stat-change.stat-change-negative {
+    background: #ffffff;
+    color: #cc292d;
+}
+
+.stat-change.stat-change-negative i {
+    color: #cc292d;
+}
+
+.stat-change.stat-change-negative .stat-change-label {
+    color: #cc292d;
+    opacity: 0.75;
 }
 
 
@@ -202,15 +497,25 @@
 
 .stat-icon {
     position: absolute;
+    z-index: 1;
 
-    right: 10px;
-    bottom: 5px;
+    right: 16px;
+    bottom: 16px;
 
-    color: #ffd000;
+    width: 38px;
+    height: 38px;
 
-    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
-    opacity: .9;
+    background: rgba(255, 255, 255, 0.18);
+
+    border-radius: 12px;
+
+    color: #ffffff;
+
+    font-size: 19px;
 }
 
 
@@ -219,21 +524,32 @@
 .view-all-button {
     border: none;
 
-    background: transparent;
+    background: rgba(255, 255, 255, 0.18);
 
-    color: #ffdc00;
+    color: #ffffff;
 
-    font-size: 13px;
-    font-weight: bold;
+    padding: 4px 11px;
+
+    border-radius: 999px;
+
+    font-size: 12px;
+    font-weight: 700;
 
     cursor: pointer;
+
+    transition: background 0.15s ease;
+}
+
+.view-all-button:hover {
+    background: rgba(255, 255, 255, 0.3);
 }
 
 .stat-card .view-all-button {
     position: absolute;
+    z-index: 1;
 
-    right: 20px;
-    bottom: 15px;
+    right: 16px;
+    bottom: 16px;
 }
 
 
@@ -268,8 +584,23 @@
 
     display: flex;
     align-items: center;
+    gap: 8px;
+
+    color: #2b2b2b;
 
     font-size: 15px;
+    font-weight: 800;
+}
+
+.section-title::before {
+    content: "";
+
+    width: 4px;
+    height: 16px;
+
+    background: #8b0000;
+
+    border-radius: 999px;
 }
 
 
@@ -293,7 +624,7 @@
 
     position: relative;
 
-    padding: 10px 12px 8px;
+    padding: 16px 16px 8px;
     box-sizing: border-box;
 
     display: flex;
@@ -301,9 +632,16 @@
 
     background: white;
 
-    border: 1px solid #bd3939;
+    border: 1px solid #e3e6ea;
+    border-radius: 16px;
 
-    border-radius: 9px;
+    box-shadow: 0 6px 20px rgba(30, 30, 40, 0.09);
+
+    transition: box-shadow 0.18s ease;
+}
+
+.sales-card:hover {
+    box-shadow: 0 12px 28px rgba(30, 30, 40, 0.14);
 }
 
 
@@ -369,12 +707,12 @@
     width: 100%;
     height: 1px;
 
-    background: #e8e8e8;
+    background: #f0f0f0;
 }
 
 /* Bottom-most grid line doubles as the baseline */
 .chart-grid span:last-child {
-    background: #c9c9c9;
+    background: #ddd;
 }
 
 
@@ -396,7 +734,12 @@
     overflow: visible;
 }
 
-.sales-chart polyline {
+#sales-area {
+    fill: url(#salesAreaGradient);
+    stroke: none;
+}
+
+.sales-chart polyline#sales-line {
     fill: none;
 
     stroke: #8d0808;
@@ -407,6 +750,20 @@
     stroke-linecap: round;
 
     vector-effect: non-scaling-stroke;
+}
+
+.sales-point {
+    fill: #ffffff;
+    stroke: #8d0808;
+    stroke-width: 2.5;
+
+    vector-effect: non-scaling-stroke;
+
+    transition: r 0.15s ease;
+}
+
+.sales-point:hover {
+    r: 6;
 }
 
 
@@ -446,31 +803,45 @@
 
     background: white;
 
-    border: 1px solid #bd3939;
+    border: 1px solid #e3e6ea;
+    border-radius: 16px;
 
-    border-radius: 9px;
+    box-shadow: 0 6px 20px rgba(30, 30, 40, 0.09);
 
     overflow: hidden;
 
     margin-top: 32px;
+
+    transition: box-shadow 0.18s ease;
+}
+
+.panel:hover {
+    box-shadow: 0 12px 28px rgba(30, 30, 40, 0.14);
 }
 
 .panel-header {
-    height: 32px;
+    height: 42px;
 
     flex-shrink: 0;
 
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
 
-    border-bottom: 1px solid #f0dcdc;
+    padding: 0 16px;
+
+    background: #fafafa;
+
+    border-bottom: 1px solid #f0f0f0;
 }
 
 .panel-header h2 {
     margin: 0;
 
-    font-size: 15px;
+    color: #2b2b2b;
+
+    font-size: 14px;
+    font-weight: 800;
 }
 
 
@@ -488,40 +859,72 @@
 }
 
 .product-item {
-    min-height: 47px;
+    min-height: 50px;
 
     display: flex;
     align-items: center;
 
-    gap: 8px;
+    gap: 10px;
 
-    border-bottom: 2px solid #eeeeee;
+    padding: 0 2px;
+
+    border-bottom: 1px solid #f2f2f2;
+
+    transition: background 0.15s ease;
+}
+
+.product-item:last-child {
+    border-bottom: none;
+}
+
+.product-item:hover {
+    background: #fafafa;
 }
 
 .product-number {
-    width: 13px;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
 
-    font-size: 12px;
-    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: #fdeeee;
+
+    border-radius: 50%;
+
+    color: #8b0000;
+
+    font-size: 11px;
+    font-weight: 800;
 }
 
 .product-image {
-    width: 35px;
-    height: 30px;
+    width: 36px;
+    height: 32px;
 
     flex-shrink: 0;
 
-    background: #ddd;
+    background: #f2f2f2;
 
-    border-radius: 2px;
+    border-radius: 8px;
 }
 
 .product-info {
     display: flex;
     flex-direction: column;
+    gap: 2px;
 
     font-size: 12px;
-    font-weight: bold;
+    font-weight: 700;
+
+    color: #222;
+}
+
+.product-info span:last-child {
+    font-weight: 600;
+    color: #888;
 }
 
 
@@ -539,33 +942,65 @@
 }
 
 .stock-item {
-    min-height: 47px;
+    min-height: 50px;
 
     display: flex;
     align-items: center;
     justify-content: space-between;
 
-    border-bottom: 2px solid #eeeeee;
+    gap: 10px;
+
+    padding: 0 2px 0 10px;
+
+    border-bottom: 1px solid #f2f2f2;
+    border-left: 3px solid #e8b4b4;
+
+    transition: background 0.15s ease;
+}
+
+.stock-item:last-child {
+    border-bottom: none;
+}
+
+.stock-item:hover {
+    background: #fdf7f7;
 }
 
 .stock-image {
-    width: 35px;
-    height: 30px;
+    width: 36px;
+    height: 32px;
 
-    background: #ddd;
+    flex-shrink: 0;
+
+    background: #f2f2f2;
+
+    border-radius: 8px;
 }
 
 .stock-info {
     text-align: right;
 
-    font-size: 9px;
-    font-weight: bold;
+    font-size: 12px;
+    font-weight: 700;
+
+    color: #222;
 }
 
 .stock-quantity {
-    color: red;
+    display: inline-block;
 
-    font-size: 13px;
+    margin-top: 3px;
+
+    padding: 2px 8px;
+
+    background: #fdeeee;
+
+    border-radius: 999px;
+
+    color: #b3221f;
+
+    font-size: 10px;
+    font-weight: 800;
 }
 
 
@@ -590,16 +1025,17 @@
 
     background: white;
 
-    border: 2px solid #bd3939;
+    border: 1px solid #e3e6ea;
+    border-radius: 16px;
 
-    border-radius: 6px;
+    box-shadow: 0 6px 20px rgba(30, 30, 40, 0.09);
 }
 
 
 /* HEADER */
 
 .activities-header {
-    height: 40px;
+    height: 46px;
 
     flex-shrink: 0;
 
@@ -607,21 +1043,29 @@
     align-items: center;
     justify-content: space-between;
 
-    padding: 0 12px;
+    padding: 0 16px;
 
-    background: #fff8f4;
+    background: #fafafa;
 
-    border-bottom: 1px solid #bd3939;
+    border-bottom: 1px solid #f0f0f0;
 }
 
 .activities-header h2 {
     margin: 0;
 
-    font-size: 18px;
+    color: #2b2b2b;
+
+    font-size: 15px;
+    font-weight: 800;
 }
 
 .activities-header .view-all-button {
-    color: red;
+    background: #fdeeee;
+    color: #8b0000;
+}
+
+.activities-header .view-all-button:hover {
+    background: #f6d9d9;
 }
 
 
@@ -648,37 +1092,86 @@ table {
 }
 
 thead th {
-    height: 38px;
+    height: 40px;
 
     padding: 5px 20px;
 
     text-align: left;
 
-    background: #ffffff;
+    background: #fafafa;
 
-    color: #111;
+    color: #555;
 
-    font-size: 13px;
+    font-size: 11px;
+    font-weight: 800;
+
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
 
     /* Header stays visible while the rows scroll underneath */
     position: sticky;
     top: 0;
     z-index: 2;
 
-    box-shadow: inset 0 -1px 0 #ddd;
+    box-shadow: inset 0 -1px 0 #eee;
+}
+
+tbody tr {
+    transition: background 0.12s ease;
+}
+
+tbody tr:hover {
+    background: #fafafa;
 }
 
 tbody td {
-    height: 26px;
+    height: 30px;
 
-    padding: 5px 20px;
+    padding: 7px 20px;
 
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid #f2f2f2;
 
-    color: #111;
+    color: #333;
 
-    font-size: 11px;
+    font-size: 11.5px;
     font-weight: 600;
+}
+
+.action-badge {
+    display: inline-block;
+
+    padding: 3px 10px;
+
+    border-radius: 999px;
+
+    font-size: 10.5px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.action-badge-order {
+    background: #e6f4ea;
+    color: #1e7d34;
+}
+
+.action-badge-in {
+    background: #e6f4ea;
+    color: #1e7d34;
+}
+
+.action-badge-out {
+    background: #fdeeee;
+    color: #b3221f;
+}
+
+.action-badge-edit {
+    background: #eaf1fc;
+    color: #1a5cbf;
+}
+
+.action-badge-default {
+    background: #f0f0f0;
+    color: #555;
 }
 
 

@@ -17,6 +17,17 @@ body {
 }
 
 
+/* Reserves the sidebar's exact space + color immediately,
+   so there's no blank flash while sidebar.js is still fetching
+   A_Main_sidebar.html */
+#sidebar-container {
+    width: 180px;
+    min-height: 100vh;
+    background: #8f0000;
+    flex-shrink: 0;
+}
+
+
 .sidebar {
     width: 180px;
     min-height: 100vh;
@@ -71,12 +82,12 @@ body {
 
 .nav-item:hover {
     background: #ebc71552;
-    border-radius: 10px;
+    border-radius: 5px;
 }
 
 .nav-item.active {
     background: #ebc71579;
-    border-radius: 10px;
+    border-radius: 5px;
 }
 
 .nav-item i {

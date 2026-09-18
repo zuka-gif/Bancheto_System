@@ -169,4 +169,3 @@ function hideLoading() {
 
     loadingScreen.classList.remove("show");
 }
-

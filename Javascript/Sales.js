@@ -102,6 +102,13 @@
         saveMenuItems();
     }
 
+    // ---------- QUANTITY-IN-ORDER LOOKUP ----------
+
+    function getOrderQtyForMenuId(menuId) {
+        const order = currentOrder.find(o => o.menuId === menuId);
+        return order ? order.pax : 0;
+    }
+
     // ---------- MENU RENDERING ----------
 
     function renderMenuGrid(filterText) {
@@ -131,7 +138,13 @@
                 ? `<img class="menu-image" src="${item.image}" alt="${item.name}">`
                 : `<div class="menu-image" style="display:flex;align-items:center;justify-content:center;background:#f1e6e2;color:#c46e6e;"><i class='bx bx-image' style='font-size:26px;'></i></div>`;
 
+            const qty = getOrderQtyForMenuId(item.id);
+            const badgeHtml = qty > 0
+                ? `<div class="menu-card-qty-badge">${qty}</div>`
+                : "";
+
             card.innerHTML = `
+                ${badgeHtml}
                 <div class="card-actions">
                     <button type="button" class="edit-menu-btn" title="Edit"><i class='bx bx-edit'></i></button>
                     <button type="button" class="delete-menu-btn" title="Delete"><i class='bx bx-trash'></i></button>
@@ -184,6 +197,7 @@
         }
 
         renderOrderList();
+        renderMenuGrid(menuSearchInput.value);
     }
 
     function renderOrderList() {
@@ -229,11 +243,13 @@
         }
 
         renderOrderList();
+        renderMenuGrid(menuSearchInput.value);
     }
 
     function removeFromOrder(orderId) {
         currentOrder = currentOrder.filter(o => o.orderId !== orderId);
         renderOrderList();
+        renderMenuGrid(menuSearchInput.value);
     }
 
     function calculateSubtotal() {
@@ -278,6 +294,7 @@
         cashReceivedInput.value = formatCurrency(0);
         discountInput.value = formatCurrency(0);
         renderOrderList();
+        renderMenuGrid(menuSearchInput.value);
     }
 
     function recordTransaction() {

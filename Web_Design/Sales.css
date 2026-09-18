@@ -121,29 +121,66 @@
 
 .date-box {
     width: 420px;
-    height: 38px;
+    height: 46px;
 
-    border: 1px solid #b46d6d;
-    border-radius: 6px;
+    border: 1px solid #c46e6e;
+    border-radius: 10px;
 
-    background: #f5cbcb;
+    background: linear-gradient(180deg, #ffffff 0%, #fbe2e2 100%);
+    box-shadow: 0 1px 4px rgba(157, 0, 0, 0.12);
 
     display: flex;
     align-items: center;
     justify-content: center;
 
-    gap: 12px;
+    gap: 10px;
 
     font-size: 14px;
     margin-bottom: 15px;
 }
 
 .date-box i {
-    font-size: 16px;
+    width: 26px;
+    height: 26px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    font-size: 15px;
+    color: #ffffff;
+
+    background: #9d0000;
 }
 
 .date-box i:nth-of-type(2) {
-    margin-left: 10px;
+    margin-left: 14px;
+    background: #328b31;
+    position: relative;
+}
+
+.date-box i:nth-of-type(2)::after {
+    content: "";
+    position: absolute;
+    left: -17px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1px;
+    height: 22px;
+    background: #d9b8b8;
+}
+
+.date-box span {
+    font-size: 15px;
+    font-weight: 700;
+    color: #4a1f1f;
+    letter-spacing: 0.2px;
+}
+
+#currentTime {
+    color: #205c20;
 }
 
 
@@ -177,29 +214,46 @@
 
     overflow-y: auto;
     overflow-x: hidden;
+    scroll-behavior: smooth;
 
-    padding-left: 5px; 
-    padding-right: 25px;
+    padding: 16px 14px 20px 16px;
     box-sizing: border-box;
-    background: #FEF3EE;
+
+    background: linear-gradient(180deg, #ffe8dc 0%, #ffd9c7 100%);
+    border: 1px solid #e7a98f;
+    border-radius: 14px;
+    box-shadow: inset 0 2px 6px rgba(180, 90, 60, 0.08);
+
+    /* Firefox scrollbar */
+    scrollbar-width: auto;
+    scrollbar-color: #a51f1f transparent;
+}
+
+.menu-grid {
+    /* leaves a visible gap between the cards and the scrollbar track */
+    margin-right: 14px;
 }
 
 .menu-area::-webkit-scrollbar {
-    width: 7px;
+    width: 16px;
 }
 
 .menu-area::-webkit-scrollbar-track {
-    background: #e9d3cb;
-    border-radius: 10px;
+    background: transparent;
+    margin: 16px 4px;
+    border-radius: 14px;
 }
 
 .menu-area::-webkit-scrollbar-thumb {
-    background: #c24d4d;
-    border-radius: 10px;
+    background: linear-gradient(180deg, #e13c3c, #8f1414);
+    border-radius: 14px;
+    border: 5px solid transparent;
+    background-clip: padding-box;
 }
 
 .menu-area::-webkit-scrollbar-thumb:hover {
-    background: #a85757;
+    background: #7a0f0f;
+    background-clip: padding-box;
 }
 
 .menu-grid {
@@ -216,17 +270,18 @@
 ======================================== */
 
 .menu-card {
-    height: 180px;
+    height: 210px;
     min-width: 0;
     max-width: 100%;
     overflow: hidden;
 
-    border: 1px solid #c46e6e;
-    border-radius: 10px;
+    border: 1px solid #d9a3a3;
+    border-radius: 12px;
 
     background: #ffffff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
 
-    padding: 10px 50px;
+    padding: 12px 16px 14px;
 
     display: flex;
     flex-direction: column;
@@ -240,9 +295,10 @@
 }
 
 .menu-card:hover {
-    box-shadow: 0 2px 7px rgba(0, 0, 0, 0.15);
+    border-color: #c46e6e;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
 
-    transform: translateY(-1px);
+    transform: translateY(-2px);
 }
 
 
@@ -251,8 +307,8 @@
 ======================================== */
 
 .menu-image {
-    width: 120%;
-    height: 100px;
+    width: 100%;
+    height: 118px;
 
     object-fit: cover;
 
@@ -267,7 +323,7 @@
 .menu-name {
     width: 100%;
 
-    min-height: 28px;
+    min-height: 32px;
 
     display: flex;
     align-items: center;
@@ -275,10 +331,11 @@
 
     text-align: center;
 
-    font-size: 12px;
-    font-weight: bold;
+    font-size: 14px;
+    font-weight: 700;
+    color: #2b2b2b;
 
-    line-height: 14px;
+    line-height: 17px;
     text-overflow: ellipsis;
 }
 
@@ -288,9 +345,48 @@
 ======================================== */
 
 .menu-price {
-    font-size: 13px;
-    font-weight: bold;
-    color: #9d0000;
+    font-size: 16px;
+    font-weight: 800;
+    color: #ffffff;
+    background: #b51b14;
+
+    padding: 3px 12px;
+    border-radius: 20px;
+
+    letter-spacing: 0.2px;
+}
+
+
+/* ========================================
+   QUANTITY-IN-ORDER BADGE
+======================================== */
+
+.menu-card-qty-badge {
+    position: absolute;
+
+    top: 6px;
+    left: 6px;
+
+    min-width: 22px;
+    height: 22px;
+
+    padding: 0 6px;
+
+    border-radius: 11px;
+
+    background: #328b31;
+    color: #ffffff;
+
+    font-size: 12px;
+    font-weight: 700;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+
+    z-index: 3;
 }
 
 
@@ -306,9 +402,10 @@
     flex-shrink: 0;
 
     border: 1px solid #c46e6e;
-    border-radius: 10px;
+    border-radius: 12px;
 
     background: #FEF3EE;
+    box-shadow: 0 3px 12px rgba(157, 0, 0, 0.08);
 
     padding: 20px;
 
@@ -331,16 +428,32 @@
     display: flex;
     align-items: center;
 
-    gap: 8px;
+    gap: 10px;
 
-    font-size: 14px;
-    font-weight: bold;
+    font-size: 16px;
+    font-weight: 800;
+    color: #7a1010;
 
-    margin-bottom: 8px;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+
+    border-bottom: 2px solid #e7cec6;
 }
 
 .order-title i {
-    font-size: 22px;
+    width: 30px;
+    height: 30px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    font-size: 17px;
+    color: #ffffff;
+
+    background: #9d0000;
 }
 
 
@@ -353,12 +466,33 @@
     flex: 1;
     min-height: 0;
 
-    border: 2px solid #cfc2bb;
-    border-bottom: 1spx solid #e8ded9;
+    border: 1px solid #e0cfc7;
+    border-radius: 8px;
 
-    background: #FEF3EE;
+    background: #ffffff;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04);
 
     overflow-y: auto;
+
+    scrollbar-width: thin;
+    scrollbar-color: #c24d4d #f6e3db;
+}
+
+.order-table::-webkit-scrollbar {
+    width: 9px;
+}
+
+.order-table::-webkit-scrollbar-track {
+    background: #f6e3db;
+}
+
+.order-table::-webkit-scrollbar-thumb {
+    background: #c24d4d;
+    border-radius: 8px;
+}
+
+.order-table::-webkit-scrollbar-thumb:hover {
+    background: #a03d3d;
 }
 
 
@@ -367,7 +501,7 @@
 ======================================== */
 
 .order-table-header {
-    height: 30px;
+    height: 34px;
 
     display: grid;
 
@@ -377,12 +511,10 @@
         0.85fr
         22px;
 
-    border-bottom: 2px solid #d9cfca;
-
     position: sticky;
     top: 0;
 
-    background: #fff8f5;
+    background: linear-gradient(180deg, #a51414, #7a0f0f);
 
     z-index: 2;
 }
@@ -394,8 +526,10 @@
     justify-content: center;
 
     font-size: 12px;
-    font-weight: 600;
-    color: #333;
+    font-weight: 700;
+    color: #ffffff;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 
     border-right: none;
 }
@@ -409,6 +543,22 @@
     width: 100%;
 }
 
+.order-list:empty::after {
+    content: "No items yet — tap a menu card to add one.";
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    height: 120px;
+    padding: 0 20px;
+
+    text-align: center;
+
+    font-size: 12px;
+    color: #b09a94;
+}
+
 
 /* ========================================
    ORDER ROW
@@ -417,7 +567,7 @@
 .order-row {
     width: 100%;
 
-    min-height: 38px;
+    min-height: 44px;
 
     display: grid;
 
@@ -429,7 +579,17 @@
 
     align-items: center;
 
-    border-bottom: 2px solid #f0e7e2;
+    border-bottom: 1px solid #f2e6e0;
+
+    transition: background 0.12s ease;
+}
+
+.order-row:nth-child(even) {
+    background: #fff6f2;
+}
+
+.order-row:hover {
+    background: #fbe0d8;
 }
 
 
@@ -438,11 +598,13 @@
 ======================================== */
 
 .order-name {
-    padding-left: 6px;
+    padding-left: 8px;
 
-    font-size: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #2b2b2b;
 
-    line-height: 14px;
+    line-height: 16px;
 
     overflow: hidden;
 
@@ -469,11 +631,12 @@
 /* PAX NUMBER */
 
 .pax-number {
-    min-width: 14px;
+    min-width: 18px;
 
     text-align: center;
 
-    font-size: 12px;
+    font-size: 13px;
+    font-weight: 700;
 }
 
 
@@ -482,19 +645,19 @@
 ======================================== */
 
 .pax-btn {
-    width: 18px;
-    height: 18px;
+    width: 22px;
+    height: 22px;
 
     padding: 0;
 
     border: none;
-    border-radius: 3px;
+    border-radius: 50%;
 
-    background: transparent;
+    background: #eeeeee;
 
-    color: #111;
+    color: #333;
 
-    font-size: 13px;
+    font-size: 14px;
     font-weight: bold;
 
     line-height: 13px;
@@ -504,10 +667,18 @@
     justify-content: center;
 
     cursor: pointer;
+
+    transition: background 0.12s ease, color 0.12s ease;
 }
 
-.pax-btn:hover {
-    background: #e5e5e5;
+.pax-btn.plus-btn:hover {
+    background: #328b31;
+    color: #ffffff;
+}
+
+.pax-btn.minus-btn:hover {
+    background: #9d0000;
+    color: #ffffff;
 }
 
 
@@ -518,8 +689,8 @@
 .order-price {
     text-align: center;
 
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 13px;
+    font-weight: 700;
     color: #9d0000;
 
     white-space: nowrap;
@@ -537,16 +708,19 @@
     padding: 0;
 
     border: none;
+    border-radius: 50%;
 
     background: transparent;
 
-    color: #222;
+    color: #999;
 
     cursor: pointer;
 
     display: flex;
     align-items: center;
     justify-content: center;
+
+    transition: background 0.12s ease, color 0.12s ease;
 }
 
 .delete-order i {
@@ -554,6 +728,7 @@
 }
 
 .delete-order:hover {
+    background: #ffe0e0;
     color: #a00000;
 }
 
@@ -577,19 +752,24 @@
 
     border-bottom: none;
 
-    font-size: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
 }
 
 .summary-item.total {
-    height: 36px;
+    height: 42px;
 
     color: #9d0000;
+    background: #fbe4e4;
 
-    font-size: 14px;
-    font-weight: bold;
+    font-size: 17px;
+    font-weight: 800;
 
     border-top: 1px solid #e2d8d3;
-    padding-top: 4px;
+    border-radius: 6px;
+    padding: 4px 10px;
+    margin-top: 2px;
 }
 
 .discount-input {
@@ -676,15 +856,16 @@
 .record-btn,
 .clear-btn {
     width: 100%;
-    height: 36px;
+    height: 42px;
 
     border: none;
     border-radius: 6px;
 
     color: white;
 
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
 
     cursor: pointer;
 }
