@@ -1,4 +1,367 @@
 /* =====================================================
+   HEADER ICONS: BELL / SETTINGS / PROFILE
+   (moved here so the bell, gear, profile, and their
+   related popups/dropdown all live in one design file,
+   separate from Dashboard.css's page layout)
+===================================================== */
+
+.Popup-icons {
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+}
+
+.Popup-icons button {
+    border: none;
+    outline: none;
+
+    background: transparent;
+
+    cursor: pointer;
+}
+
+/* Shared round icon-button look for bell + gear */
+
+.notifications,
+.setting {
+    width: 42px;
+    height: 42px;
+
+    border-radius: 50%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: #ffffff;
+    border: 1px solid #e6e6e6 !important;
+
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+
+    transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.notifications i,
+.setting i {
+    font-size: 20px;
+}
+
+.notifications:hover,
+.setting:hover {
+    background: #f3f3f3;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    transform: translateY(-1px);
+}
+
+.notifications:active,
+.setting:active {
+    transform: translateY(0);
+}
+
+.notifications:focus-visible,
+.setting:focus-visible {
+    outline: 2px solid #0D83F0;
+    outline-offset: 2px;
+}
+
+
+/* =====================================================
+   NOTIFICATION BELL + BADGE
+===================================================== */
+
+.notification-wrap {
+    position: relative;
+}
+
+.notification-badge {
+    position: absolute;
+
+    top: -3px;
+    right: -3px;
+
+    min-width: 18px;
+    height: 18px;
+
+    padding: 0 4px;
+    box-sizing: border-box;
+
+    border-radius: 10px;
+    border: 2px solid #f7f8f9;
+
+    background: #cc292d;
+    color: #ffffff;
+
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 14px;
+
+    text-align: center;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+/* =====================================================
+   NOTIFICATION DROPDOWN
+===================================================== */
+
+.notification-dropdown {
+    display: none;
+
+    position: absolute;
+
+    top: 52px;
+    right: 0;
+
+    width: 340px;
+    max-width: calc(100vw - 40px);
+
+    background: #ffffff;
+
+    border: 1px solid #e6e6e6;
+    border-radius: 12px;
+
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+
+    overflow: hidden;
+
+    z-index: 500;
+
+    animation: notifDropdownOpen 0.15s ease;
+}
+
+.notification-wrap.open .notification-dropdown {
+    display: block;
+}
+
+@keyframes notifDropdownOpen {
+
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+}
+
+.notification-dropdown-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    height: 46px;
+
+    padding: 0 16px;
+
+    background: #fff8f5;
+
+    border-bottom: 1px solid #f0dcdc;
+}
+
+.notification-dropdown-header strong {
+    font-size: 14px;
+    color: #222;
+}
+
+.notification-dropdown-header span {
+    font-size: 11px;
+    font-weight: 700;
+
+    color: #cc292d;
+}
+
+.notification-list {
+    max-height: 320px;
+
+    overflow-y: auto;
+}
+
+.notification-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.notification-list::-webkit-scrollbar-thumb {
+    background: #ddd;
+    border-radius: 10px;
+}
+
+/* Generic item shape — used by whatever Dashboard.js renders per
+   notification (expects an icon + text block per row). */
+
+.notification-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+
+    padding: 12px 16px;
+
+    border-bottom: 1px solid #f2f2f2;
+
+    cursor: pointer;
+
+    transition: background 0.15s ease;
+}
+
+.notification-item:last-child {
+    border-bottom: none;
+}
+
+.notification-item:hover {
+    background: #fff8f5;
+}
+
+.notification-item .notification-icon {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+
+    border-radius: 50%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: #fbe3e3;
+    color: #cc292d;
+
+    font-size: 16px;
+}
+
+.notification-item .notification-text {
+    min-width: 0;
+}
+
+.notification-item .notification-title {
+    display: block;
+
+    font-size: 13px;
+    font-weight: 700;
+    color: #222;
+
+    margin-bottom: 2px;
+}
+
+.notification-item .notification-meta {
+    display: block;
+
+    font-size: 11px;
+    color: #999;
+}
+
+.notification-item.unread {
+    background: #fff4f4;
+}
+
+.notification-empty {
+    padding: 30px 16px;
+
+    text-align: center;
+
+    color: #999;
+    font-size: 13px;
+}
+
+.notification-view-all {
+    width: 100%;
+    height: 42px;
+
+    border: none;
+    border-top: 1px solid #f0dcdc;
+
+    background: #ffffff;
+
+    color: #8b0000;
+
+    font-size: 13px;
+    font-weight: 700;
+
+    cursor: pointer;
+}
+
+.notification-view-all:hover {
+    background: #fff2f2;
+}
+
+
+/* =====================================================
+   PROFILE BUTTON (header)
+===================================================== */
+
+.profile {
+    height: 42px;
+
+    padding: 0 14px 0 3px;
+
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+
+    background: linear-gradient(135deg, #1a94ff, #0a6fd6) !important;
+
+    border-radius: 50px;
+
+    color: white;
+
+    font-size: 14px;
+    font-weight: bold;
+
+    box-shadow: 0 2px 6px rgba(13, 131, 240, 0.35);
+
+    transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.profile:hover {
+    background: linear-gradient(135deg, #2a9dff, #0a6fd6) !important;
+    box-shadow: 0 4px 14px rgba(13, 131, 240, 0.5);
+    transform: translateY(-1px);
+}
+
+.profile:active {
+    transform: translateY(0);
+}
+
+.profile:focus-visible {
+    outline: 2px solid #0a4f8f;
+    outline-offset: 2px;
+}
+
+.profile-label {
+    letter-spacing: 0.2px;
+}
+
+.profile-chevron {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.8);
+
+    margin-left: -2px;
+}
+
+
+.profile-status-dot {
+    position: absolute;
+
+    bottom: -1px;
+    right: -1px;
+
+    width: 11px;
+    height: 11px;
+
+    border-radius: 50%;
+
+    background: #3ddc84;
+    border: 2px solid #ffffff;
+}
+
+
+/* =====================================================
    POPUP OVERLAY
 ===================================================== */
 
@@ -9,6 +372,7 @@
     inset: 0;
 
     background: rgba(0, 0, 0, 0.30);
+    backdrop-filter: blur(2px);
 
     display: none;
 
@@ -110,6 +474,51 @@
 }
 
 
+.popup-header-title {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+}
+
+
+.popup-header-text {
+
+    display: flex;
+
+    flex-direction: column;
+
+}
+
+
+.popup-header-icon {
+
+    width: 34px;
+
+    height: 34px;
+
+    flex-shrink: 0;
+
+    border-radius: 8px;
+
+    background: rgba(255, 255, 255, 0.16);
+
+    color: #ffffff;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 17px;
+
+}
+
+
 .popup-header p {
 
     margin: 6px 0 0;
@@ -155,7 +564,9 @@
 
     gap: 25px;
 
-    padding: 20px;
+    padding: 22px 20px;
+
+    background: #fafafa;
 
 }
 
@@ -164,15 +575,19 @@
 ================================ */
 
 .dashboard-profile {
+    position: relative;
+
     width: 38px;
     height: 38px;
 
     border-radius: 50%;
-    overflow: hidden;
+    overflow: visible;
 
     display: flex;
     align-items: center;
     justify-content: center;
+
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85);
 }
 
 .dashboard-profile img {
@@ -186,9 +601,18 @@
 }
 
 .dashboard-profile i {
-    font-size: 24px;
-    color: #D9D9D9;
+    width: 100%;
+    height: 50%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 19px;
+    color: #ffffff;
+
     background-color: #0D83F0;
+    border-radius: 50%;
 }
 
 .profile-avatar {
@@ -202,6 +626,10 @@
     justify-content: center;
     overflow: visible;
     cursor: pointer;
+
+    flex-shrink: 0;
+
+    box-shadow: 0 0 0 4px #ffffff, 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 .profile-avatar > i.bxs-user {
@@ -295,6 +723,22 @@
 
 }
 
+.profile-fields-label {
+
+    display: block;
+
+    margin-bottom: 12px;
+
+    color: #8b0000;
+
+    font-size: 11px;
+    font-weight: 800;
+
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+}
+
 
 .profile-field {
 
@@ -327,11 +771,20 @@
 
     height: 42px;
 
-    border: 1px solid black;
+    border: 1px solid #d5d5d5;
 
-    border-radius: 4px;
+    border-radius: 6px;
 
     background: #ffffff;
+
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+}
+
+
+.profile-input:hover {
+
+    border-color: #aaaaaa;
 
 }
 
@@ -339,6 +792,8 @@
 .profile-input:focus-within {
 
     border-color: #0d83f0;
+
+    box-shadow: 0 0 0 3px rgba(13, 131, 240, 0.12);
 
 }
 
@@ -522,9 +977,21 @@
 
     gap: 11px;
 
-    padding: 16px 0;
+    padding: 16px 8px;
 
-    border-bottom: 1px solid black;
+    margin: 0 -8px;
+
+    border-radius: 8px;
+
+    border-bottom: 1px solid #eeeeee;
+
+    transition: background 0.15s ease;
+
+}
+
+.setting-row:hover {
+
+    background: #fafafa;
 
 }
 
@@ -535,9 +1002,9 @@
 
     height: 38px;
 
-    border-radius: 5px;
+    border-radius: 8px;
 
-    background: #f2f2f2;
+    background: #eef6e4;
 
     display: flex;
 
@@ -546,6 +1013,8 @@
     align-items: center;
 
     color: #666;
+
+    flex-shrink: 0;
 
 }
 
@@ -672,9 +1141,11 @@
 
 .setting-section {
 
-    padding: 10px 8px 10px;
+    padding: 16px 8px;
 
-    border-bottom: 1px solid black;
+    margin: 0 -8px;
+
+    border-bottom: 1px solid #eeeeee;
 
 }
 
@@ -771,6 +1242,12 @@
 
     justify-content: space-between;
 
+    padding: 10px 12px;
+
+    background: #f7f7f7;
+
+    border-radius: 8px;
+
 }
 
 
@@ -856,6 +1333,12 @@
 
         grid-template-columns: 1fr;
 
+    }
+
+
+    .notification-dropdown {
+        width: calc(100vw - 40px);
+        right: -60px;
     }
 
 }

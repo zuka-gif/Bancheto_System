@@ -17,32 +17,45 @@
 .report-tabs {
     display: flex;
     align-items: center;
-    gap: 24px;
-    margin-bottom: 40px;
+    gap: 10px;
+    margin-bottom: 28px;
+
+    border-bottom: 2px solid #eee0da;
+}
+
+/* Only shown when printing — see @media print below */
+.print-header {
+    display: none;
 }
 
 .report-tab {
     border: none;
-    border-radius: 5px;
+    border-radius: 8px 8px 0 0;
     background: transparent;
 
-    color: #111;
+    color: #555;
 
     font-family: Arial, sans-serif;
     font-size: 14px;
 
-    padding: 50px 50px 10px;
+    padding: 14px 26px;
+    margin-bottom: -2px;
 
     cursor: pointer;
+
+    transition: background 0.12s ease, color 0.12s ease;
 }
 
 .report-tab.active {
     font-weight: bold;
-    border-bottom: 5px solid #8b0000;
+    color: #8b0000;
+    background: #fdeeea;
+    border-bottom: 3px solid #8b0000;
 }
 
 .report-tab:hover {
     color: #5c1d1d;
+    background: #fbf1ee;
 }
 
 
@@ -60,42 +73,49 @@
 }
  
 .range-select-box select {
-    height: 38px;
+    height: 40px;
  
-    padding: 0 12px;
+    padding: 0 14px;
  
-    border: 1px solid #ccc;
-    border-radius: 6px;
+    border: 1px solid #d5c9c4;
+    border-radius: 8px;
  
     background: #ffffff;
  
     font-size: 13px;
+    font-weight: 600;
     color: #333;
  
     cursor: pointer;
 }
+
+.range-select-box select:focus {
+    outline: none;
+    border-color: #9d0000;
+}
  
 .date-range-display {
-    height: 38px;
+    height: 40px;
  
-    padding: 0 12px;
+    padding: 0 14px;
  
-    border: 1px solid #ccc;
-    border-radius: 6px;
+    border: 1px solid #d5c9c4;
+    border-radius: 8px;
  
-    background: #ffffff;
+    background: #fff8f5;
  
     display: flex;
     align-items: center;
     gap: 8px;
  
     font-size: 13px;
-    color: #333;
+    font-weight: 600;
+    color: #7a1010;
 }
  
 .date-range-display i {
     font-size: 15px;
-    color: #666;
+    color: #9d0000;
 }
  
 .custom-date-inputs {
@@ -108,23 +128,28 @@
 }
  
 .custom-date-inputs input {
-    height: 38px;
+    height: 40px;
  
     padding: 0 10px;
  
-    border: 1px solid #ccc;
-    border-radius: 6px;
+    border: 1px solid #d5c9c4;
+    border-radius: 8px;
  
     font-size: 13px;
 }
+
+.custom-date-inputs input:focus {
+    outline: none;
+    border-color: #9d0000;
+}
  
 .generate-btn {
-    height: 38px;
+    height: 40px;
  
-    padding: 0 20px;
+    padding: 0 22px;
  
     border: none;
-    border-radius: 6px;
+    border-radius: 8px;
  
     background: #328b31;
  
@@ -134,6 +159,8 @@
     font-weight: bold;
  
     cursor: pointer;
+
+    box-shadow: 0 1px 4px rgba(50, 139, 49, 0.3);
 }
  
 .generate-btn:hover {
@@ -145,19 +172,19 @@
 }
  
 .export-btn {
-    height: 38px;
+    height: 40px;
  
-    padding: 0 14px;
+    padding: 0 16px;
  
-    border: 1px solid #ccc;
-    border-radius: 6px;
+    border: 1px solid #d5c9c4;
+    border-radius: 8px;
  
-    background: #f2f2f2;
+    background: #ffffff;
  
-    color: #333;
+    color: #7a1010;
  
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
  
     cursor: pointer;
  
@@ -167,7 +194,8 @@
 }
  
 .export-btn:hover {
-    background: #e6e6e6;
+    background: #fdeeea;
+    border-color: #c46e6e;
 }
  
 .export-menu {
@@ -175,17 +203,17 @@
  
     position: absolute;
  
-    top: 44px;
+    top: 46px;
     right: 0;
  
-    min-width: 140px;
+    min-width: 150px;
  
     background: #ffffff;
  
-    border: 1px solid #ddd;
-    border-radius: 6px;
+    border: 1px solid #e0cfc7;
+    border-radius: 8px;
  
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 8px 22px rgba(157, 0, 0, 0.15);
  
     overflow: hidden;
  
@@ -199,7 +227,7 @@
 .export-menu button {
     width: 100%;
  
-    padding: 10px 14px;
+    padding: 11px 14px;
  
     border: none;
     background: transparent;
@@ -207,13 +235,15 @@
     text-align: left;
  
     font-size: 13px;
+    font-weight: 600;
     color: #333;
  
     cursor: pointer;
 }
  
 .export-menu button:hover {
-    background: #f2f2f2;
+    background: #fdeeea;
+    color: #8b0000;
 }
  
  
@@ -224,9 +254,11 @@
 .report-table-container {
     width: 100%;
  
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
+    border: 1px solid #e0cfc7;
+    border-radius: 10px;
  
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+
     overflow: hidden;
 }
  
@@ -236,26 +268,46 @@
 }
  
 .report-table thead th {
-    height: 42px;
+    height: 46px;
  
-    padding: 0 20px;
+    padding: 0 14px;
  
     text-align: left;
  
-    background: #e4e4e4;
+    background: linear-gradient(180deg, #a51414, #7a0f0f);
  
-    color: #222;
+    color: #ffffff;
  
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+/* Total Orders (3rd column) and Total Pax (4th column) on the Sales
+   report are centered — applies on screen and when printed, since
+   there's no separate print override for it */
+#sales-reportTable th:nth-child(3),
+#sales-reportTable td:nth-child(3),
+#sales-reportTable th:nth-child(4),
+#sales-reportTable td:nth-child(4) {
+    text-align: center;
 }
  
+.report-table tbody tr:nth-child(even) {
+    background: #fff8f5;
+}
+
+.report-table tbody tr:hover {
+    background: #fdeeea;
+}
+
 .report-table tbody td {
-    height: 40px;
+    height: 42px;
  
-    padding: 0 20px;
+    padding: 0 14px;
  
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid #f2e6e0;
  
     font-size: 13px;
     color: #333;
@@ -263,34 +315,63 @@
  
 .report-table .empty-row {
     text-align: center;
-    color: #999;
-    padding: 24px 0;
+    color: #b09a94;
+    font-size: 13px;
+    padding: 34px 0;
 }
  
 .report-table tfoot .total-row td {
-    height: 44px;
+    height: 46px;
+
+    padding: 0 14px;
  
-    border-top: 2px solid #ccc;
+    background: #fdeeea;
+    border-top: 2px solid #e7c2b8;
  
     font-size: 14px;
     font-weight: 800;
-    color: #111;
+    color: #7a1010;
 }
 
 .report-table .status-cell {
     font-weight: 700;
+    font-size: 13px;
+}
+
+.report-table .status-cell::before {
+    content: "";
+    display: inline-block;
+
+    width: 8px;
+    height: 8px;
+
+    margin-right: 6px;
+
+    border-radius: 50%;
 }
 
 .report-table .status-cell.status-in {
     color: #2e8034;
 }
 
+.report-table .status-cell.status-in::before {
+    background: #2e8034;
+}
+
 .report-table .status-cell.status-low {
-    color: #dda50d;
+    color: #b3830b;
+}
+
+.report-table .status-cell.status-low::before {
+    background: #dda50d;
 }
 
 .report-table .status-cell.status-out {
     color: #cc292d;
+}
+
+.report-table .status-cell.status-out::before {
+    background: #cc292d;
 }
  
  
@@ -308,12 +389,12 @@
  
 .print-btn,
 .export-pdf-btn {
-    height: 40px;
+    height: 42px;
  
-    padding: 0 22px;
+    padding: 0 24px;
  
     border: none;
-    border-radius: 6px;
+    border-radius: 8px;
  
     font-size: 13px;
     font-weight: 700;
@@ -321,22 +402,30 @@
     cursor: pointer;
  
     color: #ffffff;
+
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.print-btn:hover,
+.export-pdf-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
 }
  
 .print-btn {
-    background: #3d7f37;
+    background: #555555;
 }
  
 .print-btn:hover {
-    background: #346d2f;
+    background: #444444;
 }
  
 .export-pdf-btn {
-    background: #2E7D32;
+    background: #8b0000;
 }
  
 .export-pdf-btn:hover {
-    background: #157347;
+    background: #6e0000;
 }
  
  
@@ -345,21 +434,115 @@
 ======================================== */
  
 @media print {
- 
+
+    @page {
+        margin: 1.2cm;
+    }
+
+    body {
+        background: #ffffff;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    html {
+        margin: 0 !important;
+    }
+
+    #sidebar-container,
     .sidebar,
     .report-tabs,
     .report-filters,
     .report-footer-actions {
         display: none !important;
     }
- 
-    main {
+
+    /* the on-screen layout uses a fixed 100vh height with overflow
+       hidden so the app fits one screen — but that same rule clips a
+       multi-page report down to a single printed page, so it's undone
+       here to let content flow across as many pages as it needs */
+    main,
+    .reports-main {
+        display: block !important;
         margin-left: 0 !important;
         padding: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
     }
- 
+
+    .report-content {
+        display: block !important;
+    }
+
+    /* only the currently active tab's report should print — the
+       inactive tab carries an inline display:none from showReport() */
+    .report-content[style*="display: none"] {
+        display: none !important;
+    }
+
+    .print-header {
+        display: block !important;
+        margin-bottom: 18px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #000;
+    }
+
+    .print-header-brand {
+        font-size: 18px;
+        font-weight: 800;
+        color: #000;
+    }
+
+    .print-header-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: #000;
+        margin-top: 2px;
+    }
+
+    .print-header-meta {
+        font-size: 11px;
+        color: #444;
+        margin-top: 6px;
+    }
+
+    /* everything below just keeps the table's normal on-screen
+       format (colors, padding, alignment) intact when printed —
+       most browsers silently drop background colors on print
+       unless told otherwise */
     .report-table-container {
-        border: none;
+        box-shadow: none;
+    }
+
+    .report-table thead th,
+    .report-table tbody tr:nth-child(even),
+    .report-table tfoot .total-row td,
+    .report-table .status-cell::before {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        color-adjust: exact;
+    }
+
+    .report-table tbody tr:hover {
+        background: inherit;
+    }
+
+    /* keep a data row's cells from splitting across a page break */
+    .report-table tbody tr,
+    .report-table tfoot tr {
+        page-break-inside: avoid;
+    }
+
+    /* repeat the header/footer if the report spans multiple pages */
+    .report-table thead {
+        display: table-header-group;
+    }
+
+    .report-table tfoot {
+        display: table-footer-group;
     }
 }
  

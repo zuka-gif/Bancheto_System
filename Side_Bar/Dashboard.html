@@ -53,8 +53,11 @@
                 <button class="setting"><i class='bx bxs-cog' style='color:#777777'  ></i></button>
                 <button class="profile">
                     <div class="dashboard-profile">
-                        <img id="dashboardProfileImage" src="" alt="Profile Picture" > <i class='bx bxs-user-circle' id="dashboardProfileIcon"></i>
-                    </div>Profile</button>
+                        <img id="dashboardProfileImage" src="" alt="Profile Picture" > <i class='bx bxs-user' id="dashboardProfileIcon"></i>
+                        <span class="profile-status-dot"></span>
+                    </div>
+                    <span class="profile-label">Profile</span>
+                </button>
             </div>
         </header>
 
@@ -376,8 +379,13 @@
         <div class="popup-header">
 
             <div class="header-bg">
-                <h2>Account Profile</h2>
-                <p>Manage your account information and security.</p>
+                <div class="popup-header-title">
+                    <span class="popup-header-icon"><i class='bx bxs-user-badge'></i></span>
+                    <div class="popup-header-text">
+                        <h2>Account Profile</h2>
+                        <p>Manage your account information and security.</p>
+                    </div>
+                </div>
             </div>
 
             <button
@@ -406,6 +414,8 @@
             <!-- PROFILE FIELDS -->
 
             <div class="profile-fields">
+
+                <span class="profile-fields-label">Personal Information</span>
 
                 <div class="profile-field">
 
@@ -522,8 +532,13 @@
         <div class="popup-header">
 
             <div>
-                <h2>Change Password</h2>
-                <p>Update your account password.</p>
+                <div class="popup-header-title">
+                    <span class="popup-header-icon"><i class='bx bxs-lock-alt'></i></span>
+                    <div class="popup-header-text">
+                        <h2>Change Password</h2>
+                        <p>Update your account password.</p>
+                    </div>
+                </div>
             </div>
 
             <button
@@ -631,8 +646,13 @@
         <div class="popup-header">
 
             <div>
-                <h2>System Setting</h2>
-                <p>Manage system preferences.</p>
+                <div class="popup-header-title">
+                    <span class="popup-header-icon"><i class='bx bxs-cog'></i></span>
+                    <div class="popup-header-text">
+                        <h2>System Setting</h2>
+                        <p>Manage system preferences.</p>
+                    </div>
+                </div>
             </div>
 
             <button

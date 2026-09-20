@@ -125,7 +125,7 @@
        direction: 1 = up, -1 = down, 0 = flat/stable */
     function computeDailyChange(current, yesterday) {
         if (current === 0 && yesterday === 0) {
-            return { text: "Stable 0%", direction: 0 };
+            return { text: "0%", direction: 0 };
         }
 
         if (yesterday === 0) {

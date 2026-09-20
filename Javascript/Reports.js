@@ -116,7 +116,15 @@
     // ---------- MARKUP ----------
 
     function buildTabMarkup(tabId) {
+        const reportTitle = tabId === "sales" ? "Sales Report" : "Inventory Report";
+
         return `
+            <div class="print-header" id="${tabId}-printHeader">
+                <div class="print-header-brand">Yesunim Korean Grill House</div>
+                <div class="print-header-title">${reportTitle}</div>
+                <div class="print-header-meta" id="${tabId}-printMeta"></div>
+            </div>
+
             <div class="report-filters">
 
                 <div class="range-select-box">
@@ -242,6 +250,11 @@
     // always reflects the live inventory. Only items that had at least
     // one recorded stock movement within the selected date range are
     // included, so the date filter still means something here.
+    //
+    // Footer total row: Stock totals the Stock column, and Price totals
+    // just the Price column (sum of each item's unit price) — not
+    // stock × price — so the footer always adds up to what's shown
+    // above it.
 
     function renderInventoryTable(tabId) {
         const { start, end } = computeRange(tabId);
@@ -292,7 +305,7 @@
         }).join("");
 
         const totalStock = rows.reduce((s, i) => s + (Number(i.stock) || 0), 0);
-        const totalValue = rows.reduce((s, i) => s + (Number(i.stock) || 0) * (Number(i.price) || 0), 0);
+        const totalPrice = rows.reduce((s, i) => s + (Number(i.price) || 0), 0);
 
         footEl.innerHTML = `
             <tr class="total-row">
@@ -300,7 +313,7 @@
                 <td></td>
                 <td>${totalStock}</td>
                 <td></td>
-                <td>${currency(totalValue)}</td>
+                <td>${currency(totalPrice)}</td>
                 <td></td>
             </tr>
         `;
@@ -331,6 +344,48 @@
             textEl.textContent = "Select a date range";
         }
     }
+
+    // ---------- PRINT HEADER ----------
+    // Fills in the printed-only header (range covered + when it was
+    // printed) right before the print dialog opens, so a printed page
+    // is self-explanatory even without the on-screen filter bar.
+
+    function preparePrintHeader(tabId) {
+        const metaEl = document.getElementById(`${tabId}-printMeta`);
+        const s = state[tabId];
+
+        let rangeText;
+        if (s.mode === "all") {
+            rangeText = "All Time";
+        } else {
+            const { start, end } = computeRange(tabId);
+            rangeText = (start && end)
+                ? `${formatDateDisplay(start)} - ${formatDateDisplay(end)}`
+                : "—";
+        }
+
+        const now = new Date();
+        const printedText = now.toLocaleString("en-US", {
+            month: "long", day: "numeric", year: "numeric",
+            hour: "2-digit", minute: "2-digit", hour12: true
+        });
+
+        metaEl.textContent = `Range: ${rangeText}  •  Printed: ${printedText}`;
+
+        // Some browsers print their own header/footer showing the page
+        // title (a setting the person controls, not something CSS can
+        // remove) — give it something more useful than the bare app
+        // name while the print dialog is open, then put it back after.
+        const reportTitle = tabId === "sales" ? "Sales Report" : "Inventory Report";
+        window.__previousTitle = document.title;
+        document.title = `Yesunim - ${reportTitle} (${rangeText})`;
+    }
+
+    window.addEventListener("afterprint", () => {
+        if (window.__previousTitle) {
+            document.title = window.__previousTitle;
+        }
+    });
 
     // ---------- EXPORT CSV ----------
 
@@ -425,8 +480,15 @@
 
         exportCsvBtn.addEventListener("click", () => exportCsv(tabId));
 
-        printBtn.addEventListener("click", () => window.print());
-        exportPdfBtn.addEventListener("click", () => window.print());
+        printBtn.addEventListener("click", () => {
+            preparePrintHeader(tabId);
+            window.print();
+        });
+
+        exportPdfBtn.addEventListener("click", () => {
+            preparePrintHeader(tabId);
+            window.print();
+        });
 
         updateDateRangeText(tabId);
         generateReport(tabId);
@@ -451,5 +513,15 @@
     }
 
     document.addEventListener("DOMContentLoaded", init);
+
+    // Catches Ctrl+P / browser menu printing too, not just our own
+    // Print/Export PDF buttons, so the printed header is always fresh.
+    window.addEventListener("beforeprint", () => {
+        const visibleTab = document.querySelector(".report-content[style*='block'], .report-content:not([style*='display'])");
+        const tabId = visibleTab ? visibleTab.id : "sales";
+        if (document.getElementById(`${tabId}-printMeta`)) {
+            preparePrintHeader(tabId);
+        }
+    });
 
 })();

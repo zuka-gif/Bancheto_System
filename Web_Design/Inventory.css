@@ -6,7 +6,7 @@
     height: 100vh;
     padding: 30px 35px;
     box-sizing: border-box;
-    background: #ffffff;
+    background: #f4f6f8;
     display: flex;
     flex-direction: column;
 
@@ -25,6 +25,8 @@
 
     font-size: 28px;
     font-weight: 800;
+
+    letter-spacing: -0.2px;
 }
 
 .inventory-header p {
@@ -44,7 +46,7 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 40px;
+    gap: 24px;
 
     margin-top: 20px;
     margin-bottom: 20px;
@@ -59,12 +61,21 @@
     flex: 1 1 220px;
     max-width: 320px;
 
-    border: 1px solid #e2b8b8;
-    border-radius: 8px;
+    border: 1px solid #eee0e0;
+    border-radius: 12px;
 
-    padding: 14px 16px;
+    padding: 16px 18px;
 
     background: #ffffff;
+
+    box-shadow: 0 4px 14px rgba(30, 30, 40, 0.06);
+
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.inventory-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(30, 30, 40, 0.1);
 }
 
 .stat-icon {
@@ -72,11 +83,13 @@
     height: 48px;
     flex-shrink: 0;
 
-    border-radius: 10px;
+    border-radius: 12px;
 
     display: flex;
     align-items: center;
     justify-content: center;
+
+    box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.08);
 }
 
 .stat-icon i {
@@ -85,15 +98,15 @@
 }
 
 .stat-icon-blue {
-    background: #4a90d9;
+    background: linear-gradient(135deg, #5aa3ec, #3a7dc4);
 }
 
 .stat-icon-orange {
-    background: #f0c14b;
+    background: linear-gradient(135deg, #f5cd5f, #d99f1f);
 }
 
 .stat-icon-red {
-    background: #e39a9a;
+    background: linear-gradient(135deg, #e8a9a9, #cc6f6f);
 }
 
 .stat-text {
@@ -113,9 +126,12 @@
 }
 
 .stat-value {
-    font-size: 20px;
+    font-size: 22px;
     font-weight: 800;
     color: #111;
+
+    letter-spacing: -0.2px;
+    font-variant-numeric: tabular-nums;
 }
 
 .stat-value.value-orange {
@@ -143,25 +159,34 @@
     justify-content: space-between;
     gap: 14px;
 
-    margin-bottom: 16px;
+    margin-bottom: 18px;
 }
 
 .inventory-search-box {
     flex: 1 1 260px;
     max-width: 360px;
 
-    height: 40px;
+    height: 42px;
 
     display: flex;
     align-items: center;
     gap: 8px;
 
-    padding: 0 12px;
+    padding: 0 14px;
 
-    border: 1px solid #ccc;
-    border-radius: 20px;
+    border: 1px solid #ddd;
+    border-radius: 21px;
 
     background: #ffffff;
+
+    box-shadow: 0 2px 8px rgba(30, 30, 40, 0.05);
+
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.inventory-search-box:focus-within {
+    border-color: #c46e6e;
+    box-shadow: 0 2px 10px rgba(196, 110, 110, 0.2);
 }
 
 .inventory-search-box i {
@@ -202,6 +227,8 @@
     justify-content: center;
 
     cursor: pointer;
+
+    transition: background 0.12s ease;
 }
 
 .clear-search-btn:hover {
@@ -212,7 +239,7 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 16px;
+    gap: 10px;
 }
 
 .legend-chip {
@@ -220,17 +247,27 @@
     align-items: center;
     gap: 6px;
 
+    padding: 5px 12px;
+
+    background: #ffffff;
+    border: 1px solid #eee;
+    border-radius: 999px;
+
+    box-shadow: 0 2px 6px rgba(30, 30, 40, 0.04);
+
     font-size: 12px;
     font-weight: 600;
     color: #444;
 }
 
 .legend-dot {
-    width: 10px;
-    height: 10px;
+    width: 9px;
+    height: 9px;
     flex-shrink: 0;
 
     border-radius: 50%;
+
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.04);
 }
 
 .legend-dot.dot-in {
@@ -251,7 +288,9 @@
     color: #999;
     font-size: 13px;
 
-    padding: 30px 0;
+    padding: 34px 0;
+
+    animation: fadeSlideIn 0.25s ease both;
 }
 
 
@@ -263,36 +302,44 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 12px;
+    gap: 10px;
 
     margin-bottom: 18px;
 }
 
 .category-tab {
-    border: 1px solid #ccc;
-    border-radius: 6px;
+    border: 1px solid #ddd;
+    border-radius: 999px;
 
-    background: #f2f2f2;
+    background: #ffffff;
 
-    color: #333;
+    color: #444;
 
     font-family: Arial, sans-serif;
     font-size: 13px;
     font-weight: 600;
 
-    padding: 8px 16px;
+    padding: 9px 18px;
 
     cursor: pointer;
+
+    box-shadow: 0 2px 6px rgba(30, 30, 40, 0.05);
+
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
 }
 
 .category-tab:hover {
-    background: #e6e6e6;
+    background: #f7f2f2;
+    border-color: #e0c8c8;
+    transform: translateY(-1px);
 }
 
 .category-tab.active {
-    background: #f0a500;
+    background: linear-gradient(135deg, #ffb92f, #f0a500);
     border-color: #f0a500;
-    color: black;
+    color: #3a2400;
+
+    box-shadow: 0 4px 12px rgba(240, 165, 0, 0.35);
 }
 
 
@@ -343,14 +390,14 @@
 }
 
 .add-product-btn {
-    height: 40px;
+    height: 42px;
 
-    padding: 0 18px;
+    padding: 0 20px;
 
     border: none;
-    border-radius: 6px;
+    border-radius: 8px;
 
-    background: #328b31;
+    background: linear-gradient(135deg, #3fa33f, #267526);
 
     color: white;
 
@@ -362,6 +409,10 @@
     display: flex;
     align-items: center;
     gap: 6px;
+
+    box-shadow: 0 6px 16px rgba(38, 117, 38, 0.3);
+
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .add-product-btn i {
@@ -369,7 +420,49 @@
 }
 
 .add-product-btn:hover {
-    background: #267526;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(38, 117, 38, 0.4);
+}
+
+
+/* ========================================
+   ENTRANCE ANIMATIONS
+   Applied to cards and table rows as they
+   render, with a short stagger so a list of
+   items settles in rather than popping in
+   all at once.
+======================================== */
+
+@keyframes fadeSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.inventory-card,
+.inventory-table tbody tr {
+    animation: fadeSlideIn 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.inventory-card:nth-child(1),  .inventory-table tbody tr:nth-child(1)  { animation-delay: 0.02s; }
+.inventory-card:nth-child(2),  .inventory-table tbody tr:nth-child(2)  { animation-delay: 0.05s; }
+.inventory-card:nth-child(3),  .inventory-table tbody tr:nth-child(3)  { animation-delay: 0.08s; }
+.inventory-card:nth-child(4),  .inventory-table tbody tr:nth-child(4)  { animation-delay: 0.11s; }
+.inventory-card:nth-child(5),  .inventory-table tbody tr:nth-child(5)  { animation-delay: 0.14s; }
+.inventory-card:nth-child(6),  .inventory-table tbody tr:nth-child(6)  { animation-delay: 0.17s; }
+.inventory-card:nth-child(7),  .inventory-table tbody tr:nth-child(7)  { animation-delay: 0.2s; }
+.inventory-card:nth-child(8),  .inventory-table tbody tr:nth-child(8)  { animation-delay: 0.23s; }
+.inventory-card:nth-child(9),  .inventory-table tbody tr:nth-child(9)  { animation-delay: 0.26s; }
+.inventory-card:nth-child(10), .inventory-table tbody tr:nth-child(10) { animation-delay: 0.29s; }
+.inventory-card:nth-child(n+11), .inventory-table tbody tr:nth-child(n+11) { animation-delay: 0.3s; }
+
+.inventory-section {
+    animation: fadeSlideIn 0.3s ease both;
 }
 
 
@@ -380,15 +473,17 @@
 .inventory-sections {
     display: flex;
     flex-direction: column;
-    gap: 26px;
+    gap: 24px;
 }
 
 .inventory-section {
-    background: #f7f2f2;
-    border: 1px solid #ecd9d9;
-    border-radius: 10px;
+    background: #ffffff;
+    border: 1px solid #eee;
+    border-radius: 14px;
 
-    padding: 18px 20px;
+    padding: 22px 24px;
+
+    box-shadow: 0 4px 14px rgba(30, 30, 40, 0.05);
 }
 
 .section-title-bar {
@@ -396,37 +491,39 @@
     align-items: center;
     gap: 10px;
 
-    padding-bottom: 10px;
-    margin-bottom: 16px;
+    padding-bottom: 14px;
+    margin-bottom: 18px;
 
-    border-bottom: 2px solid #e2b8b8;
+    border-bottom: 2px solid #f0dcdc;
 }
 
 .section-title-bar i {
-    font-size: 19px;
+    font-size: 20px;
     color: #8b0000;
 }
 
 .section-title-name {
-    font-size: 16px;
+    font-size: 17px;
     font-weight: 800;
     color: #5C1D1D;
 
-    letter-spacing: 0.2px;
+    letter-spacing: 0.1px;
 }
 
 .section-count {
     margin-left: auto;
 
-    background: #ffffff;
-    border: 1px solid #e2b8b8;
-    border-radius: 12px;
+    background: #fdeeee;
+    border: 1px solid #f0d5d5;
+    border-radius: 999px;
 
-    padding: 3px 12px;
+    padding: 4px 13px;
 
     font-size: 11px;
     font-weight: 700;
     color: #8b0000;
+
+    font-variant-numeric: tabular-nums;
 }
 
 
@@ -439,32 +536,32 @@
 
 .inventory-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(178px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 18px;
 }
 
 .inventory-card {
     position: relative;
 
-    background: #7a1414;
-    border-radius: 10px;
+    background: linear-gradient(160deg, #8a1b1b, #6d1212);
+    border-radius: 12px;
     border-left: 5px solid transparent;
 
-    padding: 14px;
+    padding: 16px;
 
     display: flex;
     flex-direction: column;
 
-    gap: 10px;
+    gap: 11px;
 
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 12px rgba(90, 15, 15, 0.25);
 
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.18s ease;
 }
 
 .inventory-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 22px rgba(90, 15, 15, 0.38);
 }
 
 .inventory-card.status-in {
@@ -515,6 +612,12 @@
     justify-content: center;
 
     cursor: pointer;
+
+    transition: transform 0.12s ease;
+}
+
+.card-actions button:hover {
+    transform: scale(1.08);
 }
 
 .card-actions .edit-product-btn i {
@@ -538,15 +641,15 @@
 .inventory-card-top {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 11px;
 }
 
 .inventory-image {
-    width: 44px;
-    height: 44px;
+    width: 46px;
+    height: 46px;
     flex-shrink: 0;
 
-    border-radius: 6px;
+    border-radius: 9px;
     border: 1px solid rgba(255, 255, 255, 0.4);
 
     object-fit: cover;
@@ -565,7 +668,7 @@
 .inventory-info {
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 4px;
 
     min-width: 0;
 }
@@ -573,8 +676,10 @@
 .inventory-name {
     color: #ffffff;
 
-    font-size: 13px;
+    font-size: 13.5px;
     font-weight: 700;
+
+    line-height: 1.3;
 
     overflow: hidden;
     text-overflow: ellipsis;
@@ -586,24 +691,29 @@
 
     font-size: 12px;
     font-weight: 700;
+
+    font-variant-numeric: tabular-nums;
 }
 
 .inventory-price {
     color: #f0d9d9;
 
-    font-size: 11px;
+    font-size: 11.5px;
     font-weight: 600;
+
+    font-variant-numeric: tabular-nums;
 }
 
 .status-tag {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
 
     font-size: 10px;
     font-weight: 800;
 
-    letter-spacing: 0.2px;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
 }
 
 .status-tag::before {
@@ -629,25 +739,38 @@
     color: #ff8a80;
 }
 
+/* A gentle pulse on the dot draws the eye to items that need
+   restocking soonest, without being distracting. */
+@keyframes statusPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.45; }
+}
+
+.status-tag.status-out::before {
+    animation: statusPulse 1.6s ease-in-out infinite;
+}
+
 .qty-controls {
     display: flex;
     align-items: center;
     justify-content: space-between;
 
     background: rgba(255, 255, 255, 0.14);
-    border-radius: 5px;
+    border-radius: 7px;
 
-    padding: 5px 7px;
+    padding: 6px 8px;
+
+    margin-top: 2px;
 }
 
 .qty-btn {
-    width: 22px;
-    height: 22px;
+    width: 23px;
+    height: 23px;
 
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
 
-    background: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.92);
 
     color: #7a1414;
 
@@ -659,10 +782,13 @@
     justify-content: center;
 
     cursor: pointer;
+
+    transition: background 0.12s ease, transform 0.1s ease;
 }
 
 .qty-btn:hover {
     background: #ffffff;
+    transform: scale(1.08);
 }
 
 .qty-label {
@@ -670,15 +796,19 @@
 
     font-size: 10px;
     font-weight: 600;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
 }
 
 .search-highlight {
-    background: #fff1a8;
+    background: #ffe27a;
     color: #5c1d1d;
 
     border-radius: 3px;
 
-    padding: 0 1px;
+    padding: 0 2px;
+
+    font-weight: 800;
 }
 
 
@@ -690,38 +820,52 @@
     width: 100%;
     border-collapse: collapse;
 
-    border-radius: 8px;
+    border-radius: 14px;
     overflow: hidden;
+
+    box-shadow: 0 4px 16px rgba(30, 30, 40, 0.07);
 }
 
 .inventory-table thead tr {
-    background: #8b0000;
+    background: linear-gradient(135deg, #9c1010, #7a0000);
 }
 
 .inventory-table thead th {
-    height: 42px;
+    height: 46px;
 
-    padding: 0 18px;
+    padding: 0 20px;
 
     text-align: left;
 
     color: #ffffff;
 
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 700;
+
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+
+    /* Stays visible while rows scroll underneath */
+    position: sticky;
+    top: 0;
+    z-index: 2;
+
+    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.12);
 }
 
 .inventory-table tbody tr {
-    background: #e6e6e6;
-    border-bottom: 2px solid #ffffff;
+    background: #ffffff;
+    border-bottom: 1px solid #f0f0f0;
+
+    transition: background 0.15s ease;
 }
 
 .inventory-table tbody tr:nth-child(even) {
-    background: #eeeeee;
+    background: #faf7f7;
 }
 
 .inventory-table tbody tr:hover {
-    background: #f6dede;
+    background: #fdeeee;
 }
 
 .inventory-table tbody tr:last-child {
@@ -729,28 +873,37 @@
 }
 
 .inventory-table tbody td {
-    height: 46px;
+    height: 52px;
 
-    padding: 0 18px;
+    padding: 0 20px;
 
     font-size: 13px;
-    color: #222;
+    color: #2a2a2a;
+
+    line-height: 1.4;
+}
+
+.inventory-table tbody td:nth-child(3),
+.inventory-table tbody td:nth-child(5) {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
 }
 
 .inventory-product-cell {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 11px;
 
-    font-weight: 600;
+    font-weight: 700;
+    color: #222;
 }
 
 .inventory-thumb {
-    width: 26px;
-    height: 26px;
+    width: 30px;
+    height: 30px;
     flex-shrink: 0;
 
-    border-radius: 4px;
+    border-radius: 7px;
 
     background: #222222;
 
@@ -765,19 +918,46 @@
     font-size: 13px;
 }
 
+/* Status now reads as a pill, same visual language as the cards,
+   instead of plain colored text. */
 .status-cell {
     font-weight: 700;
 }
 
-.status-cell.status-in {
+.status-cell .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+
+    padding: 4px 11px;
+
+    border-radius: 999px;
+
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+}
+
+.status-cell .status-pill::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.status-cell.status-in .status-pill {
+    background: #e6f7ea;
     color: #2e8034;
 }
 
-.status-cell.status-low {
-    color: #dda50d;
+.status-cell.status-low .status-pill {
+    background: #fff4df;
+    color: #b8790a;
 }
 
-.status-cell.status-out {
+.status-cell.status-out .status-pill {
+    background: #fde8e8;
     color: #cc292d;
 }
 
@@ -788,10 +968,12 @@
 }
 
 .action-cell button {
-    width: 26px;
-    height: 26px;
+    width: 28px;
+    height: 28px;
 
     border: none;
+    border-radius: 8px;
+
     background: transparent;
 
     display: flex;
@@ -799,6 +981,20 @@
     justify-content: center;
 
     cursor: pointer;
+
+    transition: background 0.12s ease, transform 0.1s ease;
+}
+
+.action-cell button:hover {
+    transform: scale(1.08);
+}
+
+.action-cell .edit-product-btn:hover {
+    background: #eee;
+}
+
+.action-cell .delete-product-btn:hover {
+    background: #fdeeee;
 }
 
 .action-cell .edit-product-btn i {
@@ -822,7 +1018,7 @@
 .empty-row td {
     text-align: center;
     color: #999;
-    padding: 24px 0;
+    padding: 30px 0;
 }
 
 
@@ -836,7 +1032,7 @@
     position: fixed;
     inset: 0;
 
-    background: rgba(0, 0, 0, 0.35);
+    background: rgba(20, 10, 10, 0.45);
 
     z-index: 9999;
 
@@ -854,11 +1050,11 @@
 
     background: #ffffff;
 
-    border-radius: 10px;
+    border-radius: 14px;
 
     overflow: hidden;
 
-    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
 }
 
 .add-product-popup .popup-header {
@@ -866,11 +1062,11 @@
     align-items: center;
     justify-content: space-between;
 
-    height: 54px;
+    height: 56px;
 
     padding: 0 18px;
 
-    background: #8b0000;
+    background: linear-gradient(135deg, #9c1010, #7a0000);
 }
 
 .add-product-popup .popup-header h2 {
@@ -888,7 +1084,7 @@
 }
 
 .add-product-form {
-    padding: 18px;
+    padding: 20px;
     max-height: 75vh;
     overflow-y: auto;
 }
@@ -904,17 +1100,23 @@
 }
 
 .add-product-form .input-box {
-    height: 38px;
+    height: 40px;
 
-    border: 1px solid #ccc;
-    border-radius: 5px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
 
-    margin-bottom: 14px;
+    margin-bottom: 15px;
 
     display: flex;
     align-items: center;
 
-    padding: 0 10px;
+    padding: 0 12px;
+
+    transition: border-color 0.12s ease;
+}
+
+.add-product-form .input-box:focus-within {
+    border-color: #c46e6e;
 }
 
 .add-product-form .input-box input,
@@ -941,12 +1143,12 @@
 }
 
 .image-upload {
-    height: 110px;
+    height: 112px;
 
     border: 1.5px dashed #c46e6e;
-    border-radius: 8px;
+    border-radius: 10px;
 
-    margin-bottom: 14px;
+    margin-bottom: 15px;
 
     display: flex;
     align-items: center;
@@ -958,6 +1160,13 @@
 
     position: relative;
     background: #fff8f5;
+
+    transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.image-upload:hover {
+    border-color: #a85757;
+    background: #fdeeee;
 }
 
 .image-upload img {
@@ -986,47 +1195,58 @@
     justify-content: flex-end;
     gap: 8px;
 
-    margin-top: 4px;
+    margin-top: 6px;
 }
 
 .add-product-actions .cancel-btn {
     width: auto;
-    height: 36px;
+    height: 38px;
 
-    padding: 0 16px;
+    padding: 0 18px;
 
-    background: #eeeeee;
+    background: #f2f2f2;
     color: #333;
 
-    border: 1px solid #ccc;
-    border-radius: 5px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
 
     font-size: 13px;
     font-weight: 600;
 
     cursor: pointer;
+
+    transition: background 0.12s ease;
+}
+
+.add-product-actions .cancel-btn:hover {
+    background: #e6e6e6;
 }
 
 .add-product-actions .save-product-btn {
     width: auto;
-    height: 36px;
+    height: 38px;
 
-    padding: 0 16px;
+    padding: 0 18px;
 
-    background: #2E7D32;
+    background: linear-gradient(135deg, #3fa33f, #267526);
     color: white;
 
     border: none;
-    border-radius: 5px;
+    border-radius: 8px;
 
     font-size: 13px;
     font-weight: 600;
 
     cursor: pointer;
+
+    box-shadow: 0 4px 12px rgba(38, 117, 38, 0.3);
+
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
 
 .add-product-actions .save-product-btn:hover {
-    background: #157347;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(38, 117, 38, 0.4);
 }
 
 
@@ -1066,6 +1286,6 @@
     }
 
     .inventory-section {
-        padding: 14px;
+        padding: 16px;
     }
 }
