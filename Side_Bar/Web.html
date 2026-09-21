@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yesunim</title>
+
+    <!-- Shared -->
+    <link href="../Web_Design/Side_Bar.css" rel="stylesheet" />
+
+    <!-- Per-page styles (all loaded up front so page switches never show a flash of unstyled content) -->
+    <link href="../Web_Design/Dashboard.css" rel="stylesheet" />
+    <link href="../Web_Design/Profile_Setting.css" rel="stylesheet" />
+    <link href="../Web_Design/Sales.css" rel="stylesheet" />
+    <link href="../Web_Design/Inventory.css" rel="stylesheet" />
+    <link href="../Web_Design/Reports.css" rel="stylesheet" />
+    <link href="../Web_Design/Analytics.css" rel="stylesheet" />
+    <link href="../Web_Design/User.css" rel="stylesheet" />
+
+    <link rel="icon" href="../Logo/yesunim.png" type="image/png" />
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+
+    <!-- Analytics page needs Chart.js; loaded once here instead of per-navigation since the library itself never changes -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <style>
+        #page-content {
+            flex: 1;
+            min-width: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="sidebar-container"></div>
+
+    <div id="page-content"></div>
+
+    <script src="../Javascript/sidebar.js"></script>
+    <script src="../Javascript/Web.js"></script>
+</body>
+</html>

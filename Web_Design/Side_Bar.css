@@ -17,17 +17,6 @@ body {
 }
 
 
-/* Reserves the sidebar's exact space + color immediately,
-   so there's no blank flash while sidebar.js is still fetching
-   A_Main_sidebar.html */
-#sidebar-container {
-    width: 180px;
-    min-height: 100vh;
-    background: #8f0000;
-    flex-shrink: 0;
-}
-
-
 .sidebar {
     width: 180px;
     min-height: 100vh;
@@ -38,6 +27,11 @@ body {
     padding-top: 15px;
     padding-bottom: 15px;
     color: white;
+
+    /* Keeps the sidebar visually fixed during a page navigation's
+       fade transition, instead of fading out and back in with the
+       rest of the page — see the view-transition meta tag in <head>. */
+    view-transition-name: main-sidebar;
 }
 
 

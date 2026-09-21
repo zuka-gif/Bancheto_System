@@ -316,6 +316,7 @@
         const transaction = {
             id: "t_" + Date.now(),
             date: new Date().toISOString(),
+            role: getCurrentUserRole(),
             items: currentOrder.map(o => ({
                 name: o.name,
                 price: o.price,
@@ -521,6 +522,10 @@
         addMenuForm.addEventListener("submit", handleAddMenuSubmit);
     }
 
-    document.addEventListener("DOMContentLoaded", init);
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init);
+    } else {
+        init();
+    }
 
 })();

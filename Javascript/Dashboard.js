@@ -360,18 +360,9 @@
 
     // ---------- RECENT ACTIVITIES ----------
 
-    function getCurrentUserName() {
-        // Best-effort: reuse whatever the profile popup already stores,
-        // falling back to a generic label if nothing has been saved yet.
-        try {
-            const saved = localStorage.getItem("yesunim_profile");
-            if (saved) {
-                const profile = JSON.parse(saved);
-                return profile.fullname || profile.username || "Admin";
-            }
-        } catch (e) { /* ignore malformed data */ }
-        return "Admin";
-    }
+    // getCurrentUserRole() is defined once in sidebar.js (loaded on
+    // every page) and used as a fallback below for older records
+    // saved before each transaction/log started recording its own role.
 
     function formatActivityTime(dateObj) {
         const now = new Date();
@@ -383,13 +374,14 @@
     }
 
     function buildActivityFeed(transactions, logs) {
-        const userName = getCurrentUserName();
         const feed = [];
 
         transactions.forEach(t => {
             feed.push({
                 date: new Date(t.date),
-                user: userName,
+                // Older transactions recorded before this field existed
+                // fall back to whoever is currently logged in viewing this.
+                user: t.role || getCurrentUserRole(),
                 action: "New Order",
                 module: "Sales",
                 details: `Order total ${currency(Number(t.total) || 0)}`
@@ -403,7 +395,7 @@
 
             feed.push({
                 date: new Date(l.date),
-                user: userName,
+                user: l.role || getCurrentUserRole(),
                 action: l.action,
                 module: "Inventory",
                 details: `${l.itemName} (${changeText}, now ${resulting})`
@@ -629,6 +621,10 @@
         wireNotificationBell();
     }
 
-    document.addEventListener("DOMContentLoaded", init);
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init);
+    } else {
+        init();
+    }
 
 })();

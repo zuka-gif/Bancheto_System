@@ -1,46 +1,53 @@
-fetch("A_Main_sidebar.html")
-    .then(response => {
-        if (!response.ok) {
-            throw new Error("Could not load sidebar");
+// ==========================================
+// ACTIVE SIDEBAR ITEM
+// ==========================================
+
+const currentPage =
+    window.location.pathname
+        .split("/")
+        .pop()
+        .toLowerCase();
+
+document.querySelectorAll(".nav-item").forEach(function (item) {
+
+    const href = item.getAttribute("href");
+
+    // Ignore Logout
+    if (!href || href === "#") {
+        return;
+    }
+
+    const linkPage =
+        href.split("/").pop().toLowerCase();
+
+    if (linkPage === currentPage) {
+        item.classList.add("active");
+    }
+
+});
+
+
+
+
+// ==========================================
+// CURRENT USER ROLE
+//==========================================
+
+function getCurrentUserRole() {
+
+    try {
+        const saved =
+            localStorage.getItem("banchetoCurrentUser") ||
+            sessionStorage.getItem("banchetoCurrentUser");
+
+        if (saved) {
+            const user = JSON.parse(saved);
+            return user.role || "Admin";
         }
+    } catch (e) { /* ignore malformed data */ }
 
-        return response.text();
-    })
-    .then(data => {
-        // Insert sidebar
-        document.getElementById("sidebar-container").innerHTML = data;
-
-        // ==========================================
-        // ACTIVE SIDEBAR ITEM
-        // ==========================================
-
-        const currentPage =
-            window.location.pathname
-                .split("/")
-                .pop()
-                .toLowerCase();
-
-        document.querySelectorAll(".nav-item").forEach(function (item) {
-
-            const href = item.getAttribute("href");
-
-            // Ignore Logout
-            if (!href || href === "#") {
-                return;
-            }
-
-            const linkPage =
-                href.split("/").pop().toLowerCase();
-
-            if (linkPage === currentPage) {
-                item.classList.add("active");
-            }
-
-        });
-    })
-    .catch(error => {
-        console.error("Sidebar error:", error);
-    });
+    return "Admin";
+}
 
 
 

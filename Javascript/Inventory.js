@@ -94,6 +94,7 @@
         logs.push({
             id: "log_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
             date: new Date().toISOString(),
+            role: getCurrentUserRole(),
             itemName: item.name,
             category: item.category,
             action: action, // "Stock In" | "Stock Out" | "Added" | "Edited" | "Deleted"
@@ -658,6 +659,10 @@
         clearSearchBtn.addEventListener("click", clearSearch);
     }
 
-    document.addEventListener("DOMContentLoaded", init);
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init);
+    } else {
+        init();
+    }
 
 })();
