@@ -256,6 +256,29 @@
 
                 <div class="sales-card">
 
+                    <div class="sales-summary" id="salesSummary">
+
+                        <div class="sales-summary-item">
+                            <span class="sales-summary-label">This Week</span>
+                            <strong class="sales-summary-value" id="salesSummaryTotal">₱0.00</strong>
+                        </div>
+
+                        <div class="sales-summary-divider"></div>
+
+                        <div class="sales-summary-item">
+                            <span class="sales-summary-label">Best Day</span>
+                            <strong class="sales-summary-value" id="salesSummaryBestDay">—</strong>
+                        </div>
+
+                        <div class="sales-summary-divider"></div>
+
+                        <div class="sales-summary-item">
+                            <span class="sales-summary-label">Daily Avg</span>
+                            <strong class="sales-summary-value" id="salesSummaryAvg">₱0.00</strong>
+                        </div>
+
+                    </div>
+
                     <div class="chart-container">
 
                         <!-- Y AXIS -->
@@ -315,6 +338,10 @@
                                 <g id="sales-points"></g>
 
                             </svg>
+
+                            <div class="chart-tooltip" id="salesTooltip"></div>
+
+                            <div class="chart-peak-label" id="salesPeakLabel"></div>
 
                         </div>
 

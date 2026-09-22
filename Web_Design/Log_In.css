@@ -57,14 +57,14 @@ body{
 
 .yellow{
     color: rgb(255, 251, 0);
-    font-size:100px;
+    font-size:82px;
     font-family: 'Cormorant Unicase', serif;
     font-style: italic;
 }
 
 .red{
     color:rgb(255, 2, 2);
-    font-size:100px;
+    font-size:82px;
     font-family: 'Cormorant Unicase', serif;
     font-style: italic;
 }

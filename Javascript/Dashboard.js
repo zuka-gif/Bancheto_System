@@ -36,6 +36,13 @@
     const salesPointsGroup = document.getElementById("sales-points");
     const chartYAxis = document.querySelector(".chart-y-axis");
     const chartXAxis = document.querySelector(".chart-x-axis");
+    const chartEl = document.querySelector(".chart");
+    const salesTooltipEl = document.getElementById("salesTooltip");
+    const salesPeakLabelEl = document.getElementById("salesPeakLabel");
+
+    const salesSummaryTotalEl = document.getElementById("salesSummaryTotal");
+    const salesSummaryBestDayEl = document.getElementById("salesSummaryBestDay");
+    const salesSummaryAvgEl = document.getElementById("salesSummaryAvg");
 
     const bestSellingListEl = document.getElementById("best-selling-list");
     const lowStockListEl = document.getElementById("low-stock-list");
@@ -114,36 +121,25 @@
         return Number(lineItem.qty ?? lineItem.quantity ?? 1) || 1;
     }
 
-    /* Today vs YESTERDAY only. Rules:
-         - No sales today AND none yesterday  -> "Stable 0%"
-         - Sales today, none yesterday        -> capped at +100% (can't
-           divide by zero, and any growth from nothing is treated as
-           the maximum the card can show)
-         - Otherwise, plain percent change, clamped to ±100% so one
-           unusually huge day never blows out the card, and shown with
-           its own sign (negative stays negative, e.g. "-25%")
-       direction: 1 = up, -1 = down, 0 = flat/stable */
-    function computeDailyChange(current, yesterday) {
-        if (current === 0 && yesterday === 0) {
-            return { text: "0%", direction: 0 };
+    /* Turns a current-vs-baseline pair into something a human can read.
+       Returns { text, direction } where direction is 1, -1 or 0. */
+    function formatChange(current, baseline) {
+        // Nothing to compare against — a percentage would be meaningless
+        // (dividing by zero), so say so plainly instead of inventing 100%.
+        if (!baseline || baseline <= 0) {
+            return {
+                text: current > 0 ? "New" : "—",
+                direction: current > 0 ? 1 : 0
+            };
         }
 
-        if (yesterday === 0) {
-            return { text: "100%", direction: 1 };
-        }
+        const pct = ((current - baseline) / baseline) * 100;
+        const direction = pct > 0 ? 1 : (pct < 0 ? -1 : 0);
 
-        let pct = ((current - yesterday) / yesterday) * 100;
-
-        if (pct > 100) pct = 100;
-        if (pct < -100) pct = -100;
-
-        const rounded = Math.round(pct);
-
-        if (rounded === 0) {
-            return { text: "0%", direction: 0 };
-        }
-
-        return { text: `${rounded}%`, direction: rounded > 0 ? 1 : -1 };
+        return {
+            text: Math.abs(pct).toFixed(1) + "%",
+            direction: direction
+        };
     }
 
     // ---------- STAT CARDS ----------
@@ -164,18 +160,10 @@
                 iconEl.className = "bx bx-minus";
             }
         }
-
-        // The badge itself (the pill wrapping the icon + text) turns solid
-        // red when the change is negative, so a drop reads as a clear
-        // warning at a glance instead of blending into the card color.
-        const badgeEl = el.closest(".stat-change");
-        if (badgeEl) {
-            badgeEl.classList.toggle("stat-change-negative", change.direction < 0);
-        }
     }
 
-    /* Sum/count over a whole date range — used for both "today" and
-       "yesterday" below (a range of one day each). */
+    /* Sum/count over a whole date range, not just a single day —
+       used to build the comparison window below. */
     function totalsInRange(transactions, rangeStart, rangeEnd) {
         const inRange = transactions.filter(t => {
             const d = new Date(t.date);
@@ -194,16 +182,16 @@
         // The card itself shows TODAY's total, refreshed daily.
         const today = totalsInRange(transactions, startOfDay(now), endOfDay(now));
 
-        // The percentage compares today directly against YESTERDAY.
-        const yesterdayDate = new Date(now);
-        yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-        const yesterday = totalsInRange(transactions, startOfDay(yesterdayDate), endOfDay(yesterdayDate));
+        // The percentage compares today against this same weekday one
+        // week ago — a direct "since last week" comparison.
+        const lastWeekDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+        const lastWeek = totalsInRange(transactions, startOfDay(lastWeekDate), endOfDay(lastWeekDate));
 
         if (statEls.sales) statEls.sales.textContent = currency(today.sales);
-        renderStatChange(statEls.salesChange, computeDailyChange(today.sales, yesterday.sales));
+        renderStatChange(statEls.salesChange, formatChange(today.sales, lastWeek.sales));
 
         if (statEls.orders) statEls.orders.textContent = today.orders;
-        renderStatChange(statEls.ordersChange, computeDailyChange(today.orders, yesterday.orders));
+        renderStatChange(statEls.ordersChange, formatChange(today.orders, lastWeek.orders));
 
         const availableItems = items.filter(i => getStock(i) > 0).length;
         if (statEls.items) statEls.items.textContent = availableItems;
@@ -213,6 +201,65 @@
             return stock > 0 && stock <= LOW_STOCK_THRESHOLD;
         }).length;
         if (statEls.lowStock) statEls.lowStock.textContent = lowStockCount;
+    }
+
+    // ---------- SALES CHART TOOLTIP ----------
+
+    function showSalesTooltip(targetEl, dayDate, value) {
+        if (!salesTooltipEl || !chartEl) return;
+
+        const targetRect = targetEl.getBoundingClientRect();
+        const containerRect = chartEl.getBoundingClientRect();
+
+        const x = targetRect.left + targetRect.width / 2 - containerRect.left;
+        // Never let the tooltip's anchor point go above the space it needs
+        // to draw upward into — otherwise it gets clipped off the top of
+        // the card when the point itself is near the chart's ceiling.
+        const y = Math.max(targetRect.top - containerRect.top, 34);
+
+        const dayLabel = dayDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+
+        salesTooltipEl.innerHTML = `<strong>${currency(value)}</strong><span>${dayLabel}</span>`;
+        salesTooltipEl.style.left = `${x}px`;
+        salesTooltipEl.style.top = `${y}px`;
+        salesTooltipEl.classList.add("show");
+    }
+
+    function hideSalesTooltip() {
+        if (salesTooltipEl) salesTooltipEl.classList.remove("show");
+    }
+
+    // Cache of the current best-day point so the callout badge can be
+    // re-aligned on window resize (the SVG reflows, but the underlying
+    // data hasn't changed) without needing a full chart re-render.
+    let currentPeakIndex = -1;
+    let currentPeakDay = null;
+    let currentPeakValue = 0;
+
+    function positionSalesPeakLabel() {
+        if (!salesPeakLabelEl || !chartEl) return;
+
+        if (currentPeakIndex < 0 || currentPeakValue <= 0) {
+            salesPeakLabelEl.classList.remove("show");
+            return;
+        }
+
+        const hitEl = document.querySelector(`.sales-point-hit[data-index="${currentPeakIndex}"]`);
+        if (!hitEl) {
+            salesPeakLabelEl.classList.remove("show");
+            return;
+        }
+
+        const targetRect = hitEl.getBoundingClientRect();
+        const containerRect = chartEl.getBoundingClientRect();
+
+        const x = targetRect.left + targetRect.width / 2 - containerRect.left;
+        const y = targetRect.top - containerRect.top;
+
+        salesPeakLabelEl.textContent = currency(currentPeakValue);
+        salesPeakLabelEl.style.left = `${x}px`;
+        salesPeakLabelEl.style.top = `${y}px`;
+        salesPeakLabelEl.classList.add("show");
     }
 
     // ---------- SALES OVERVIEW CHART (last 7 days) ----------
@@ -234,8 +281,11 @@
         });
 
         const maxValue = Math.max(...dailyTotals, 1);
-        // Round the axis ceiling up to a "nice" number so labels aren't jagged
-        const niceMax = Math.ceil(maxValue / 5) * 5 || 5;
+        // Round the axis ceiling up to a "nice" number, with ~15% headroom
+        // built in above the actual highest value. Without this, the
+        // tallest point sits flush against the very top of the chart with
+        // nowhere for its dot (or the peak-day callout) to breathe.
+        const niceMax = Math.ceil((maxValue * 1.15) / 5) * 5 || 5;
 
         // ---- Y AXIS LABELS (7 labels, top = niceMax, bottom = 0) ----
         if (chartYAxis) {
@@ -280,12 +330,60 @@
 
             // A small dot at each day makes individual values legible
             // instead of leaving people to guess from the line alone.
+            // Each dot is paired with a larger, invisible "hit" circle —
+            // the visible dot alone is too small a target to hover
+            // reliably — which drives the tooltip and the dot's grow
+            // effect together.
             if (salesPointsGroup) {
-                salesPointsGroup.innerHTML = coords.map(p => `
-                    <circle class="sales-point" cx="${p.x}" cy="${p.y}" r="4"></circle>
+                salesPointsGroup.innerHTML = coords.map((p, idx) => `
+                    <circle class="sales-point" data-index="${idx}" cx="${p.x}" cy="${p.y}" r="4"></circle>
+                    <circle class="sales-point-hit" data-index="${idx}" cx="${p.x}" cy="${p.y}" r="12"></circle>
                 `).join("");
+
+                salesPointsGroup.querySelectorAll(".sales-point-hit").forEach(hitEl => {
+                    const idx = Number(hitEl.dataset.index);
+                    const dotEl = salesPointsGroup.querySelector(`.sales-point[data-index="${idx}"]`);
+
+                    hitEl.addEventListener("mouseenter", () => {
+                        if (dotEl) dotEl.classList.add("sales-point-active");
+                        showSalesTooltip(hitEl, days[idx], dailyTotals[idx]);
+                    });
+
+                    hitEl.addEventListener("mouseleave", () => {
+                        if (dotEl) dotEl.classList.remove("sales-point-active");
+                        hideSalesTooltip();
+                    });
+                });
             }
         }
+
+        // ---- SUMMARY STRIP: This Week / Best Day / Daily Avg ----
+        const weekTotal = dailyTotals.reduce((s, v) => s + v, 0);
+        const dailyAvg = weekTotal / (dailyTotals.length || 1);
+
+        let bestIdx = 0;
+        dailyTotals.forEach((v, idx) => {
+            if (v > dailyTotals[bestIdx]) bestIdx = idx;
+        });
+
+        if (salesSummaryTotalEl) salesSummaryTotalEl.textContent = currency(weekTotal);
+
+        if (salesSummaryBestDayEl) {
+            salesSummaryBestDayEl.textContent = weekTotal > 0
+                ? `${days[bestIdx].toLocaleDateString("en-US", { weekday: "short" })} · ${currency(dailyTotals[bestIdx])}`
+                : "—";
+        }
+
+        if (salesSummaryAvgEl) salesSummaryAvgEl.textContent = currency(dailyAvg);
+
+        currentPeakIndex = weekTotal > 0 ? bestIdx : -1;
+        currentPeakDay = weekTotal > 0 ? days[bestIdx] : null;
+        currentPeakValue = weekTotal > 0 ? dailyTotals[bestIdx] : 0;
+
+        // Position after the browser has actually laid out the new
+        // points — otherwise getBoundingClientRect can read stale
+        // coordinates from before this render.
+        requestAnimationFrame(positionSalesPeakLabel);
     }
 
     // ---------- BEST SELLING PRODUCTS ----------
@@ -349,10 +447,8 @@
             return `
                 <div class="stock-item">
                     <div class="stock-image"></div>
-                    <div class="stock-info">
-                        <div>${i.name || "Unnamed item"}</div>
-                        <div class="stock-quantity">${label}</div>
-                    </div>
+                    <div class="stock-name">${i.name || "Unnamed item"}</div>
+                    <div class="stock-quantity">${label}</div>
                 </div>
             `;
         }).join("");
@@ -360,9 +456,18 @@
 
     // ---------- RECENT ACTIVITIES ----------
 
-    // getCurrentUserRole() is defined once in sidebar.js (loaded on
-    // every page) and used as a fallback below for older records
-    // saved before each transaction/log started recording its own role.
+    function getCurrentUserName() {
+        // Best-effort: reuse whatever the profile popup already stores,
+        // falling back to a generic label if nothing has been saved yet.
+        try {
+            const saved = localStorage.getItem("yesunim_profile");
+            if (saved) {
+                const profile = JSON.parse(saved);
+                return profile.fullname || profile.username || "Admin";
+            }
+        } catch (e) { /* ignore malformed data */ }
+        return "Admin";
+    }
 
     function formatActivityTime(dateObj) {
         const now = new Date();
@@ -374,14 +479,13 @@
     }
 
     function buildActivityFeed(transactions, logs) {
+        const userName = getCurrentUserName();
         const feed = [];
 
         transactions.forEach(t => {
             feed.push({
                 date: new Date(t.date),
-                // Older transactions recorded before this field existed
-                // fall back to whoever is currently logged in viewing this.
-                user: t.role || getCurrentUserRole(),
+                user: userName,
                 action: "New Order",
                 module: "Sales",
                 details: `Order total ${currency(Number(t.total) || 0)}`
@@ -395,7 +499,7 @@
 
             feed.push({
                 date: new Date(l.date),
-                user: l.role || getCurrentUserRole(),
+                user: userName,
                 action: l.action,
                 module: "Inventory",
                 details: `${l.itemName} (${changeText}, now ${resulting})`
@@ -615,16 +719,21 @@
         renderActivities(transactions, logs);
     }
 
+    function wireChartResize() {
+        let resizeTimer = null;
+        window.addEventListener("resize", () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(positionSalesPeakLabel, 100);
+        });
+    }
+
     function init() {
         refresh();
         wireViewAllButtons();
         wireNotificationBell();
+        wireChartResize();
     }
 
-    if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", init);
-    } else {
-        init();
-    }
+    document.addEventListener("DOMContentLoaded", init);
 
 })();

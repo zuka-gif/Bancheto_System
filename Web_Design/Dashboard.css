@@ -71,8 +71,6 @@
     border: none;
     outline: none;
 
-    background: transparent;
-
     cursor: pointer;
 }
 
@@ -82,21 +80,34 @@
 }
 
 .notifications {
-    width: 24px;
-    height: 28px;
+    width: 40px;
+    height: 40px;
 
     position: relative;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(40, 42, 46, 0.75);
+    border-radius: 50%;
+
+    transition: background 0.15s ease;
+}
+
+.notifications:hover {
+    background: rgba(40, 42, 46, 0.88);
 }
 
 .notifications i {
-    font-size: 22px;
+    font-size: 20px;
 }
 
 .notification-badge {
     position: absolute;
 
-    top: -4px;
-    right: -6px;
+    top: 1px;
+    right: 1px;
 
     min-width: 16px;
     height: 16px;
@@ -310,12 +321,25 @@
 
 
 .setting {
-    width: 24px;
-    height: 28px;
+    width: 40px;
+    height: 40px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(40, 42, 46, 0.75);
+    border-radius: 50%;
+
+    transition: background 0.15s ease;
+}
+
+.setting:hover {
+    background: rgba(40, 42, 46, 0.88);
 }
 
 .setting i {
-    font-size: 22px;
+    font-size: 20px;
 }
 
 
@@ -460,8 +484,6 @@
 
     font-size: 12px;
     font-weight: 700;
-
-    transition: background 0.15s ease, color 0.15s ease;
 }
 
 .stat-change i {
@@ -473,23 +495,6 @@
 
     font-weight: 500;
     opacity: 0.85;
-}
-
-/* Negative change — solid red pill instead of the default translucent
-   white one, so a drop reads as a clear warning at a glance regardless
-   of which card color it's sitting on. */
-.stat-change.stat-change-negative {
-    background: #ffffff;
-    color: #cc292d;
-}
-
-.stat-change.stat-change-negative i {
-    color: #cc292d;
-}
-
-.stat-change.stat-change-negative .stat-change-label {
-    color: #cc292d;
-    opacity: 0.75;
 }
 
 
@@ -645,6 +650,64 @@
 }
 
 
+/* SALES SUMMARY STRIP
+   Quick-glance numbers so the chart's story doesn't only exist on
+   hover — total for the week, which day was best, and the daily
+   average, all pulled from the same data driving the line itself. */
+
+.sales-summary {
+    display: flex;
+    align-items: center;
+
+    flex-shrink: 0;
+
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.sales-summary-item {
+    flex: 1;
+    min-width: 0;
+
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.sales-summary-label {
+    color: #888;
+
+    font-size: 10.5px;
+    font-weight: 700;
+
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.sales-summary-value {
+    color: #222;
+
+    font-size: 15px;
+    font-weight: 800;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sales-summary-divider {
+    width: 1px;
+    height: 26px;
+    flex-shrink: 0;
+
+    background: #eee;
+
+    margin: 0 16px;
+}
+
+
 /* CHART CONTAINER */
 
 .chart-container {
@@ -760,10 +823,150 @@
     vector-effect: non-scaling-stroke;
 
     transition: r 0.15s ease;
+
+    pointer-events: none;
 }
 
-.sales-point:hover {
+/* Toggled by JS when the (larger, invisible) hit circle underneath
+   is hovered — this is what actually grows on hover, since the
+   visible dot itself is too small a target to hover reliably. */
+.sales-point.sales-point-active {
     r: 6;
+}
+
+.sales-point-hit {
+    fill: transparent;
+    pointer-events: all;
+    cursor: pointer;
+}
+
+.chart-tooltip {
+    position: absolute;
+
+    left: 0;
+    top: 0;
+
+    transform: translate(-50%, calc(-100% - 12px));
+
+    padding: 6px 10px;
+
+    background: #262626;
+    border-radius: 8px;
+
+    color: #ffffff;
+
+    font-size: 11px;
+
+    white-space: nowrap;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+
+    opacity: 0;
+    pointer-events: none;
+
+    transition: opacity 0.12s ease;
+
+    z-index: 5;
+}
+
+.chart-tooltip::after {
+    content: "";
+
+    position: absolute;
+
+    left: 50%;
+    bottom: -4px;
+
+    width: 8px;
+    height: 8px;
+
+    background: #262626;
+
+    transform: translateX(-50%) rotate(45deg);
+}
+
+.chart-tooltip.show {
+    opacity: 1;
+}
+
+/* Permanent callout on the week's best-selling day — unlike the hover
+   tooltip, this one stays visible at all times so the chart's headline
+   number doesn't require any interaction to see. */
+.chart-peak-label {
+    position: absolute;
+
+    left: 0;
+    top: 0;
+
+    transform: translate(-50%, calc(-100% - 14px));
+
+    display: none;
+
+    align-items: center;
+    gap: 5px;
+
+    padding: 4px 10px;
+
+    background: #ffffff;
+    border: 1.5px solid #8d0808;
+    border-radius: 999px;
+
+    color: #8d0808;
+
+    font-size: 11px;
+    font-weight: 800;
+
+    white-space: nowrap;
+
+    box-shadow: 0 4px 10px rgba(141, 8, 8, 0.15);
+
+    pointer-events: none;
+
+    z-index: 4;
+}
+
+.chart-peak-label.show {
+    display: flex;
+}
+
+.chart-peak-label::before {
+    content: "\2605";
+
+    font-size: 10px;
+    color: #d9a400;
+}
+
+.chart-peak-label::after {
+    content: "";
+
+    position: absolute;
+
+    left: 50%;
+    bottom: -6px;
+
+    width: 7px;
+    height: 7px;
+
+    background: #ffffff;
+    border-right: 1.5px solid #8d0808;
+    border-bottom: 1.5px solid #8d0808;
+
+    transform: translateX(-50%) rotate(45deg);
+}
+
+.chart-tooltip strong {
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.chart-tooltip span {
+    color: rgba(255, 255, 255, 0.7);
+
+    font-size: 10px;
+    font-weight: 600;
 }
 
 
@@ -946,7 +1149,6 @@
 
     display: flex;
     align-items: center;
-    justify-content: space-between;
 
     gap: 10px;
 
@@ -977,8 +1179,15 @@
     border-radius: 8px;
 }
 
-.stock-info {
-    text-align: right;
+.stock-name {
+    flex: 1;
+    min-width: 0;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    text-align: left;
 
     font-size: 12px;
     font-weight: 700;
@@ -987,11 +1196,11 @@
 }
 
 .stock-quantity {
+    flex-shrink: 0;
+
     display: inline-block;
 
-    margin-top: 3px;
-
-    padding: 2px 8px;
+    padding: 3px 9px;
 
     background: #fdeeee;
 

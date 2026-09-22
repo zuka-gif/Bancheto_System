@@ -357,24 +357,27 @@
     overflow-y: auto;
 
     padding-right: 8px;
+
+    scrollbar-width: thin;
+    scrollbar-color: #c24d4d #f1e3e0;
 }
 
 .inventory-scroll::-webkit-scrollbar {
-    width: 7px;
+    width: 9px;
 }
 
 .inventory-scroll::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: #f1e3e0;
     border-radius: 10px;
 }
 
 .inventory-scroll::-webkit-scrollbar-thumb {
-    background: #c5c5c5;
+    background: #c24d4d;
     border-radius: 10px;
 }
 
 .inventory-scroll::-webkit-scrollbar-thumb:hover {
-    background: #999;
+    background: #a03d3d;
 }
 
 
@@ -536,23 +539,27 @@
 
 .inventory-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 18px;
+
+    align-items: stretch;
 }
 
 .inventory-card {
     position: relative;
 
     background: linear-gradient(160deg, #8a1b1b, #6d1212);
-    border-radius: 12px;
+    border-radius: 14px;
     border-left: 5px solid transparent;
 
-    padding: 16px;
+    padding: 18px;
 
     display: flex;
     flex-direction: column;
 
-    gap: 11px;
+    gap: 13px;
+
+    min-height: 192px;
 
     box-shadow: 0 4px 12px rgba(90, 15, 15, 0.25);
 
@@ -561,7 +568,7 @@
 
 .inventory-card:hover {
     transform: translateY(-3px);
-    box-shadow: 0 10px 22px rgba(90, 15, 15, 0.38);
+    box-shadow: 0 12px 26px rgba(90, 15, 15, 0.4);
 }
 
 .inventory-card.status-in {
@@ -640,16 +647,18 @@
 
 .inventory-card-top {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 11px;
+
+    min-width: 0;
 }
 
 .inventory-image {
-    width: 46px;
-    height: 46px;
+    width: 54px;
+    height: 54px;
     flex-shrink: 0;
 
-    border-radius: 9px;
+    border-radius: 10px;
     border: 1px solid rgba(255, 255, 255, 0.4);
 
     object-fit: cover;
@@ -662,37 +671,46 @@
 
     color: rgba(255, 255, 255, 0.6);
 
-    font-size: 18px;
+    font-size: 20px;
+
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
 .inventory-info {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 5px;
 
     min-width: 0;
+    flex: 1;
 }
 
 .inventory-name {
     color: #ffffff;
 
-    font-size: 13.5px;
-    font-weight: 700;
+    font-size: 14px;
+    font-weight: 800;
 
     line-height: 1.3;
+    letter-spacing: 0.1px;
 
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 .inventory-qty {
     color: #ffd873;
 
-    font-size: 12px;
+    font-size: 12.5px;
     font-weight: 700;
 
     font-variant-numeric: tabular-nums;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .inventory-price {
@@ -702,6 +720,10 @@
     font-weight: 600;
 
     font-variant-numeric: tabular-nums;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .status-tag {
@@ -709,18 +731,30 @@
     align-items: center;
     gap: 5px;
 
-    font-size: 10px;
+    align-self: flex-start;
+    max-width: 100%;
+    box-sizing: border-box;
+
+    padding: 3px 9px;
+    border-radius: 999px;
+
+    font-size: 9.5px;
     font-weight: 800;
 
     letter-spacing: 0.3px;
     text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    margin-top: 2px;
 }
 
 .status-tag::before {
     content: "";
 
-    width: 7px;
-    height: 7px;
+    width: 6px;
+    height: 6px;
 
     border-radius: 50%;
 
@@ -729,14 +763,17 @@
 
 .status-tag.status-in {
     color: #8fe396;
+    background: rgba(143, 227, 150, 0.16);
 }
 
 .status-tag.status-low {
     color: #ffcf5c;
+    background: rgba(255, 207, 92, 0.16);
 }
 
 .status-tag.status-out {
     color: #ff8a80;
+    background: rgba(255, 138, 128, 0.16);
 }
 
 /* A gentle pulse on the dot draws the eye to items that need
@@ -756,25 +793,25 @@
     justify-content: space-between;
 
     background: rgba(255, 255, 255, 0.14);
-    border-radius: 7px;
+    border-radius: 8px;
 
-    padding: 6px 8px;
+    padding: 7px 9px;
 
-    margin-top: 2px;
+    margin-top: auto;
 }
 
 .qty-btn {
-    width: 23px;
-    height: 23px;
+    width: 25px;
+    height: 25px;
 
     border: none;
-    border-radius: 6px;
+    border-radius: 7px;
 
     background: rgba(255, 255, 255, 0.92);
 
     color: #7a1414;
 
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 800;
 
     display: flex;
@@ -783,12 +820,18 @@
 
     cursor: pointer;
 
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+
     transition: background 0.12s ease, transform 0.1s ease;
 }
 
 .qty-btn:hover {
     background: #ffffff;
-    transform: scale(1.08);
+    transform: scale(1.1);
+}
+
+.qty-btn:active {
+    transform: scale(0.95);
 }
 
 .qty-label {
@@ -819,11 +862,49 @@
 .inventory-table {
     width: 100%;
     border-collapse: collapse;
+    table-layout: fixed;
 
     border-radius: 14px;
     overflow: hidden;
 
     box-shadow: 0 4px 16px rgba(30, 30, 40, 0.07);
+}
+
+/* Fixed proportions keep Status and Action from stretching into wide,
+   mostly-empty columns that make their centered content look adrift */
+.inventory-table th:nth-child(1),
+.inventory-table td:nth-child(1) {
+    width: 27%;
+}
+
+.inventory-table th:nth-child(2),
+.inventory-table td:nth-child(2) {
+    width: 14%;
+}
+
+.inventory-table th:nth-child(3),
+.inventory-table td:nth-child(3) {
+    width: 10%;
+}
+
+.inventory-table th:nth-child(4),
+.inventory-table td:nth-child(4) {
+    width: 10%;
+}
+
+.inventory-table th:nth-child(5),
+.inventory-table td:nth-child(5) {
+    width: 14%;
+}
+
+.inventory-table th:nth-child(6),
+.inventory-table td:nth-child(6) {
+    width: 15%;
+}
+
+.inventory-table th:nth-child(7),
+.inventory-table td:nth-child(7) {
+    width: 10%;
 }
 
 .inventory-table thead tr {
@@ -853,6 +934,13 @@
     box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.12);
 }
 
+/* Status and Action read as state/controls rather than left-to-right
+   text, so they're centered while the text columns stay left-aligned */
+.inventory-table thead th:nth-child(6),
+.inventory-table thead th:nth-child(7) {
+    text-align: center;
+}
+
 .inventory-table tbody tr {
     background: #ffffff;
     border-bottom: 1px solid #f0f0f0;
@@ -865,7 +953,7 @@
 }
 
 .inventory-table tbody tr:hover {
-    background: #fdeeee;
+    background: #f0caca;
 }
 
 .inventory-table tbody tr:last-child {
@@ -889,13 +977,26 @@
     font-weight: 600;
 }
 
+.inventory-table tbody td:nth-child(6),
+.inventory-table tbody td:nth-child(7) {
+    text-align: center;
+}
+
 .inventory-product-cell {
     display: flex;
     align-items: center;
     gap: 11px;
 
+    min-width: 0;
+
     font-weight: 700;
     color: #222;
+}
+
+.inventory-product-cell span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .inventory-thumb {
@@ -964,6 +1065,7 @@
 .action-cell {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 10px;
 }
 

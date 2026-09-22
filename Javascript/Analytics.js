@@ -122,15 +122,13 @@
         }).length;
     }
 
-    // Estimated cost: value of stock restocked ("Stock In") during the
-    // period, priced using each product's CURRENT price (see note above).
-    function computeCostEstimate(logs, items) {
-        const priceByName = {};
-        items.forEach(i => { priceByName[i.name] = Number(i.price) || 0; });
-
-        return logs
-            .filter(l => l.action === "Stock In" && l.change > 0)
-            .reduce((sum, l) => sum + l.change * (priceByName[l.itemName] || 0), 0);
+    // Total Cost — a plain sum of each item's unit price (NOT stock ×
+    // price). Mirrors the "Total" row under the Price column on the
+    // Reports page's Inventory Report exactly, and is the single source
+    // of "Total Cost" used everywhere on this page (the stat card above
+    // AND the Revenue Summary panel below), so both always agree.
+    function computeTotalInventoryPrice(items) {
+        return items.reduce((sum, i) => sum + (Number(i.price) || 0), 0);
     }
 
     function computeItemSalesCounts(transactions) {
@@ -205,7 +203,7 @@
     function renderStatCards(metrics, lowStockCount) {
         totalSalesValueEl.textContent = currency(metrics.totalSales);
         totalOrdersValueEl.textContent = metrics.totalOrders;
-        totalCostValueEl.textContent = currency(metrics.totalCost);
+        totalCostValueEl.textContent = currency(metrics.totalInventoryPrice);
         lowStockValueEl.textContent = lowStockCount;
     }
 
@@ -302,11 +300,11 @@
     }
 
     function renderRevenueSummary(metrics) {
-        const netRevenue = metrics.totalSales - metrics.totalCost;
+        const netRevenue = metrics.totalSales - metrics.totalInventoryPrice;
         const margin = metrics.totalSales ? (netRevenue / metrics.totalSales) * 100 : 0;
 
         grossRevenueValueEl.textContent = currency(metrics.totalSales);
-        totalCostSummaryValueEl.textContent = currency(metrics.totalCost);
+        totalCostSummaryValueEl.textContent = currency(metrics.totalInventoryPrice);
         netRevenueValueEl.textContent = currency(netRevenue);
         profitMarginValueEl.textContent = `${margin.toFixed(1)}%`;
     }
@@ -319,14 +317,12 @@
 
         const items = loadInventoryItems();
         const allTransactions = loadTransactions();
-        const allLogs = loadInventoryLogs();
 
         const transactions = allTransactions.filter(t => inRange(new Date(t.date), start, end));
-        const logs = allLogs.filter(l => inRange(new Date(l.date), start, end));
 
         const salesMetrics = computeSalesMetrics(transactions);
-        const totalCost = computeCostEstimate(logs, items);
-        const metrics = { ...salesMetrics, totalCost };
+        const totalInventoryPrice = computeTotalInventoryPrice(items);
+        const metrics = { ...salesMetrics, totalInventoryPrice };
 
         const lowStockCount = computeLowStockCount(items);
         const bestSelling = computeBestSelling(transactions);

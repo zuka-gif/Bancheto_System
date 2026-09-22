@@ -47,6 +47,7 @@
 
     // ---------- ELEMENTS ----------
     const categoryTabsEl = document.getElementById("categoryTabs");
+    const inventoryScrollEl = document.getElementById("inventoryScroll");
     const sectionsEl = document.getElementById("inventorySections");
     const tableEl = document.getElementById("inventoryTable");
     const tableBodyEl = document.getElementById("inventoryTableBody");
@@ -105,11 +106,36 @@
         localStorage.setItem(LOGS_KEY, JSON.stringify(logs));
     }
 
+    // Normalizes a stored item so missing/legacy fields (an older item
+    // saved before "unit" or "price" existed, for example) never render
+    // as the literal text "undefined" — they fall back to sane defaults
+    // instead, without silently discarding whatever data is there.
+    // A field can be missing (real undefined) or, from an older bug,
+    // hold the literal text "undefined"/"null" — both need the fallback.
+    function cleanText(value, fallback) {
+        if (!value) return fallback;
+        const trimmed = String(value).trim();
+        if (!trimmed || trimmed === "undefined" || trimmed === "null") return fallback;
+        return trimmed;
+    }
+
+    function normalizeItem(item) {
+        return {
+            id: item.id,
+            name: cleanText(item.name, "Unnamed Product"),
+            category: cleanText(item.category, "Others"),
+            stock: Number.isFinite(item.stock) ? item.stock : 0,
+            unit: cleanText(item.unit, "pcs"),
+            price: Number.isFinite(item.price) ? item.price : 0,
+            image: item.image || ""
+        };
+    }
+
     function loadItems() {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
             try {
-                items = JSON.parse(saved);
+                items = JSON.parse(saved).map(normalizeItem);
                 return;
             } catch (e) {
                 // fall through to default
@@ -226,6 +252,14 @@
 
             btn.addEventListener("click", () => {
                 activeCategory = values[index];
+
+                // Without this, switching to a shorter list while
+                // scrolled down leaves the sticky table header pinned
+                // at the old scroll offset, which looks like it jumps.
+                if (inventoryScrollEl) {
+                    inventoryScrollEl.scrollTop = 0;
+                }
+
                 renderTabs();
                 renderView();
             });
@@ -330,7 +364,7 @@
                 <td>${item.stock}</td>
                 <td>${item.unit}</td>
                 <td>${formatPrice(item.price)}</td>
-                <td class="status-cell ${status.className}">${status.label}</td>
+                <td class="status-cell ${status.className}"><span class="status-pill">${status.label}</span></td>
                 <td>
                     <div class="action-cell">
                         <button type="button" class="edit-product-btn" title="Edit"><i class='bx bx-edit'></i></button>
@@ -365,7 +399,7 @@
             <div class="inventory-card-top">
                 ${imageHtml}
                 <div class="inventory-info">
-                    <div class="inventory-name">${highlightMatch(item.name)}</div>
+                    <div class="inventory-name" title="${item.name}">${highlightMatch(item.name)}</div>
                     <div class="inventory-qty">${item.stock} ${item.unit}</div>
                     <div class="inventory-price">${formatPrice(item.price)} / ${item.unit}</div>
                     <div class="status-tag ${status.className}">${status.label}</div>
