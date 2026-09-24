@@ -18,6 +18,7 @@
     const INVENTORY_ITEMS_KEY = "yesunim_inventoryItems";
     const INVENTORY_LOGS_KEY = "yesunim_inventoryLogs";
     const DISMISSED_NOTIFICATIONS_KEY = "yesunim_dismissedNotifications";
+    const CURRENT_USER_KEY = "banchetoCurrentUser"; // set by User.js at Sign In
     const LOW_STOCK_THRESHOLD = 5; // must match Inventory.js
 
     // ---------- ELEMENTS ----------
@@ -470,9 +471,31 @@
 
     // ---------- RECENT ACTIVITIES ----------
 
+    // Reads the account that's actually signed in right now — the same
+    // object User.js writes to sessionStorage (or localStorage, if
+    // "Remember me" was checked) when Sign In succeeds. This is what
+    // holds the real "Owner" / "Manager" / "Cashier" role, as opposed
+    // to getCurrentUserName() below, which only has a display name.
+    function getCurrentSession() {
+        try {
+            const raw =
+                sessionStorage.getItem(CURRENT_USER_KEY) ||
+                localStorage.getItem(CURRENT_USER_KEY);
+
+            return raw ? JSON.parse(raw) : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
     function getCurrentUserName() {
-        // Best-effort: reuse whatever the profile popup already stores,
-        // falling back to a generic label if nothing has been saved yet.
+        const session = getCurrentSession();
+        if (session && (session.fullname || session.username)) {
+            return session.fullname || session.username;
+        }
+
+        // Best-effort fallback: reuse whatever the profile popup already
+        // stores, in case the session object above isn't available.
         try {
             const saved = localStorage.getItem("yesunim_profile");
             if (saved) {
@@ -480,7 +503,27 @@
                 return profile.fullname || profile.username || "Admin";
             }
         } catch (e) { /* ignore malformed data */ }
+
         return "Admin";
+    }
+
+    // The Role column shows this — the account's actual role
+    // (Owner / Manager / Cashier), not their name.
+    function getCurrentUserRole() {
+        const session = getCurrentSession();
+        if (session && session.role) {
+            return session.role;
+        }
+
+        try {
+            const saved = localStorage.getItem("yesunim_profile");
+            if (saved) {
+                const profile = JSON.parse(saved);
+                if (profile.role) return profile.role;
+            }
+        } catch (e) { /* ignore malformed data */ }
+
+        return "Unknown";
     }
 
     function formatActivityTime(dateObj) {
@@ -494,12 +537,14 @@
 
     function buildActivityFeed(transactions, logs) {
         const userName = getCurrentUserName();
+        const userRole = getCurrentUserRole();
         const feed = [];
 
         transactions.forEach(t => {
             feed.push({
                 date: new Date(t.date),
                 user: userName,
+                role: userRole,
                 action: "New Order",
                 module: "Sales",
                 details: `Order total ${currency(Number(t.total) || 0)}`
@@ -514,6 +559,7 @@
             feed.push({
                 date: new Date(l.date),
                 user: userName,
+                role: userRole,
                 action: l.action,
                 module: "Inventory",
                 details: `${l.itemName} (${changeText}, now ${resulting})`
@@ -547,7 +593,7 @@
             return `
                 <tr>
                     <td>${formatActivityTime(entry.date)}</td>
-                    <td>${entry.user}</td>
+                    <td>${entry.role}</td>
                     <td><span class="action-badge ${badgeClass}">${entry.action}</span></td>
                     <td>${entry.module}</td>
                     <td>${entry.details}</td>

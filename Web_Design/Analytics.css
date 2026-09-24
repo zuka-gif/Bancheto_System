@@ -84,12 +84,22 @@ html, body {
     border-color: #cfd4da;
 }
 
+
+/* ========================================
+   MONTH / DATE PICKER
+   Enhanced so it visibly reads as a clickable
+   control — a clear border, a hover lift with
+   shadow + tint, a focus ring when the native
+   picker is open, and a small "chevron" cue so
+   it doesn't look like static, unclickable text.
+======================================== */
+
 .date-picker-box {
     height: 40px;
 
-    padding: 0 14px;
+    padding: 0 12px 0 14px;
 
-    border: 1px solid #e3e6ea;
+    border: 1.5px solid #dfe3e8;
     border-radius: 8px;
 
     background: #ffffff;
@@ -102,11 +112,38 @@ html, body {
     color: #333;
 
     box-shadow: 0 2px 6px rgba(30, 30, 40, 0.05);
+
+    cursor: pointer;
+
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+.date-picker-box:hover {
+    border-color: #8b0000;
+    background: #fffaf9;
+
+    box-shadow: 0 4px 12px rgba(139, 0, 0, 0.12);
+
+    transform: translateY(-1px);
+}
+
+.date-picker-box:active {
+    transform: translateY(0);
+}
+
+/* Ring shown while the native month picker is actually open/focused,
+   so there's clear feedback the click registered. */
+.date-picker-box:focus-within {
+    border-color: #8b0000;
+
+    box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.14);
 }
 
 .date-picker-box i {
     font-size: 15px;
     color: #8b0000;
+
+    pointer-events: none;
 }
 
 .date-picker-box input[type="month"] {
@@ -115,11 +152,39 @@ html, body {
     background: transparent;
 
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
     font-family: inherit;
     color: #333;
 
     cursor: pointer;
+
+    /* Let the click-through on the container also land cleanly
+       on the input itself, and stop it clipping on small values */
+    min-width: 92px;
+}
+
+/* Small chevron on the right, echoing a native <select>, so the whole
+   control reads as "click me to change" rather than plain text with
+   an icon glued to the front of it. */
+.date-picker-box::after {
+    content: "\ea4d"; /* boxicons bx-chevron-down glyph */
+    font-family: 'boxicons';
+
+    font-size: 15px;
+    color: #999;
+
+    margin-left: 2px;
+
+    transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.date-picker-box:hover::after {
+    color: #8b0000;
+}
+
+.date-picker-box:focus-within::after {
+    color: #8b0000;
+    transform: rotate(180deg);
 }
 
 .filter-btn {
