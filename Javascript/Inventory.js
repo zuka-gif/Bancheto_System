@@ -3,7 +3,8 @@
    Handles: category tabs, sectioned card grid, quantity
    +/-, In Stock/Low Stock/Out of Stock status decision,
    Add/Edit/Delete Product (with confirm), search/filter,
-   and activity logging for the Reports page.
+   unit dropdown (typeable), and activity logging for the
+   Reports page.
 ===================================================== */
 
 (function () {
@@ -16,6 +17,10 @@
     // The Category field on the form is now free text, so any category
     // typed there will automatically get its own tab too.
     const baseCategories = ["Meat", "Sea Food", "Vegetables", "Others"];
+
+    // Suggested units shown in the Unit dropdown. The field is still
+    // typeable, so any custom unit can be entered as well.
+    const baseUnits = ["kg", "g", "pcs", "L", "mL", "pack", "box", "bottle", "can", "sack", "dozen"];
 
     // ---------- DEFAULT SEED DATA (used only the first time) ----------
     const defaultItems = [
@@ -44,6 +49,7 @@
     let searchQuery = "";
     let editingItemId = null; // null = adding a new product, otherwise editing this item's id
     let pendingImageDataUrl = "";
+    let previousUnit = "";    // remembered so an emptied Unit field can be restored
 
     // ---------- ELEMENTS ----------
     const categoryTabsEl = document.getElementById("categoryTabs");
@@ -81,6 +87,8 @@
     const productUnitInput = document.getElementById("productUnitInput");
     const productPriceInput = document.getElementById("productPriceInput");
     const categoryListEl = document.getElementById("categoryList");
+    const unitListEl = document.getElementById("unitList");
+    const unitChevronEl = document.getElementById("unitChevron");
 
     // ---------- STORAGE ----------
 
@@ -215,6 +223,49 @@
             option.value = cat;
             categoryListEl.appendChild(option);
         });
+    }
+
+    // ---------- UNIT DROPDOWN (base units + any custom unit already used) ----------
+
+    function getAllUnits() {
+        const result = [...baseUnits];
+
+        items.forEach(item => {
+            const u = (item.unit || "").trim();
+            if (u && !result.some(x => x.toLowerCase() === u.toLowerCase())) {
+                result.push(u);
+            }
+        });
+
+        return result;
+    }
+
+    function refreshUnitDatalist() {
+        if (!unitListEl) return;
+        unitListEl.innerHTML = "";
+        getAllUnits().forEach(unit => {
+            const option = document.createElement("option");
+            option.value = unit;
+            unitListEl.appendChild(option);
+        });
+    }
+
+    // Browsers only list datalist options that match the current text.
+    // Clearing the field on focus shows the full list; if the user leaves
+    // it empty, the previous value comes back.
+    function showAllUnits() {
+        if (productUnitInput.value !== "") previousUnit = productUnitInput.value;
+        productUnitInput.value = "";
+
+        if (typeof productUnitInput.showPicker === "function") {
+            try { productUnitInput.showPicker(); } catch (e) { /* needs user gesture */ }
+        }
+    }
+
+    function restoreUnitIfEmpty() {
+        if (productUnitInput.value.trim() === "") {
+            productUnitInput.value = previousUnit;
+        }
     }
 
     // ---------- CATEGORY ICON (for "All Items" section headers) ----------
@@ -558,9 +609,11 @@
         addProductForm.reset();
         productStockInput.value = 0;
         productUnitInput.value = "kg";
+        previousUnit = "kg";
         productPriceInput.value = 0;
 
         refreshCategoryDatalist();
+        refreshUnitDatalist();
 
         // Pre-fill the category the user is currently viewing,
         // since Add Product is now only shown inside a category tab.
@@ -580,11 +633,13 @@
         saveProductBtn.textContent = "Update Product";
 
         refreshCategoryDatalist();
+        refreshUnitDatalist();
 
         productNameInput.value = item.name;
         productCategoryInput.value = item.category;
         productStockInput.value = item.stock;
         productUnitInput.value = item.unit;
+        previousUnit = item.unit;
         productPriceInput.value = item.price || 0;
 
         pendingImageDataUrl = item.image || "";
@@ -737,6 +792,7 @@
         renderView();
         updateStats();
         refreshCategoryDatalist();
+        refreshUnitDatalist();
 
         if (new URLSearchParams(window.location.search).get("highlight")) {
             // Give the DOM a tick to finish painting before we scroll/flash.
@@ -754,6 +810,19 @@
         productImageUploadBox.addEventListener("click", () => productImageInput.click());
         productImageInput.addEventListener("change", (e) => {
             handleImageUpload(e.target.files[0]);
+        });
+
+        // Unit dropdown behavior
+        productUnitInput.addEventListener("focus", showAllUnits);
+        productUnitInput.addEventListener("click", () => {
+            if (productUnitInput.value === "") showAllUnits();
+        });
+        productUnitInput.addEventListener("blur", restoreUnitIfEmpty);
+
+        unitChevronEl.addEventListener("mousedown", (e) => {
+            e.preventDefault(); // keep focus behavior consistent
+            productUnitInput.focus();
+            showAllUnits();
         });
 
         addProductForm.addEventListener("submit", handleAddProductSubmit);

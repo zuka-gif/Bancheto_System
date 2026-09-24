@@ -92,6 +92,12 @@ html, body {
    shadow + tint, a focus ring when the native
    picker is open, and a small "chevron" cue so
    it doesn't look like static, unclickable text.
+
+   user-select: none — stops a click-and-slight-
+   drag anywhere in the box (icon, chevron, any
+   label text) from turning into a text-selection
+   highlight instead of registering as a click
+   that opens the picker.
 ======================================== */
 
 .date-picker-box {
@@ -114,6 +120,11 @@ html, body {
     box-shadow: 0 2px 6px rgba(30, 30, 40, 0.05);
 
     cursor: pointer;
+
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 
     transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, transform 0.15s ease;
 }

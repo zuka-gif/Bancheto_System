@@ -490,6 +490,34 @@
     font-size: 14px;
 }
 
+/* Change pill colors: white pill so the text stays readable on any
+   card color, with green / red / gray text depending on direction. */
+.stat-change.change-up,
+.stat-change.change-down,
+.stat-change.change-flat {
+    background: #ffffff;
+}
+
+.stat-change.change-up {
+    color: #1e9e3a;   /* green: higher than yesterday */
+}
+
+.stat-change.change-down {
+    color: #d62828;   /* red: lower than yesterday */
+}
+
+.stat-change.change-flat {
+    color: #777777;   /* gray: same as yesterday */
+}
+
+/* Keep "Since yesterday" neutral so only the arrow and percentage carry the color */
+.stat-change.change-up .stat-change-label,
+.stat-change.change-down .stat-change-label,
+.stat-change.change-flat .stat-change-label {
+    color: #555555;
+    opacity: 1;
+}
+
 .stat-change-label {
     margin-left: 2px;
 
@@ -822,7 +850,7 @@
 
     vector-effect: non-scaling-stroke;
 
-    transition: r 0.15s ease;
+    transition: r 0.18s ease, fill 0.18s ease, stroke 0.18s ease;
 
     pointer-events: none;
 }
@@ -830,8 +858,21 @@
 /* Toggled by JS when the (larger, invisible) hit circle underneath
    is hovered — this is what actually grows on hover, since the
    visible dot itself is too small a target to hover reliably. */
+/* Best day of the week: bigger and gold, like the peak dot on Analytics */
+.sales-point.sales-point-peak {
+    fill: #d9a400;
+    r: 6;
+}
+
+/* Hovered day: fills maroon with a white ring */
 .sales-point.sales-point-active {
     r: 6;
+    fill: #8d0808;
+    stroke: #ffffff;
+}
+
+.sales-point.sales-point-peak.sales-point-active {
+    r: 8;
 }
 
 .sales-point-hit {
@@ -867,7 +908,10 @@
     opacity: 0;
     pointer-events: none;
 
-    transition: opacity 0.12s ease;
+    /* Glides between days instead of snapping */
+    transition: opacity 0.15s ease,
+                left 0.22s cubic-bezier(0.22, 0.61, 0.36, 1),
+                top 0.22s cubic-bezier(0.22, 0.61, 0.36, 1);
 
     z-index: 5;
 }
@@ -989,6 +1033,98 @@
 
     font-size: 10px;
     font-weight: bold;
+}
+
+
+/* SALES CHART ENHANCEMENTS */
+
+/* The line, area and dots sweep in from left to right on load. The
+   negative insets keep dots at the edges from being clipped. */
+@keyframes salesChartReveal {
+    from { clip-path: inset(-14px 100% -14px -14px); }
+    to   { clip-path: inset(-14px -14px -14px -14px); }
+}
+
+.sales-chart {
+    animation: salesChartReveal 0.9s ease-out;
+}
+
+@keyframes salesLabelIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+/* Best-day badge fades in once the line has finished drawing */
+.chart-peak-label.show {
+    animation: salesLabelIn 0.35s ease 0.8s both;
+}
+
+/* Vertical guide that follows the hovered day */
+.chart-guide {
+    position: absolute;
+
+    top: 0;
+    bottom: 0;
+    left: 0;
+
+    width: 0;
+
+    border-left: 1.5px dashed rgba(141, 8, 8, 0.35);
+
+    opacity: 0;
+    pointer-events: none;
+
+    transition: opacity 0.15s ease,
+                left 0.22s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* Used for the first frame after appearing, so it fades in
+   in place instead of sliding across from the corner */
+.chart-tooltip.no-glide,
+.chart-guide.no-glide {
+    transition: opacity 0.15s ease;
+}
+
+.chart-guide.show {
+    opacity: 1;
+}
+
+/* Tooltip: change vs previous day */
+.chart-tooltip .tt-change {
+    margin-top: 3px;
+
+    color: rgba(255, 255, 255, 0.7);
+
+    font-size: 10px;
+    font-weight: 800;
+}
+
+.chart-tooltip .tt-up {
+    color: #7ee29b;
+}
+
+.chart-tooltip .tt-down {
+    color: #ff9a9a;
+}
+
+/* X axis: today is bolder, hovered day turns maroon */
+.chart-x-axis span {
+    transition: color 0.12s ease;
+}
+
+.chart-x-axis span.chart-x-today {
+    color: #222;
+}
+
+.chart-x-axis span.chart-x-active {
+    color: #8d0808;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sales-chart,
+    .chart-peak-label.show {
+        animation: none;
+    }
 }
 
 

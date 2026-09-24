@@ -444,12 +444,45 @@
         renderRevenueSummary(metrics);
     }
 
+    // ---------- DATE PICKER BOX — WHOLE-BOX CLICK ----------
+    // Makes the entire .date-picker-box act as one button: clicking the
+    // icon, the label text, the chevron, or the empty padding all open
+    // the native month picker the same way. The mousedown handler stops
+    // a click-and-slight-drag from highlighting text inside the box
+    // first (which used to swallow the click and leave the picker
+    // unopened) — paired with `user-select: none` in the CSS.
+    function setupDatePickerBox() {
+        const datePickerBox = document.querySelector(".date-picker-box");
+        if (!datePickerBox) return;
+
+        datePickerBox.addEventListener("mousedown", (e) => {
+            if (e.target !== monthInput) {
+                e.preventDefault();
+            }
+        });
+
+        datePickerBox.addEventListener("click", (e) => {
+            // Avoid double-firing if the user clicked the native input directly
+            if (e.target === monthInput) return;
+
+            if (typeof monthInput.showPicker === "function") {
+                monthInput.showPicker();
+            } else {
+                // Fallback for browsers without showPicker() support
+                monthInput.focus();
+                monthInput.click();
+            }
+        });
+    }
+
     // ---------- INIT ----------
 
     function init() {
         const now = new Date();
         const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
         monthInput.value = defaultMonth;
+
+        setupDatePickerBox();
 
         filterBtn.addEventListener("click", refresh);
         trendGranularitySelect.addEventListener("change", refresh);

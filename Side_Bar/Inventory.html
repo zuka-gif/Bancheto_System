@@ -228,8 +228,10 @@
 
                     <div class="form-col">
                         <label>Unit</label>
-                        <div class="input-box">
-                            <input type="text" id="productUnitInput" placeholder="e.g. kg, pcs, L" value="kg" required>
+                        <div class="input-box unit-box">
+                            <input type="text" id="productUnitInput" placeholder="e.g. kg, pcs, L" value="kg" list="unitList" autocomplete="off" required>
+                            <datalist id="unitList"></datalist>
+                            <i class='bx bx-chevron-down unit-chevron' id="unitChevron"></i>
                         </div>
                     </div>
                 </div>

@@ -161,6 +161,17 @@
 
         el.textContent = change.text;
 
+        // The pill that wraps the arrow, the percentage and the label
+        const pillEl = el.parentElement;
+        if (pillEl) {
+            pillEl.classList.remove("change-up", "change-down", "change-flat");
+            pillEl.classList.add(
+                change.direction > 0 ? "change-up" :
+                change.direction < 0 ? "change-down" :
+                "change-flat"
+            );
+        }
+
         // Flip the arrow icon to match the direction of the change
         const iconEl = el.previousElementSibling; // the <i> arrow icon sits right before the span
         if (iconEl && iconEl.tagName === "I") {
@@ -197,16 +208,16 @@
         // The card itself shows TODAY's total, refreshed daily.
         const today = totalsInRange(transactions, startOfDay(now), endOfDay(now));
 
-        // The percentage compares today against this same weekday one
-        // week ago — a direct "since last week" comparison.
-        const lastWeekDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
-        const lastWeek = totalsInRange(transactions, startOfDay(lastWeekDate), endOfDay(lastWeekDate));
+        // The percentage compares today against yesterday, matching the
+        // "Since yesterday" label on the cards.
+        const yesterdayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+        const yesterday = totalsInRange(transactions, startOfDay(yesterdayDate), endOfDay(yesterdayDate));
 
         if (statEls.sales) statEls.sales.textContent = currency(today.sales);
-        renderStatChange(statEls.salesChange, formatChange(today.sales, lastWeek.sales));
+        renderStatChange(statEls.salesChange, formatChange(today.sales, yesterday.sales));
 
         if (statEls.orders) statEls.orders.textContent = today.orders;
-        renderStatChange(statEls.ordersChange, formatChange(today.orders, lastWeek.orders));
+        renderStatChange(statEls.ordersChange, formatChange(today.orders, yesterday.orders));
 
         const availableItems = items.filter(i => getStock(i) > 0).length;
         if (statEls.items) statEls.items.textContent = availableItems;
@@ -220,8 +231,13 @@
 
     // ---------- SALES CHART TOOLTIP ----------
 
-    function showSalesTooltip(targetEl, dayDate, value) {
+    function showSalesTooltip(targetEl, idx) {
         if (!salesTooltipEl || !chartEl) return;
+
+        const dayDate = currentDays[idx];
+        const value = currentDailyTotals[idx];
+        const orders = currentDailyOrders[idx] || 0;
+        if (!dayDate) return;
 
         const targetRect = targetEl.getBoundingClientRect();
         const containerRect = chartEl.getBoundingClientRect();
@@ -230,14 +246,57 @@
         // Never let the tooltip's anchor point go above the space it needs
         // to draw upward into — otherwise it gets clipped off the top of
         // the card when the point itself is near the chart's ceiling.
-        const y = Math.max(targetRect.top - containerRect.top, 34);
+        const y = Math.max(targetRect.top - containerRect.top, 62);
 
         const dayLabel = dayDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+        const orderLabel = `${orders} order${orders === 1 ? "" : "s"}`;
 
-        salesTooltipEl.innerHTML = `<strong>${currency(value)}</strong><span>${dayLabel}</span>`;
-        salesTooltipEl.style.left = `${x}px`;
-        salesTooltipEl.style.top = `${y}px`;
-        salesTooltipEl.classList.add("show");
+        // Change vs the day before (the first day has nothing to compare to)
+        let changeHtml = "";
+        if (idx > 0) {
+            const change = formatChange(value, currentDailyTotals[idx - 1]);
+
+            if (change.text !== "—") {
+                if (change.direction > 0) {
+                    changeHtml = `<span class="tt-change tt-up">▲ ${change.text} vs prev day</span>`;
+                } else if (change.direction < 0) {
+                    changeHtml = `<span class="tt-change tt-down">▼ ${change.text} vs prev day</span>`;
+                } else {
+                    changeHtml = `<span class="tt-change">No change vs prev day</span>`;
+                }
+            }
+        }
+
+        salesTooltipEl.innerHTML =
+            `<strong>${currency(value)}</strong>` +
+            `<span>${dayLabel} · ${orderLabel}</span>` +
+            changeHtml;
+        placeGliding(salesTooltipEl, x, y);
+    }
+
+    // Moves a hover element (tooltip / guide line) to a new spot. When it's
+    // already visible it glides there via the CSS transition; when it's
+    // just appearing it jumps into place first and only fades in, so it
+    // never swoops in from the top-left corner.
+    function placeGliding(el, x, y) {
+        const setPosition = () => {
+            el.style.left = `${x}px`;
+            if (y !== undefined) el.style.top = `${y}px`;
+        };
+
+        if (el.classList.contains("show")) {
+            setPosition();
+            return;
+        }
+
+        el.classList.add("no-glide");
+        setPosition();
+        void el.offsetWidth; // apply the jump before the transition comes back
+        el.classList.add("show");
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => el.classList.remove("no-glide"));
+        });
     }
 
     function hideSalesTooltip() {
@@ -250,6 +309,12 @@
     let currentPeakIndex = -1;
     let currentPeakDay = null;
     let currentPeakValue = 0;
+
+    // Latest chart data, so the hover handler always reads the current
+    // week without needing a full re-render.
+    let currentDays = [];
+    let currentDailyTotals = [];
+    let currentDailyOrders = [];
 
     function positionSalesPeakLabel() {
         if (!salesPeakLabelEl || !chartEl) return;
@@ -277,6 +342,60 @@
         salesPeakLabelEl.classList.add("show");
     }
 
+    // ---------- SMOOTH LINE ----------
+    // Turns the 7 straight-line points into a smooth curve, the same
+    // kind of curve Chart.js draws with tension 0.3 on the Analytics page.
+    // It samples each curved segment into many tiny steps so the existing
+    // <polyline> can draw it without any HTML changes.
+    function buildSmoothPoints(coords, tension, height) {
+        if (coords.length < 3) return coords.map(p => ({ x: p.x, y: p.y }));
+
+        const controls = coords.map((p, i) => {
+            const prev = coords[i - 1];
+            const next = coords[i + 1];
+
+            if (!prev || !next) return { before: p, after: p };
+
+            const d01 = Math.hypot(p.x - prev.x, p.y - prev.y);
+            const d12 = Math.hypot(next.x - p.x, next.y - p.y);
+            const total = (d01 + d12) || 1;
+
+            const fa = tension * d01 / total;
+            const fb = tension * d12 / total;
+
+            return {
+                before: { x: p.x - fa * (next.x - prev.x), y: p.y - fa * (next.y - prev.y) },
+                after: { x: p.x + fb * (next.x - prev.x), y: p.y + fb * (next.y - prev.y) }
+            };
+        });
+
+        const steps = 16;
+        const out = [];
+
+        for (let i = 0; i < coords.length - 1; i++) {
+            const p0 = coords[i];
+            const p1 = controls[i].after;
+            const p2 = controls[i + 1].before;
+            const p3 = coords[i + 1];
+
+            for (let s = 0; s < steps; s++) {
+                const t = s / steps;
+                const u = 1 - t;
+
+                out.push({
+                    x: u * u * u * p0.x + 3 * u * u * t * p1.x + 3 * u * t * t * p2.x + t * t * t * p3.x,
+                    y: u * u * u * p0.y + 3 * u * u * t * p1.y + 3 * u * t * t * p2.y + t * t * t * p3.y
+                });
+            }
+        }
+
+        const last = coords[coords.length - 1];
+        out.push({ x: last.x, y: last.y });
+
+        // Keep the curve inside the chart so it never dips below the baseline
+        return out.map(p => ({ x: p.x, y: Math.max(0, Math.min(height, p.y)) }));
+    }
+
     // ---------- SALES OVERVIEW CHART (last 7 days) ----------
 
     function renderSalesChart(transactions) {
@@ -293,6 +412,12 @@
             return transactions
                 .filter(t => isSameDay(new Date(t.date), d))
                 .reduce((s, t) => s + (Number(t.total) || 0), 0);
+        });
+
+        const dailyOrders = days.map(d => {
+            return transactions
+                .filter(t => isSameDay(new Date(t.date), d))
+                .reduce((s, t) => s + countOrders(t), 0);
         });
 
         const maxValue = Math.max(...dailyTotals, 1);
@@ -318,6 +443,8 @@
             xSpans.forEach((span, idx) => {
                 if (!days[idx]) return;
                 span.textContent = days[idx].toLocaleDateString("en-US", { weekday: "long" });
+                // Today (the last day) gets a stronger label
+                span.classList.toggle("chart-x-today", idx === days.length - 1);
             });
         }
 
@@ -333,7 +460,8 @@
                 return { x, y: Math.max(0, Math.min(height, y)) };
             });
 
-            const pointsAttr = coords.map(p => `${p.x},${p.y}`).join(" ");
+            const smooth = buildSmoothPoints(coords, 0.3, height);
+            const pointsAttr = smooth.map(p => `${p.x},${p.y}`).join(" ");
             salesLine.setAttribute("points", pointsAttr);
 
             // The area fill closes the shape by dropping down to the
@@ -350,25 +478,16 @@
             // reliably — which drives the tooltip and the dot's grow
             // effect together.
             if (salesPointsGroup) {
+                // The best day gets its own class so it can be drawn
+                // bigger and gold, like the peak dot on Analytics.
+                const peakIdx = dailyTotals.some(v => v > 0)
+                    ? dailyTotals.indexOf(Math.max(...dailyTotals))
+                    : -1;
+
                 salesPointsGroup.innerHTML = coords.map((p, idx) => `
-                    <circle class="sales-point" data-index="${idx}" cx="${p.x}" cy="${p.y}" r="4"></circle>
+                    <circle class="sales-point${idx === peakIdx ? " sales-point-peak" : ""}" data-index="${idx}" cx="${p.x}" cy="${p.y}" r="4"></circle>
                     <circle class="sales-point-hit" data-index="${idx}" cx="${p.x}" cy="${p.y}" r="12"></circle>
                 `).join("");
-
-                salesPointsGroup.querySelectorAll(".sales-point-hit").forEach(hitEl => {
-                    const idx = Number(hitEl.dataset.index);
-                    const dotEl = salesPointsGroup.querySelector(`.sales-point[data-index="${idx}"]`);
-
-                    hitEl.addEventListener("mouseenter", () => {
-                        if (dotEl) dotEl.classList.add("sales-point-active");
-                        showSalesTooltip(hitEl, days[idx], dailyTotals[idx]);
-                    });
-
-                    hitEl.addEventListener("mouseleave", () => {
-                        if (dotEl) dotEl.classList.remove("sales-point-active");
-                        hideSalesTooltip();
-                    });
-                });
             }
         }
 
@@ -390,6 +509,10 @@
         }
 
         if (salesSummaryAvgEl) salesSummaryAvgEl.textContent = currency(dailyAvg);
+
+        currentDays = days;
+        currentDailyTotals = dailyTotals;
+        currentDailyOrders = dailyOrders;
 
         currentPeakIndex = weekTotal > 0 ? bestIdx : -1;
         currentPeakDay = weekTotal > 0 ? days[bestIdx] : null;
@@ -779,6 +902,66 @@
         renderActivities(transactions, logs);
     }
 
+    // Hovering anywhere over the chart (not just exactly on a dot) shows
+    // the tooltip for the nearest day, same as the Analytics Sales Trend.
+    function wireChartHover() {
+        if (!chartEl || !salesPointsGroup) return;
+
+        let activeIndex = -1;
+
+        // Vertical dashed guide that follows the hovered day. Inserted
+        // first so the line and dots draw on top of it.
+        const guideEl = document.createElement("div");
+        guideEl.className = "chart-guide";
+        chartEl.insertBefore(guideEl, chartEl.firstChild);
+
+        function setActiveXLabel(idx) {
+            if (!chartXAxis) return;
+            chartXAxis.querySelectorAll("span").forEach((span, i) => {
+                span.classList.toggle("chart-x-active", i === idx);
+            });
+        }
+
+        function clearActive() {
+            salesPointsGroup
+                .querySelectorAll(".sales-point-active")
+                .forEach(el => el.classList.remove("sales-point-active"));
+            activeIndex = -1;
+            guideEl.classList.remove("show");
+            setActiveXLabel(-1);
+            hideSalesTooltip();
+        }
+
+        chartEl.addEventListener("mousemove", (e) => {
+            const count = currentDailyTotals.length;
+            if (count === 0) return;
+
+            const rect = chartEl.getBoundingClientRect();
+            const ratio = (e.clientX - rect.left) / (rect.width || 1);
+            const idx = Math.max(0, Math.min(count - 1, Math.round(ratio * (count - 1))));
+
+            const dotEl = salesPointsGroup.querySelector(`.sales-point[data-index="${idx}"]`);
+            const hitEl = salesPointsGroup.querySelector(`.sales-point-hit[data-index="${idx}"]`);
+            if (!dotEl || !hitEl) return;
+
+            if (idx !== activeIndex) {
+                salesPointsGroup
+                    .querySelectorAll(".sales-point-active")
+                    .forEach(el => el.classList.remove("sales-point-active"));
+                dotEl.classList.add("sales-point-active");
+                setActiveXLabel(idx);
+                activeIndex = idx;
+            }
+
+            const hitRect = hitEl.getBoundingClientRect();
+            placeGliding(guideEl, hitRect.left + hitRect.width / 2 - rect.left);
+
+            showSalesTooltip(hitEl, idx);
+        });
+
+        chartEl.addEventListener("mouseleave", clearActive);
+    }
+
     function wireChartResize() {
         let resizeTimer = null;
         window.addEventListener("resize", () => {
@@ -791,6 +974,7 @@
         refresh();
         wireViewAllButtons();
         wireNotificationBell();
+        wireChartHover();
         wireChartResize();
     }
 

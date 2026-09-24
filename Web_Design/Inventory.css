@@ -1235,6 +1235,38 @@
     font-family: inherit;
 }
 
+/* ---------- UNIT DROPDOWN (typeable + suggestions) ---------- */
+
+.unit-box {
+    position: relative;
+}
+
+.unit-box input {
+    padding-right: 22px;
+}
+
+/* hide the browser's native arrow, we use our own chevron */
+.unit-box input::-webkit-calendar-picker-indicator {
+    display: none !important;
+    opacity: 0;
+}
+
+.unit-chevron {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+
+    font-size: 18px;
+    color: #888;
+
+    cursor: pointer;
+}
+
+.unit-box:focus-within .unit-chevron {
+    color: #c46e6e;
+}
+
 .form-row {
     display: flex;
     gap: 12px;
