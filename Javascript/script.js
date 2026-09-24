@@ -88,6 +88,75 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 
+    // FULLNAME VALIDATION
+    //
+    // Letters, spaces, periods, apostrophes, and hyphens only —
+    // rejects a fullname that is purely (or partly) numeric.
+
+    function isValidFullname(value) {
+
+        const trimmed =
+            value.trim();
+
+        const fullnamePattern =
+            /^[A-Za-z\s.'-]+$/;
+
+        return fullnamePattern.test(trimmed);
+
+    }
+
+
+    // USERNAME VALIDATION
+    //
+    // Letters, numbers, underscore, and period are allowed, but the
+    // username must contain at least one letter — so "12345" is
+    // rejected while "cashier1" or "user_02" are fine.
+
+    function isValidUsername(value) {
+
+        const trimmed =
+            value.trim();
+
+        const usernamePattern =
+            /^(?=.*[A-Za-z])[A-Za-z0-9_.]+$/;
+
+        return usernamePattern.test(trimmed);
+
+    }
+
+
+    // FULLNAME LIVE INPUT FILTER
+    //
+    // Strips digits as the user types, instead of only catching
+    // the problem on submit.
+
+    const signupFullnameInput =
+        document.getElementById("signupFullname");
+
+
+    if (signupFullnameInput) {
+
+        signupFullnameInput.addEventListener("input", function () {
+
+            const cleaned =
+                signupFullnameInput.value.replace(
+                    /[^A-Za-z\s.'-]/g,
+                    ""
+                );
+
+
+            if (cleaned !== signupFullnameInput.value) {
+
+                signupFullnameInput.value =
+                    cleaned;
+
+            }
+
+        });
+
+    }
+
+
     // SIGN UP
 
     const signupForm =
@@ -101,16 +170,28 @@ document.addEventListener("DOMContentLoaded", function () {
             event.preventDefault();
 
 
+            const fullnameInput =
+                document.getElementById("signupFullname");
+
+
+            const usernameInput =
+                document.getElementById("signupUsername");
+
+
             const inputs =
                 signupForm.querySelectorAll("input");
 
 
             const fullname =
-                inputs[0].value.trim();
+                fullnameInput
+                    ? fullnameInput.value.trim()
+                    : inputs[0].value.trim();
 
 
             const username =
-                inputs[1].value.trim();
+                usernameInput
+                    ? usernameInput.value.trim()
+                    : inputs[1].value.trim();
 
 
             const emailOrPhone =
@@ -160,6 +241,32 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 showMessage(
                     "Please complete all required fields.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            // FULLNAME FORMAT
+
+            if (!isValidFullname(fullname)) {
+
+                showMessage(
+                    "Fullname must contain letters only (no numbers).",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            // USERNAME FORMAT
+
+            if (!isValidUsername(username)) {
+
+                showMessage(
+                    "Username must include at least one letter (not numbers only).",
                     "error"
                 );
 
@@ -1609,4 +1716,3 @@ function saveLoginHistory(
     );
 
 }
-

@@ -31,12 +31,12 @@
             <form id="signupForm">
                 <label>Fullname</label>
                 <div class="input-box">
-                    <input type="text" placeholder="Enter your fullname" required minlength="6" maxlength="30">
+                    <input type="text" id="signupFullname" placeholder="Enter your fullname" required minlength="6" maxlength="30" pattern="[A-Za-z\s.'-]+" title="Fullname must contain letters only (no numbers).">
                 </div>
 
                 <label>Username</label>
                 <div class="input-box">
-                    <input type="text" placeholder="Enter your username" required minlength="4" maxlength="20">
+                    <input type="text" id="signupUsername" placeholder="Enter your username" required minlength="6" maxlength="30" title="Username must include at least one letter (not numbers only).">
                 </div>
 
                 <label>Email Address or Phone Number</label>
