@@ -59,6 +59,35 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
 
+    // EMAIL / PHONE VALIDATION
+    //
+    // The "Email Address or Phone Number" field accepts either format,
+    // so a plain type="email" input won't work here. This checks the
+    // value matches one shape or the other before letting the form
+    // submit, instead of silently accepting anything typed in.
+
+    function isValidEmailOrPhone(value) {
+
+        const trimmed =
+            value.trim();
+
+        // Gmail only: something@gmail.com (case-insensitive)
+        const emailPattern =
+            /^[^\s@]+@gmail\.com$/i;
+
+        // Phone: 7-15 digits, optional leading +, spaces/dashes allowed
+        // between digits (e.g. "+63 912 345 6789", "0912-345-6789")
+        const phonePattern =
+            /^\+?\d[\d\s-]{6,14}$/;
+
+        return (
+            emailPattern.test(trimmed) ||
+            phonePattern.test(trimmed)
+        );
+
+    }
+
+
     // SIGN UP
 
     const signupForm =
@@ -131,6 +160,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 showMessage(
                     "Please complete all required fields.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            // EMAIL / PHONE FORMAT
+
+            if (!isValidEmailOrPhone(emailOrPhone)) {
+
+                showMessage(
+                    "Please enter a valid Gmail address (e.g. name@gmail.com) or phone number.",
                     "error"
                 );
 
@@ -354,6 +396,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 showMessage(
                     "Please enter your email/phone and password.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            // EMAIL / PHONE FORMAT
+
+            if (!isValidEmailOrPhone(emailOrPhone)) {
+
+                showMessage(
+                    "Please enter a valid Gmail address (e.g. name@gmail.com) or phone number.",
                     "error"
                 );
 
@@ -645,6 +700,20 @@ document.addEventListener("DOMContentLoaded", function () {
                     setModalMessage(
                         message,
                         "Please enter your email or phone number.",
+                        "error"
+                    );
+
+                    return;
+                }
+
+
+                // EMAIL / PHONE FORMAT
+
+                if (!isValidEmailOrPhone(contact)) {
+
+                    setModalMessage(
+                        message,
+                        "Please enter a valid Gmail address (e.g. name@gmail.com) or phone number.",
                         "error"
                     );
 
@@ -1540,3 +1609,4 @@ function saveLoginHistory(
     );
 
 }
+

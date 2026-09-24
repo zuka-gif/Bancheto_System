@@ -187,9 +187,13 @@
             const key = dateKey(new Date(t.date));
             if (!grouped[key]) grouped[key] = { key, totalSales: 0, totalOrders: 0, totalPax: 0 };
             grouped[key].totalSales += t.total;
-            grouped[key].totalOrders += 1;
 
+            // "Orders" = how many individual orders/pax were actually placed,
+            // not "1 per receipt". A single receipt with 2 pax on one item
+            // (or several items) now adds that many, matching Total Pax —
+            // pax IS the order count for each line item in this app.
             const transactionPax = (t.items || []).reduce((sum, item) => sum + (item.pax || 0), 0);
+            grouped[key].totalOrders += transactionPax;
             grouped[key].totalPax += transactionPax;
         });
 

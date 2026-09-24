@@ -360,6 +360,67 @@ html, body {
 
 
 /* ========================================
+   SALES TREND SUMMARY STRIP
+   Quick-glance numbers above the chart —
+   total for the period, the single best
+   day/week, and the average — so the chart's
+   headline story doesn't only exist on hover.
+======================================== */
+
+.trend-summary {
+    display: flex;
+    align-items: center;
+
+    flex-shrink: 0;
+
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.trend-summary-item {
+    flex: 1;
+    min-width: 0;
+
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.trend-summary-label {
+    color: #888;
+
+    font-size: 10px;
+    font-weight: 700;
+
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.trend-summary-value {
+    color: #222;
+
+    font-size: 14px;
+    font-weight: 800;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.trend-summary-divider {
+    width: 1px;
+    height: 24px;
+    flex-shrink: 0;
+
+    background: #eee;
+
+    margin: 0 14px;
+}
+
+
+/* ========================================
    CHARTS ROW
 ======================================== */
 
@@ -373,6 +434,23 @@ html, body {
     position: relative;
 
     height: 175px;
+}
+
+/* The Sales Trend panel sits next to the Best Selling panel in the same
+   grid row, and the row stretches both to match whichever is taller —
+   Best Selling (donut + 5-item legend) usually is. Rather than leave
+   that extra height as dead space below a small fixed-height chart,
+   let the trend chart grow to actually fill it. */
+.sales-trend-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+.sales-trend-panel .chart-wrap {
+    flex: 1;
+    min-height: 260px;
+
+    height: auto;
 }
 
 .donut-wrap {

@@ -1399,3 +1399,51 @@ document.addEventListener(
     }
 );
 
+    
+        document.addEventListener("DOMContentLoaded", function () {
+
+            const passwordToggleButtons =
+                document.querySelectorAll(".toggle-password");
+
+            passwordToggleButtons.forEach(function (button) {
+
+                button.addEventListener("click", function () {
+
+                    const targetId =
+                        button.getAttribute("data-target");
+
+                    const passwordInput =
+                        document.getElementById(targetId);
+
+                    const icon =
+                        button.querySelector("i");
+
+                    if (!passwordInput || !icon) {
+                        return;
+                    }
+
+                    if (passwordInput.type === "password") {
+
+                        passwordInput.type = "text";
+
+                        icon.classList.remove("bx-show");
+                        icon.classList.add("bx-hide");
+
+                        button.setAttribute("aria-label", "Hide password");
+
+                    } else {
+
+                        passwordInput.type = "password";
+
+                        icon.classList.remove("bx-hide");
+                        icon.classList.add("bx-show");
+
+                        button.setAttribute("aria-label", "Show password");
+
+                    }
+
+                });
+
+            });
+
+        });

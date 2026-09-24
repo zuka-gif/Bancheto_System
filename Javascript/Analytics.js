@@ -47,6 +47,10 @@
     const netRevenueValueEl = document.getElementById("netRevenueValue");
     const profitMarginValueEl = document.getElementById("profitMarginValue");
 
+    const trendSummaryTotalEl = document.getElementById("trendSummaryTotal");
+    const trendSummaryPeakEl = document.getElementById("trendSummaryPeak");
+    const trendSummaryAvgEl = document.getElementById("trendSummaryAvg");
+
     // ---------- DATA LOADERS ----------
 
     function loadTransactions() {
@@ -104,14 +108,24 @@
     }
 
     function getItemQty(lineItem) {
-        return Number(lineItem.qty ?? lineItem.quantity ?? 1) || 1;
+        // Sales.js stores each order line as { name, price, pax, lineTotal } —
+        // "pax" IS the quantity for that item (e.g. price 279, pax 2 = 2 orders
+        // of that item). Older/other shapes may use qty or quantity instead,
+        // so check pax first since that's what this app actually writes.
+        return Number(lineItem.pax ?? lineItem.qty ?? lineItem.quantity ?? 1) || 1;
     }
 
     // ---------- METRIC COMPUTATION ----------
 
     function computeSalesMetrics(transactions) {
         const totalSales = transactions.reduce((s, t) => s + (Number(t.total) || 0), 0);
-        const totalOrders = transactions.length;
+        // Total Orders now counts every individual item quantity sold across
+        // all transactions, instead of just the number of transactions/receipts.
+        // Previously a single checkout containing 2+ items (or one item with
+        // qty > 1) still only counted as 1 toward this stat.
+        const totalOrders = transactions.reduce((sum, t) => {
+            return sum + (t.items || []).reduce((s, li) => s + getItemQty(li), 0);
+        }, 0);
         return { totalSales, totalOrders };
     }
 
@@ -122,13 +136,24 @@
         }).length;
     }
 
-    // Total Cost — a plain sum of each item's unit price (NOT stock ×
-    // price). Mirrors the "Total" row under the Price column on the
-    // Reports page's Inventory Report exactly, and is the single source
-    // of "Total Cost" used everywhere on this page (the stat card above
-    // AND the Revenue Summary panel below), so both always agree.
-    function computeTotalInventoryPrice(items) {
-        return items.reduce((sum, i) => sum + (Number(i.price) || 0), 0);
+    // Total Cost for the currently selected period — mirrors the
+    // Reports page's Inventory Report exactly: items with at least one
+    // logged inventory action (any type — Added, Edited, Stock In/Out,
+    // Deleted) within the selected month/year are considered "active"
+    // for that period, and their unit Price is summed (NOT stock ×
+    // price, just the Price column itself, same as the Total row on
+    // that report). A period with no inventory activity correctly reads
+    // ₱0.00 instead of repeating the same all-time number regardless of
+    // which filter is picked. This is the single source of "Total Cost"
+    // used everywhere on this page (the stat card above AND the Revenue
+    // Summary panel below), so both always agree with each other and
+    // with Reports → Inventory Reports for the same range.
+    function computeCostEstimate(logs, items) {
+        const activeNames = new Set(logs.map(l => l.itemName));
+
+        return items
+            .filter(i => activeNames.has(i.name))
+            .reduce((sum, i) => sum + (Number(i.price) || 0), 0);
     }
 
     function computeItemSalesCounts(transactions) {
@@ -203,21 +228,58 @@
     function renderStatCards(metrics, lowStockCount) {
         totalSalesValueEl.textContent = currency(metrics.totalSales);
         totalOrdersValueEl.textContent = metrics.totalOrders;
-        totalCostValueEl.textContent = currency(metrics.totalInventoryPrice);
+        totalCostValueEl.textContent = currency(metrics.totalCost);
         lowStockValueEl.textContent = lowStockCount;
+    }
+
+    // ---------- RENDER: SALES TREND SUMMARY STRIP ----------
+
+    function renderTrendSummary(trendData, granularity) {
+        const values = trendData.values;
+        const total = values.reduce((s, v) => s + v, 0);
+        const avg = values.length ? total / values.length : 0;
+
+        let peakIdx = -1;
+        values.forEach((v, i) => {
+            if (peakIdx === -1 || v > values[peakIdx]) peakIdx = i;
+        });
+
+        if (trendSummaryTotalEl) trendSummaryTotalEl.textContent = currency(total);
+        if (trendSummaryAvgEl) trendSummaryAvgEl.textContent = currency(avg);
+
+        if (trendSummaryPeakEl) {
+            if (peakIdx === -1 || total <= 0) {
+                trendSummaryPeakEl.textContent = "—";
+            } else {
+                const unit = granularity === "weekly" ? "" : "";
+                trendSummaryPeakEl.textContent = `${trendData.labels[peakIdx]}${unit} · ${currency(values[peakIdx])}`;
+            }
+        }
+
+        return peakIdx;
     }
 
     // ---------- RENDER: SALES TREND CHART ----------
 
-    function renderSalesTrendChart(trendData) {
-        const ctx = document.getElementById("salesTrendChart").getContext("2d");
+    function renderSalesTrendChart(trendData, granularity) {
+        const canvas = document.getElementById("salesTrendChart");
+        const ctx = canvas.getContext("2d");
 
         if (salesChart) salesChart.destroy();
+
+        const peakIdx = renderTrendSummary(trendData, granularity);
 
         if (trendData.labels.length === 0) {
             salesChart = null;
             return;
         }
+
+        // One dot per data point, styled white-on-red like the Dashboard's
+        // chart — except the single best day/week, which is drawn bigger
+        // and gold so the peak is identifiable without hovering.
+        const pointRadii = trendData.values.map((v, i) => (i === peakIdx && v > 0 ? 7 : 4));
+        const pointColors = trendData.values.map((v, i) => (i === peakIdx && v > 0 ? "#d9a400" : "#ffffff"));
+        const pointHoverRadii = pointRadii.map(r => r + 2);
 
         salesChart = new Chart(ctx, {
             type: "line",
@@ -227,20 +289,64 @@
                     label: "Sales",
                     data: trendData.values,
                     borderColor: "#8b0000",
-                    backgroundColor: "rgba(139, 0, 0, 0.08)",
+                    borderWidth: 3,
+                    // A vertical gradient fill instead of a flat tint —
+                    // needs the chart's own rendering context, so it's
+                    // built as a function rather than a fixed color.
+                    backgroundColor: (context) => {
+                        const { ctx: c, chartArea } = context.chart;
+                        if (!chartArea) return "rgba(139, 0, 0, 0.08)";
+                        const gradient = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+                        gradient.addColorStop(0, "rgba(139, 0, 0, 0.30)");
+                        gradient.addColorStop(1, "rgba(139, 0, 0, 0)");
+                        return gradient;
+                    },
                     fill: true,
                     tension: 0.3,
-                    pointRadius: 2
+                    pointRadius: pointRadii,
+                    pointHoverRadius: pointHoverRadii,
+                    pointBackgroundColor: pointColors,
+                    pointBorderColor: "#8b0000",
+                    pointBorderWidth: 2,
+                    pointHoverBackgroundColor: "#8b0000",
+                    pointHoverBorderColor: "#ffffff",
+                    pointHoverBorderWidth: 2
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
+                interaction: { mode: "nearest", intersect: false },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        enabled: true,
+                        backgroundColor: "#262626",
+                        titleColor: "rgba(255, 255, 255, 0.7)",
+                        titleFont: { size: 10, weight: "600" },
+                        bodyColor: "#ffffff",
+                        bodyFont: { size: 13, weight: "800" },
+                        padding: 10,
+                        cornerRadius: 8,
+                        displayColors: false,
+                        callbacks: {
+                            label: (item) => currency(item.parsed.y)
+                        }
+                    }
+                },
                 scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: "#888", font: { size: 11, weight: "600" } }
+                    },
                     y: {
                         beginAtZero: true,
-                        ticks: { callback: (v) => currency(v) }
+                        grid: { color: "#f0f0f0" },
+                        ticks: {
+                            color: "#888",
+                            font: { size: 11, weight: "600" },
+                            callback: (v) => currency(v).replace(".00", "")
+                        }
                     }
                 }
             }
@@ -300,11 +406,11 @@
     }
 
     function renderRevenueSummary(metrics) {
-        const netRevenue = metrics.totalSales - metrics.totalInventoryPrice;
+        const netRevenue = metrics.totalSales - metrics.totalCost;
         const margin = metrics.totalSales ? (netRevenue / metrics.totalSales) * 100 : 0;
 
         grossRevenueValueEl.textContent = currency(metrics.totalSales);
-        totalCostSummaryValueEl.textContent = currency(metrics.totalInventoryPrice);
+        totalCostSummaryValueEl.textContent = currency(metrics.totalCost);
         netRevenueValueEl.textContent = currency(netRevenue);
         profitMarginValueEl.textContent = `${margin.toFixed(1)}%`;
     }
@@ -317,12 +423,14 @@
 
         const items = loadInventoryItems();
         const allTransactions = loadTransactions();
+        const allLogs = loadInventoryLogs();
 
         const transactions = allTransactions.filter(t => inRange(new Date(t.date), start, end));
+        const logs = allLogs.filter(l => inRange(new Date(l.date), start, end));
 
         const salesMetrics = computeSalesMetrics(transactions);
-        const totalInventoryPrice = computeTotalInventoryPrice(items);
-        const metrics = { ...salesMetrics, totalInventoryPrice };
+        const totalCost = computeCostEstimate(logs, items);
+        const metrics = { ...salesMetrics, totalCost };
 
         const lowStockCount = computeLowStockCount(items);
         const bestSelling = computeBestSelling(transactions);
@@ -330,7 +438,7 @@
         const trendData = buildSalesTrendData(transactions, { start, end }, granularity);
 
         renderStatCards(metrics, lowStockCount);
-        renderSalesTrendChart(trendData);
+        renderSalesTrendChart(trendData, granularity);
         renderBestSelling(bestSelling);
         renderSlowMoving(slowMoving);
         renderRevenueSummary(metrics);

@@ -118,7 +118,18 @@
     }
 
     function getItemQty(lineItem) {
-        return Number(lineItem.qty ?? lineItem.quantity ?? 1) || 1;
+        // Sales.js stores each order line as { name, price, pax, lineTotal } —
+        // "pax" IS the quantity for that item (e.g. price 279, pax 2 = 2
+        // orders of that item). Check pax first since that's what this app
+        // actually writes; qty/quantity are kept as fallbacks for any other
+        // transaction shape.
+        return Number(lineItem.pax ?? lineItem.qty ?? lineItem.quantity ?? 1) || 1;
+    }
+
+    // Total number of individual orders (line-item quantities, i.e. pax)
+    // across a whole transaction, not just "1 receipt = 1 order".
+    function countOrders(transaction) {
+        return (transaction.items || []).reduce((s, li) => s + getItemQty(li), 0);
     }
 
     /* Turns a current-vs-baseline pair into something a human can read.
@@ -172,7 +183,10 @@
 
         return {
             sales: inRange.reduce((s, t) => s + (Number(t.total) || 0), 0),
-            orders: inRange.length
+            // Count every order (pax) on every receipt, not just the
+            // number of receipts — a receipt with 2 pax on one item
+            // now counts as 2 orders instead of 1.
+            orders: inRange.reduce((s, t) => s + countOrders(t), 0)
         };
     }
 

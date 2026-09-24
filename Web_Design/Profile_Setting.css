@@ -845,6 +845,110 @@
 
 
 /* =====================================================
+   PASSWORD SHOW/HIDE TOGGLE
+   (used on the Current / New / Confirm New Password
+   fields inside the Change Password popup)
+===================================================== */
+
+.profile-input.password-box {
+
+    position: relative;
+
+}
+
+.profile-input.password-box input {
+
+    padding-right: 38px;
+
+}
+
+.profile-input.password-box .toggle-password {
+
+    position: absolute;
+
+    right: 6px;
+
+    top: 50%;
+
+    transform: translateY(-50%);
+
+    width: 30px;
+    height: 30px;
+
+    border: none;
+    outline: none;
+
+    background: transparent;
+
+    color: #888;
+
+    cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0;
+    margin: 0;
+
+    border-radius: 50%;
+
+    transition: color 0.15s ease, background 0.15s ease;
+
+}
+
+.profile-input.password-box .toggle-password:hover {
+
+    color: #333;
+
+    background: #f0f0f0;
+
+}
+
+.profile-input.password-box .toggle-password:focus-visible {
+
+    outline: 2px solid #0D83F0;
+    outline-offset: 1px;
+
+}
+
+.profile-input.password-box .toggle-password i {
+
+    font-size: 16px;
+
+    color: inherit;
+
+    pointer-events: none;
+
+}
+
+
+/* Hide native browser password reveal/clear icons so only the
+   custom .toggle-password eye icon shows */
+
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+
+    display: none;
+
+}
+
+input[type="password"]::-webkit-credentials-auto-fill-button,
+input[type="password"]::-webkit-textfield-decoration-container {
+
+    visibility: hidden;
+    display: none !important;
+
+}
+
+input[type="password"]::-webkit-strong-password-auto-fill-button {
+
+    display: none !important;
+
+}
+
+
+/* =====================================================
    BUTTONS
 ===================================================== */
 

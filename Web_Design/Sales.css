@@ -683,6 +683,28 @@
 
 
 /* ========================================
+   PAX MINIMUM-REACHED WARNING ICON
+   Replaces the minus button once pax hits its floor (1) — signals
+   "you can't go lower this way" without needing a disabled button
+   that still looks clickable.
+======================================== */
+
+.pax-warning-icon {
+    width: 22px;
+    height: 22px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 16px;
+    color: #dda50d;
+
+    cursor: help;
+}
+
+
+/* ========================================
    ORDER PRICE
 ======================================== */
 
@@ -1103,6 +1125,181 @@
     font-size: 13px;
 
     line-height: 1.4;
+}
+
+/* ========================================
+   MENU SAVED CONFIRMATION POPUP
+   Shown after Add/Update Menu finishes saving — mirrors the item
+   back (image, name, price, description) so the person can confirm
+   at a glance that what was saved is actually what they intended,
+   instead of a plain text alert() that can't show the image.
+======================================== */
+
+@keyframes menuSavedPopIn {
+    from { opacity: 0; transform: translateY(10px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.menu-saved-popup {
+    width: 400px;
+    max-width: calc(100vw - 40px);
+
+    background: #ffffff;
+
+    border-radius: 14px;
+
+    overflow: hidden;
+
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+
+    animation: menuSavedPopIn 0.2s ease-out;
+}
+
+.menu-saved-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    height: 54px;
+
+    padding: 0 18px;
+
+    background: #2E7D32 !important;
+}
+
+.menu-saved-header h2 {
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.menu-saved-popup .popup-close {
+    border: none;
+    background: transparent;
+    color: #ffffff;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.menu-saved-body {
+    padding: 20px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.menu-saved-image {
+    width: 100%;
+    height: 150px;
+
+    border-radius: 10px;
+    border: 1px solid #ecdad4;
+
+    background: linear-gradient(180deg, #fff6f2 0%, #f7e3db 100%);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    overflow: hidden;
+
+    position: relative;
+}
+
+.menu-saved-image img {
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+}
+
+.menu-saved-image #menuSavedImagePlaceholder {
+    font-size: 36px;
+    color: #d8a8a0;
+}
+
+.menu-saved-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.menu-saved-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+
+    padding: 10px 4px;
+
+    border-bottom: 1px solid #f2e6e0;
+}
+
+.menu-saved-row:last-child {
+    border-bottom: none;
+}
+
+.menu-saved-icon {
+    flex-shrink: 0;
+
+    width: 32px;
+    height: 32px;
+
+    border-radius: 50%;
+
+    background: #fbe4e4;
+    color: #9d0000;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 15px;
+}
+
+.menu-saved-row-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    min-width: 0;
+}
+
+.menu-saved-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #b09a94;
+
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.menu-saved-row strong {
+    color: #2b2b2b;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.menu-saved-description-row p {
+    margin: 0;
+    margin-top: 1px;
+
+    font-size: 13px;
+    color: #555;
+    line-height: 1.5;
+}
+
+.menu-saved-popup .add-menu-actions {
+    padding: 0 20px 20px;
+    margin-top: 0;
+}
+
+.menu-saved-popup .save-menu-btn {
+    width: 100%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .menu-card {

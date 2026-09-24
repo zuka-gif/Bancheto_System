@@ -88,6 +88,18 @@
         localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
     }
 
+    function getCurrentUserRole() {
+        try {
+            const saved = localStorage.getItem("banchetoCurrentUser") ||
+                sessionStorage.getItem("banchetoCurrentUser");
+            if (saved) {
+                const session = JSON.parse(saved);
+                return session.role || "Unknown";
+            }
+        } catch (e) { /* ignore malformed data */ }
+        return "Unknown";
+    }
+
     function logInventoryActivity(action, item, change) {
         const saved = localStorage.getItem(LOGS_KEY);
         const logs = saved ? JSON.parse(saved) : [];
@@ -119,14 +131,24 @@
         return trimmed;
     }
 
+    // Coerces a stored number that may have been saved as a string
+    // (e.g. "380") into an actual number. Number.isFinite() on its own
+    // returns false for numeric strings, which was silently zeroing out
+    // valid prices/stock — this fixes that by converting first, then
+    // checking finiteness on the converted value.
+    function cleanNumber(value, fallback) {
+        const n = Number(value);
+        return Number.isFinite(n) ? n : fallback;
+    }
+
     function normalizeItem(item) {
         return {
             id: item.id,
             name: cleanText(item.name, "Unnamed Product"),
             category: cleanText(item.category, "Others"),
-            stock: Number.isFinite(item.stock) ? item.stock : 0,
+            stock: cleanNumber(item.stock, 0),
             unit: cleanText(item.unit, "pcs"),
-            price: Number.isFinite(item.price) ? item.price : 0,
+            price: cleanNumber(item.price, 0),
             image: item.image || ""
         };
     }
@@ -136,6 +158,11 @@
         if (saved) {
             try {
                 items = JSON.parse(saved).map(normalizeItem);
+                // Persist the normalized (type-corrected) values back so
+                // a price/stock that was stored as a string is fixed for
+                // good, instead of silently drifting toward 0 on every
+                // future save that happens to touch these items.
+                saveItems();
                 return;
             } catch (e) {
                 // fall through to default
@@ -428,6 +455,49 @@
         return card;
     }
 
+    // Updates just the one card/row that changed, in place — instead of
+    // rebuilding the whole grid/table, which was replaying every card's
+    // entrance animation on every +/- click and made it look like the
+    // whole list was flashing.
+    function updateItemInDOM(item) {
+        const status = getStatus(item.stock);
+
+        const card = sectionsEl.querySelector(`.inventory-card[data-id="${CSS.escape(item.id)}"]`);
+        if (card) {
+            card.className = `inventory-card ${status.className}`;
+
+            const qtyEl = card.querySelector(".inventory-qty");
+            if (qtyEl) qtyEl.textContent = `${item.stock} ${item.unit}`;
+
+            // Price is derived fresh from item.price every time (never
+            // cleared or skipped), so it can't go missing on a stock click.
+            const priceEl = card.querySelector(".inventory-price");
+            if (priceEl) priceEl.textContent = `${formatPrice(item.price)} / ${item.unit}`;
+
+            const statusTagEl = card.querySelector(".status-tag");
+            if (statusTagEl) {
+                statusTagEl.className = `status-tag ${status.className}`;
+                statusTagEl.textContent = status.label;
+            }
+        }
+
+        const row = tableBodyEl.querySelector(`tr[data-id="${CSS.escape(item.id)}"]`);
+        if (row) {
+            const stockCell = row.children[2];
+            if (stockCell) stockCell.textContent = item.stock;
+
+            const priceCell = row.children[4];
+            if (priceCell) priceCell.textContent = formatPrice(item.price);
+
+            const statusCell = row.querySelector(".status-cell");
+            if (statusCell) {
+                statusCell.className = `status-cell ${status.className}`;
+                const pill = statusCell.querySelector(".status-pill");
+                if (pill) pill.textContent = status.label;
+            }
+        }
+    }
+
     function changeStock(itemId, delta) {
         const item = items.find(i => i.id === itemId);
         if (!item) return;
@@ -441,8 +511,7 @@
         }
 
         saveItems();
-        renderTabs();
-        renderView();
+        updateItemInDOM(item);
         updateStats();
     }
 

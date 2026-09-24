@@ -29,6 +29,7 @@
     let editingItemId = null; // null = adding a new item, otherwise editing this item's id
 
     const PAX_STEP = 2; // clicking a menu card adds this many pax at a time
+    const MIN_PAX = 1;  // pax can never go below this — use the trash icon to remove the line instead
 
     // ---------- ELEMENTS ----------
     const menuGrid = document.getElementById("menuGrid");
@@ -67,6 +68,18 @@
     const menuDescriptionInput = document.getElementById("menuDescriptionInput");
 
     let pendingImageDataUrl = "";
+
+    // Menu Saved confirmation popup elements — shown after Add/Update
+    // Menu finishes, mirroring back everything that was just saved.
+    const menuSavedOverlay = document.getElementById("menuSavedOverlay");
+    const menuSavedTitle = document.getElementById("menuSavedTitle");
+    const menuSavedImage = document.getElementById("menuSavedImage");
+    const menuSavedImagePlaceholder = document.getElementById("menuSavedImagePlaceholder");
+    const menuSavedName = document.getElementById("menuSavedName");
+    const menuSavedPrice = document.getElementById("menuSavedPrice");
+    const menuSavedDescription = document.getElementById("menuSavedDescription");
+    const closeMenuSavedBtn = document.getElementById("closeMenuSavedBtn");
+    const menuSavedOkBtn = document.getElementById("menuSavedOkBtn");
 
     // ---------- HELPERS ----------
 
@@ -210,10 +223,19 @@
 
             const lineTotal = order.price * order.pax;
 
+            // At the floor (1 pax), swap the minus button for a warning
+            // icon instead — there's nothing to decrement to below 1, so
+            // the only way to go lower is to remove the line entirely
+            // via the trash icon.
+            const atMinPax = order.pax <= MIN_PAX;
+            const minusControlHtml = atMinPax
+                ? `<i class='bx bxs-error-circle pax-warning-icon' title="Minimum of ${MIN_PAX} pax — use the trash icon to remove this item"></i>`
+                : `<button type="button" class="pax-btn minus-btn">−</button>`;
+
             row.innerHTML = `
                 <div class="order-name">${order.name}</div>
                 <div class="order-pax">
-                    <button type="button" class="pax-btn minus-btn">−</button>
+                    ${minusControlHtml}
                     <span class="pax-number">${order.pax}</span>
                     <button type="button" class="pax-btn plus-btn">+</button>
                 </div>
@@ -221,7 +243,10 @@
                 <button type="button" class="delete-order"><i class='bx bx-trash'></i></button>
             `;
 
-            row.querySelector(".minus-btn").addEventListener("click", () => changePax(order.orderId, -1));
+            const minusBtn = row.querySelector(".minus-btn");
+            if (minusBtn) {
+                minusBtn.addEventListener("click", () => changePax(order.orderId, -1));
+            }
             row.querySelector(".plus-btn").addEventListener("click", () => changePax(order.orderId, 1));
             row.querySelector(".delete-order").addEventListener("click", () => removeFromOrder(order.orderId));
 
@@ -235,12 +260,10 @@
         const order = currentOrder.find(o => o.orderId === orderId);
         if (!order) return;
 
-        order.pax += delta;
-
-        if (order.pax <= 0) {
-            removeFromOrder(orderId);
-            return;
-        }
+        // Never let pax drop below MIN_PAX (1) or go negative — the
+        // minus button is already hidden at that point, but this guards
+        // against it regardless of how changePax gets called.
+        order.pax = Math.max(MIN_PAX, order.pax + delta);
 
         renderOrderList();
         renderMenuGrid(menuSearchInput.value);
@@ -409,6 +432,10 @@
             return;
         }
 
+        // Captured before closeAddMenuPopup() clears editingItemId, so the
+        // confirmation message can say "updated" vs. "added" correctly.
+        const wasEditing = Boolean(editingItemId);
+
         if (editingItemId) {
             const item = menuItems.find(m => m.id === editingItemId);
             if (item) {
@@ -431,6 +458,37 @@
         renderMenuGrid(menuSearchInput.value);
 
         closeAddMenuPopup();
+
+        showMenuSavedPopup(wasEditing, {
+            name: name,
+            price: price,
+            description: description,
+            image: pendingImageDataUrl
+        });
+    }
+
+    function showMenuSavedPopup(wasEditing, item) {
+        menuSavedTitle.textContent = wasEditing ? "Menu Item Updated" : "Menu Item Added";
+
+        if (item.image) {
+            menuSavedImage.src = item.image;
+            menuSavedImage.style.display = "block";
+            menuSavedImagePlaceholder.style.display = "none";
+        } else {
+            menuSavedImage.src = "";
+            menuSavedImage.style.display = "none";
+            menuSavedImagePlaceholder.style.display = "block";
+        }
+
+        menuSavedName.textContent = item.name;
+        menuSavedPrice.textContent = formatCurrency(item.price);
+        menuSavedDescription.textContent = item.description || "No description provided.";
+
+        menuSavedOverlay.classList.add("show");
+    }
+
+    function closeMenuSavedPopup() {
+        menuSavedOverlay.classList.remove("show");
     }
 
     // ---------- DATE / TIME ----------
@@ -512,6 +570,13 @@
 
         addMenuOverlay.addEventListener("click", (e) => {
             if (e.target === addMenuOverlay) closeAddMenuPopup();
+        });
+
+        // Menu Saved confirmation popup
+        closeMenuSavedBtn.addEventListener("click", closeMenuSavedPopup);
+        menuSavedOkBtn.addEventListener("click", closeMenuSavedPopup);
+        menuSavedOverlay.addEventListener("click", (e) => {
+            if (e.target === menuSavedOverlay) closeMenuSavedPopup();
         });
 
         imageUploadBox.addEventListener("click", () => menuImageInput.click());

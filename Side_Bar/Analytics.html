@@ -124,7 +124,7 @@
                     <span class="analytics-stat-label">Total Orders</span>
                 </div>
 
-                <div class="analytics-stat-card" title="Sum of each product's price on the Inventory page — matches the Total row on Reports → Inventory Reports.">
+                <div class="analytics-stat-card" title="Sum of the Price column for items with inventory activity in the selected period — matches the Total row on Reports → Inventory Reports for the same range. Reads ₱0.00 for any period with no activity.">
                     <i class='bx bx-wallet stat-bg-icon'></i>
                     <strong class="analytics-stat-value" id="totalCostValue">₱0.00</strong>
                     <span class="analytics-stat-label">Total Cost</span>
@@ -149,6 +149,30 @@
                             <option value="weekly">Weekly</option>
                         </select>
                     </div>
+
+                    <div class="trend-summary" id="trendSummary">
+
+                        <div class="trend-summary-item">
+                            <span class="trend-summary-label">Total</span>
+                            <strong class="trend-summary-value" id="trendSummaryTotal">₱0.00</strong>
+                        </div>
+
+                        <div class="trend-summary-divider"></div>
+
+                        <div class="trend-summary-item">
+                            <span class="trend-summary-label">Peak</span>
+                            <strong class="trend-summary-value" id="trendSummaryPeak">—</strong>
+                        </div>
+
+                        <div class="trend-summary-divider"></div>
+
+                        <div class="trend-summary-item">
+                            <span class="trend-summary-label">Average</span>
+                            <strong class="trend-summary-value" id="trendSummaryAvg">₱0.00</strong>
+                        </div>
+
+                    </div>
+
                     <div class="chart-wrap">
                         <canvas id="salesTrendChart"></canvas>
                     </div>

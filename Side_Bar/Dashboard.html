@@ -651,7 +651,7 @@
 
                 <label>Current Password</label>
 
-                <div class="profile-input">
+                <div class="profile-input password-box">
 
                     <i class='bx bxs-lock-alt'></i>
 
@@ -659,7 +659,12 @@
                         type="password"
                         id="currentPassword"
                         placeholder="Enter current password"
+                        required minlength="8" maxlength="50"
                     >
+
+                    <button type="button" class="toggle-password" data-target="currentPassword" aria-label="Show password">
+                        <i class='bx bx-show'></i>
+                    </button>
 
                 </div>
 
@@ -670,7 +675,7 @@
 
                 <label>New Password</label>
 
-                <div class="profile-input">
+                <div class="profile-input password-box">
 
                     <i class='bx bxs-lock-alt'></i>
 
@@ -678,7 +683,12 @@
                         type="password"
                         id="newPassword"
                         placeholder="Enter new password"
+                        required minlength="8" maxlength="50"
                     >
+
+                    <button type="button" class="toggle-password" data-target="newPassword" aria-label="Show password">
+                        <i class='bx bx-show'></i>
+                    </button>
 
                 </div>
 
@@ -689,7 +699,7 @@
 
                 <label>Confirm New Password</label>
 
-                <div class="profile-input">
+                <div class="profile-input password-box">
 
                     <i class='bx bxs-lock-alt'></i>
 
@@ -697,7 +707,12 @@
                         type="password"
                         id="confirmNewPassword"
                         placeholder="Confirm new password"
+                        required minlength="8" maxlength="50"
                     >
+
+                    <button type="button" class="toggle-password" data-target="confirmNewPassword" aria-label="Show password">
+                        <i class='bx bx-show'></i>
+                    </button>
 
                 </div>
 

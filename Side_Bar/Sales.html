@@ -260,6 +260,65 @@
 
     </div>
 
+    <!-- MENU SAVED CONFIRMATION POPUP -->
+    <div class="popup-overlay" id="menuSavedOverlay">
+
+        <div class="menu-saved-popup">
+
+            <div class="popup-header menu-saved-header">
+                <h2 id="menuSavedTitle">Menu Updated</h2>
+                <button class="popup-close" id="closeMenuSavedBtn" type="button">
+                    <i class='bx bx-x'></i>
+                </button>
+            </div>
+
+            <div class="menu-saved-body">
+
+                <div class="menu-saved-image" id="menuSavedImageWrap">
+                    <img id="menuSavedImage" src="" alt="" style="display:none;">
+                    <i class='bx bx-image' id="menuSavedImagePlaceholder"></i>
+                </div>
+
+                <div class="menu-saved-details">
+
+                    <div class="menu-saved-row">
+                        <div class="menu-saved-icon"><i class='bx bx-food-menu'></i></div>
+                        <div class="menu-saved-row-text">
+                            <span class="menu-saved-label">Name</span>
+                            <strong id="menuSavedName"></strong>
+                        </div>
+                    </div>
+
+                    <div class="menu-saved-row">
+                        <div class="menu-saved-icon"><i class='bx bx-money'></i></div>
+                        <div class="menu-saved-row-text">
+                            <span class="menu-saved-label">Price</span>
+                            <strong id="menuSavedPrice"></strong>
+                        </div>
+                    </div>
+
+                    <div class="menu-saved-row menu-saved-description-row">
+                        <div class="menu-saved-icon"><i class='bx bx-detail'></i></div>
+                        <div class="menu-saved-row-text">
+                            <span class="menu-saved-label">Description</span>
+                            <p id="menuSavedDescription"></p>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="add-menu-actions">
+                <button type="button" class="save-menu-btn" id="menuSavedOkBtn">
+                    OK
+                </button>
+            </div>
+
+        </div>
+
+    </div>
+
     <script src="../Javascript/sidebar.js"></script>
     <script src="../Javascript/Sales.js"></script>
 </body>

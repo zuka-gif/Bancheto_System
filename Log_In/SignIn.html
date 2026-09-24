@@ -32,7 +32,7 @@
                 <label>Email Address or Phone Number</label>
                 <div class="input-box">
                     <i class='bx bxs-user' ></i>
-                    <input type="text" id="loginUsername" placeholder="Enter your email or phone number " required>
+                    <input type="text" id="loginUsername" placeholder="Enter your email or phone number " required minlength="8" maxlength="50">
                 </div>
 
                 <label>Password</label>
@@ -99,7 +99,7 @@
                     type="text"
                     id="forgotContact"
                     placeholder="Enter your email or phone number"
-                    required
+                    required minlength="8" maxlength="50"
                 >
             </div>
 
@@ -130,11 +130,12 @@
                     type="password"
                     id="newPassword"
                     placeholder="Enter your new password"
-                    required
+                    required minlength="8" maxlength="50"
                 >
 
                 <button type="button" class="toggle-password" data-target="newPassword" aria-label="Show password">
                     <i class='bx bx-show'></i>
+                </button>
             </div>
 
             <label>Confirm New Password</label>
@@ -144,11 +145,12 @@
                     type="password"
                     id="confirmNewPassword"
                     placeholder="Confirm your new password"
-                    required
+                    required minlength="8" maxlength="50"
                 >
 
                 <button type="button" class="toggle-password" data-target="confirmNewPassword" aria-label="Show password" >
                     <i class='bx bx-show'></i>
+                </button>
             </div>
 
             <button type="submit" class="signin">
