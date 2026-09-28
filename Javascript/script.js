@@ -123,7 +123,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 document.getElementById("signupUsername").value.trim();
 
 
-            const emailOrPhone =
+            const email =
                 document.getElementById("signupEmailOrPhone").value.trim();
 
 
@@ -162,7 +162,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (
                 !fullname ||
                 !username ||
-                !emailOrPhone ||
+                !email ||
                 !password ||
                 !confirmPassword ||
                 !role
@@ -302,9 +302,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
             // CREATE THE REAL AUTH ACCOUNT
-            // emailOrPhone must be a real, valid email address here —
+            // email must be a real, valid email address here —
             // Supabase Auth (in its default email/password setup) signs
-            // people up by email, not by arbitrary phone numbers.
+            // people up by email address only.
             //
             // fullname/username/role are passed as signup metadata
             // (options.data) instead of being inserted into "profiles"
@@ -323,7 +323,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             const { data: signUpData, error: signUpError } =
                 await sb.auth.signUp({
-                    email: emailOrPhone,
+                    email: email,
                     password: password,
                     options: {
                         emailRedirectTo: "https://zuka-gif.github.io/Bancheto_System/Log_In/Email_Confirmed.html",
@@ -390,13 +390,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
             if (needsEmailConfirmation) {
 
-                showMessage(
+                setTimeout(function() {
+                    showMessage(
                     "Account created! Please check your email (" +
-                        emailOrPhone +
+                        email +
                         ") and tap the Confirm button before signing in.",
                     "success"
                 );
-
+            }, 1000);
             } else {
 
                 showMessage(
@@ -412,7 +413,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 window.location.href =
                     "../Log_In/SignIn.html";
 
-            }, needsEmailConfirmation ? 4000 : 1500);
+            }, needsEmailConfirmation ? 4000 : 1000);
 
         });
 
@@ -456,7 +457,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 document.getElementById("loginPassword");
 
 
-            const emailOrPhone =
+            const email =
                 loginInput
                     ? loginInput.value.trim()
                     : "";
@@ -484,10 +485,10 @@ document.addEventListener("DOMContentLoaded", function () {
             // VALIDATE
             
 
-            if (!emailOrPhone || !password) {
+            if (!email || !password) {
 
                 showMessage(
-                    "Please enter your email/phone and password.",
+                    "Please enter your email address and password.",
                     "error"
                 );
 
@@ -505,7 +506,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             const { data: signInData, error: signInError } =
                 await sb.auth.signInWithPassword({
-                    email: emailOrPhone,
+                    email: email,
                     password: password
                 });
 
@@ -519,7 +520,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 // the result of.
                 saveLoginHistory(
                     "Unknown User",
-                    emailOrPhone,
+                    email,
                     "Unknown",
                     "Failed"
                 ).catch(function (err) {
@@ -539,7 +540,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 showMessage(
                     isUnconfirmed
                         ? "Please confirm your email address before signing in. Check your inbox for the confirmation link."
-                        : "Invalid email/phone number or password.",
+                        : "Invalid email address or password.",
                     "error"
                 );
 
