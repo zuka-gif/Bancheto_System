@@ -569,6 +569,35 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
 
+            // BLOCK DISABLED ACCOUNTS
+            // The password was correct, so Supabase Auth has already
+            // created a real session by this point. It has no idea about
+            // the custom "disabled" column on profiles, so that session
+            // must be ended here before anything is saved or redirected.
+
+            if (profile.disabled) {
+
+                await sb.auth.signOut();
+
+                saveLoginHistory(
+                    profile.fullname,
+                    profile.username,
+                    profile.role,
+                    "Failed"
+                ).catch(function (err) {
+                    console.error("Could not log blocked attempt:", err);
+                });
+
+                showMessage(
+                    "This account has been disabled. Please contact the owner.",
+                    "error"
+                );
+
+                if (submitBtn) submitBtn.disabled = false;
+                return;
+            }
+
+
             
             // TIMESTAMP FOR THIS LOGIN
             
