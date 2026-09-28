@@ -502,9 +502,15 @@
         // ---- X AXIS LABELS (weekday + date for each of the 7 days) ----
         if (chartXAxis) {
             const xSpans = chartXAxis.querySelectorAll("span");
+            // Same denominator the SVG uses for stepX below (days.length - 1),
+            // so each label's "left" percentage lands on the exact same
+            // coordinate as its point on the line — not on flexbox's own
+            // (text-width-dependent) idea of "evenly spaced".
+            const lastIdx = xSpans.length - 1 || 1;
             xSpans.forEach((span, idx) => {
                 if (!days[idx]) return;
                 span.textContent = days[idx].toLocaleDateString("en-US", { weekday: "long" });
+                span.style.left = `${(idx / lastIdx) * 100}%`;
                 // Today (the last day) gets a stronger label
                 span.classList.toggle("chart-x-today", idx === days.length - 1);
             });

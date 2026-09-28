@@ -1015,24 +1015,41 @@
 
 
 /* X AXIS
-   margin-left matches .chart-y-axis width exactly. */
+   Each label is placed with an absolute "left" percentage that JS sets
+   to match the exact x-position of its corresponding point in the SVG
+   (idx / (days.length - 1) of the chart width). This keeps every label
+   centered directly under its dot regardless of how wide the weekday
+   name is — flexbox's justify-content: space-between could not do this,
+   since it spaces items evenly by their own width, not by a shared
+   coordinate system with the chart. margin-left still matches
+   .chart-y-axis width exactly so the 0%/100% edges line up with the
+   chart area. */
 
 .chart-x-axis {
     height: 16px;
 
     margin-left: 46px;
+    margin-right: 9px;
 
-    padding-top: 4px;
+    padding-top: 6px;
 
-    display: flex;
-    justify-content: space-between;
+    position: relative;
 
     flex-shrink: 0;
 
     color: #666;
 
-    font-size: 10px;
+    font-size: 9px;
     font-weight: bold;
+}
+
+.chart-x-axis span {
+    position: absolute;
+    top: 6px;
+
+    transform: translateX(-50%);
+
+    white-space: nowrap;
 }
 
 
