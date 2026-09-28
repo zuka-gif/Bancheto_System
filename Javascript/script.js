@@ -430,6 +430,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (signinForm) {
 
+        // OLD CONFIRMATION LINKS
+        // Emails sent before the redirect was changed still point to
+        // SignIn.html?confirmed=1. Send those to the "Email confirmed"
+        // page instead. Supabase auto-signs the person in from the email
+        // link, so sign out first so they log in normally afterwards.
+        if (new URLSearchParams(window.location.search).get("confirmed") === "1") {
+
+            sb.auth.signOut().finally(function () {
+                window.location.replace("Email_Confirmed.html");
+            });
+
+        }
+
         signinForm.addEventListener("submit", async function (event) {
 
             event.preventDefault();
