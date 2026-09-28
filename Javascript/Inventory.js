@@ -918,15 +918,24 @@
 
         target.scrollIntoView({ behavior: "smooth", block: "center" });
 
-        target.style.transition = "box-shadow 0.3s ease, outline 0.3s ease";
-        target.style.outline = "2px solid #cc292d";
-        target.style.outlineOffset = "2px";
-        target.style.boxShadow = "0 0 0 4px rgba(204, 41, 45, 0.15)";
+        const isRow = target.tagName === "TR";
+
+        if (isRow) {
+            // Same color as the row :hover in Inventory.css
+            target.style.transition = "background 0.3s ease";
+            target.style.background = "#f0caca";
+        } else {
+            // Card view: hover-style lift shadow instead of a line
+            target.style.transition = "box-shadow 0.3s ease";
+            target.style.boxShadow = "0 12px 26px rgba(90, 15, 15, 0.4)";
+        }
 
         setTimeout(() => {
-            target.style.outline = "";
-            target.style.outlineOffset = "";
-            target.style.boxShadow = "";
+            if (isRow) {
+                target.style.background = "";
+            } else {
+                target.style.boxShadow = "";
+            }
         }, 2400);
 
         // Clean the URL so refreshing the page doesn't re-trigger the flash

@@ -16,6 +16,7 @@
 
     const TRANSACTIONS_KEY = "yesunim_transactions"; // unused now, kept only as a comment anchor
     const DISMISSED_NOTIFICATIONS_KEY = "yesunim_dismissedNotifications";
+    const SETTINGS_KEY = "banchetoSettings"; // written by Profile_Setting.js
     const CURRENT_USER_KEY = "banchetoCurrentUser"; // set by script.js at Sign In
     const LOW_STOCK_THRESHOLD = 5; // must match Inventory.js
 
@@ -794,31 +795,290 @@
 
     // ---------- NOTIFICATION BELL ----------
 
-    // Remembers which alerts the user has already acted on/seen, so they
-    // don't keep reappearing every time the dashboard reloads. Keyed by
-    // "itemId:stock" — if the stock level changes again (drops further,
-    // or gets restocked and goes low again later), that's a new signature
-    // and the alert will resurface, which is what you'd actually want.
     let lastKnownItems = [];
 
-    function loadDismissedSignatures() {
+    // Today's date as YYYY-MM-DD in the user's local time zone.
+    // A dismissed alert is only hidden while this still matches the
+    // date it was dismissed on — so the next day it comes back.
+    function todayKey() {
+        const d = new Date();
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const dd = String(d.getDate()).padStart(2, "0");
+        return `${d.getFullYear()}-${mm}-${dd}`;
+    }
+
+    // Alerts marked as read TODAY by anyone (Owner, Manager, ...), kept in
+    // the shared "dismissed_alerts" table so everyone sees the same state.
+    // Signature format: "itemId:stock".
+    // Map of signature -> role of whoever marked it read (e.g. "Manager").
+    let dismissedToday = new Map();
+
+    async function loadDismissedFromDb() {
         try {
-            const saved = localStorage.getItem(DISMISSED_NOTIFICATIONS_KEY);
-            return saved ? new Set(JSON.parse(saved)) : new Set();
+            const { data, error } = await sb
+                .from("dismissed_alerts")
+                .select("item_id, stock, dismissed_role")
+                .eq("dismissed_on", todayKey());
+
+            if (error) {
+                console.error("Could not load dismissed alerts:", error.message);
+                return;
+            }
+
+            dismissedToday = new Map((data || []).map(r => [`${r.item_id}:${r.stock}`, r.dismissed_role || ""]));
+        } catch (e) { /* keep whatever we already had */ }
+    }
+
+    async function markNotificationDismissed(signature) {
+        // Already marked read (by anyone) — keep the original reader's name
+        if (dismissedToday.has(signature)) return;
+
+        // Show it as read right away on this screen...
+        dismissedToday.set(signature, getCurrentUserRole());
+
+        // ...then save it so every other account sees it as read too.
+        try {
+            const cut = signature.lastIndexOf(":");
+            const itemId = signature.slice(0, cut);
+            const stock = Number(signature.slice(cut + 1));
+
+            const { data: { user } } = await sb.auth.getUser();
+
+            const { error } = await sb.from("dismissed_alerts").upsert({
+                item_id: itemId,
+                stock: stock,
+                dismissed_on: todayKey(),
+                dismissed_by: user ? user.id : null,
+                dismissed_role: getCurrentUserRole()
+            }, { onConflict: "item_id,stock,dismissed_on", ignoreDuplicates: true });
+
+            if (error) {
+                console.error("Could not save dismissed alert:", error.message);
+            }
         } catch (e) {
-            return new Set();
+            console.error("Could not save dismissed alert:", e);
         }
     }
 
-    function markNotificationDismissed(signature) {
-        const dismissed = loadDismissedSignatures();
-        dismissed.add(signature);
-        localStorage.setItem(DISMISSED_NOTIFICATIONS_KEY, JSON.stringify([...dismissed]));
+    function isDismissedToday(signature) {
+        return dismissedToday.has(signature);
     }
 
     function notificationSignature(item) {
         const id = item.id != null ? String(item.id) : (item.name || "");
         return `${id}:${getStock(item)}`;
+    }
+
+    // Reads the "Notifications" switch saved by Profile_Setting.js.
+    // Defaults to ON when nothing has been saved yet.
+    function notificationsEnabled() {
+        try {
+            const settings = JSON.parse(localStorage.getItem(SETTINGS_KEY));
+            return settings ? settings.notifications !== false : true;
+        } catch (e) {
+            return true;
+        }
+    }
+
+    // ---------- AUTO ALERT (toast popup + bell ring + background refresh) ----------
+
+    const AUTO_ALERT_INTERVAL_MS = 30000; // re-check stock every 30 seconds
+
+    // Alerts already announced with a popup, keyed by "date|itemId:stock",
+    // so the same alert doesn't pop up again on every refresh — but it
+    // does pop up again on a new day, matching the daily reset above.
+    const announcedAlerts = new Set();
+
+    function injectAlertStyles() {
+        if (document.getElementById("stockToastStyles")) return;
+
+        const style = document.createElement("style");
+        style.id = "stockToastStyles";
+        style.textContent = `
+            .stock-toast-stack {
+                position: fixed; top: 20px; right: 20px; z-index: 10000;
+                display: flex; flex-direction: column; gap: 10px;
+                pointer-events: none;
+            }
+            .stock-toast {
+                pointer-events: auto; cursor: pointer;
+                display: flex; align-items: flex-start; gap: 10px;
+                width: 320px; max-width: calc(100vw - 40px);
+                padding: 12px 14px; box-sizing: border-box;
+                background: #ffffff;
+                border: 1px solid #f0dcdc; border-left: 5px solid #cc292d;
+                border-radius: 10px;
+                box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
+                animation: stockToastIn 0.3s ease;
+            }
+            .stock-toast.toast-low { border-left-color: #f0a500; }
+            .stock-toast.toast-low .stock-toast-icon { color: #f0a500; }
+            .stock-toast.leaving {
+                opacity: 0; transform: translateX(20px);
+                transition: opacity 0.25s ease, transform 0.25s ease;
+            }
+            .stock-toast-icon { font-size: 22px; color: #cc292d; flex-shrink: 0; }
+            .stock-toast-text { min-width: 0; }
+            .stock-toast-text strong { display: block; font-size: 13px; color: #222; }
+            .stock-toast-text span { font-size: 12px; color: #666; }
+            .stock-toast-close {
+                margin-left: auto; border: none; background: transparent;
+                color: #999; font-size: 18px; line-height: 1; cursor: pointer;
+            }
+            .stock-toast-close:hover { color: #333; }
+            @keyframes stockToastIn {
+                from { opacity: 0; transform: translateX(20px); }
+                to { opacity: 1; transform: translateX(0); }
+            }
+            @keyframes bellRing {
+                0%, 100% { transform: rotate(0); }
+                20% { transform: rotate(-14deg); }
+                40% { transform: rotate(12deg); }
+                60% { transform: rotate(-8deg); }
+                80% { transform: rotate(6deg); }
+            }
+            .notification-item-read { opacity: 0.6; }
+            .notification-item-read:hover { opacity: 0.9; }
+            .notification-read-label {
+                display: block; margin-top: 2px;
+                font-size: 11px; font-weight: 700; color: #2e7d32;
+            }
+            #notificationBtn.bell-ring i {
+                transform-origin: top center;
+                animation: bellRing 0.8s ease;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    function showStockToast(title, message, isOut) {
+        injectAlertStyles();
+
+        let stack = document.getElementById("stockToastStack");
+        if (!stack) {
+            stack = document.createElement("div");
+            stack.id = "stockToastStack";
+            stack.className = "stock-toast-stack";
+            document.body.appendChild(stack);
+        }
+
+        const toast = document.createElement("div");
+        toast.className = "stock-toast" + (isOut ? "" : " toast-low");
+
+        const icon = document.createElement("i");
+        icon.className = "bx " + (isOut ? "bxs-error-circle" : "bxs-error") + " stock-toast-icon";
+
+        const text = document.createElement("div");
+        text.className = "stock-toast-text";
+        const strong = document.createElement("strong");
+        strong.textContent = title;
+        const span = document.createElement("span");
+        span.textContent = message;
+        text.appendChild(strong);
+        text.appendChild(span);
+
+        const closeBtn = document.createElement("button");
+        closeBtn.type = "button";
+        closeBtn.className = "stock-toast-close";
+        closeBtn.textContent = "×";
+        closeBtn.setAttribute("aria-label", "Close");
+
+        toast.appendChild(icon);
+        toast.appendChild(text);
+        toast.appendChild(closeBtn);
+        stack.appendChild(toast);
+
+        let removed = false;
+        const removeToast = () => {
+            if (removed) return;
+            removed = true;
+            toast.classList.add("leaving");
+            setTimeout(() => toast.remove(), 260);
+        };
+
+        closeBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            removeToast();
+        });
+
+        // Clicking the popup opens the bell so the alert can be acted on
+        toast.addEventListener("click", () => {
+            toggleNotificationDropdown(true);
+            removeToast();
+        });
+
+        setTimeout(removeToast, 7000);
+    }
+
+    function ringBell() {
+        if (!notificationBtnEl) return;
+        injectAlertStyles();
+        notificationBtnEl.classList.remove("bell-ring");
+        void notificationBtnEl.offsetWidth; // restart the animation
+        notificationBtnEl.classList.add("bell-ring");
+    }
+
+    // Pops up a message for any alert that hasn't been announced yet today.
+    function announceNewAlerts(alerts) {
+        const today = todayKey();
+        const fresh = alerts.filter(i => !announcedAlerts.has(today + "|" + notificationSignature(i)));
+
+        alerts.forEach(i => announcedAlerts.add(today + "|" + notificationSignature(i)));
+
+        if (fresh.length === 0) return;
+
+        ringBell();
+
+        if (fresh.length === 1) {
+            const item = fresh[0];
+            const stock = getStock(item);
+            const isOut = stock === 0;
+            showStockToast(
+                item.name || "Unnamed item",
+                isOut ? "is out of stock" : `is low — ${stock} ${getUnit(item)} left`,
+                isOut
+            );
+        } else {
+            showStockToast(
+                `${fresh.length} stock alerts`,
+                "Some items are low or out of stock. Click to view.",
+                fresh.some(i => getStock(i) === 0)
+            );
+        }
+    }
+
+    // Lightweight background check: only re-reads inventory, then redraws
+    // the Low Stock panel and the bell (which pops up any new alerts).
+    let autoAlertBusy = false;
+
+    async function refreshAlerts() {
+        if (autoAlertBusy) return;
+        autoAlertBusy = true;
+
+        try {
+            const items = await loadInventoryItems();
+
+            // loadInventoryItems() returns [] when the request fails —
+            // keep showing what we had instead of wrongly clearing alerts.
+            if (items.length === 0 && lastKnownItems.length > 0) return;
+
+            // Pick up alerts other accounts have marked as read meanwhile
+            await loadDismissedFromDb();
+
+            renderLowStock(items);
+            renderNotifications(items);
+        } finally {
+            autoAlertBusy = false;
+        }
+    }
+
+    function startAutoAlerts() {
+        setInterval(refreshAlerts, AUTO_ALERT_INTERVAL_MS);
+
+        // Also check right away when the user comes back to this tab
+        document.addEventListener("visibilitychange", () => {
+            if (!document.hidden) refreshAlerts();
+        });
     }
 
     /* The bell surfaces the same low-stock/out-of-stock situation the
@@ -829,12 +1089,26 @@
 
         lastKnownItems = items;
 
-        const dismissed = loadDismissedSignatures();
+        // Notifications switched off in System Setting
+        if (!notificationsEnabled()) {
+            notificationBadgeEl.style.display = "none";
+            if (notificationCountTextEl) notificationCountTextEl.textContent = "";
+            notificationListEl.innerHTML = `<div class="notification-empty">Notifications are turned off in System Setting.</div>`;
+            return;
+        }
 
-        const alerts = items
+        injectAlertStyles();
+
+        const lowItems = items
             .filter(i => getStock(i) <= LOW_STOCK_THRESHOLD)
-            .filter(i => !dismissed.has(notificationSignature(i)))
             .sort((a, b) => getStock(a) - getStock(b));
+
+        // Unread first, then the ones already marked read (dimmed, with who read them)
+        const alerts = lowItems.filter(i => !isDismissedToday(notificationSignature(i)));
+        const readAlerts = lowItems.filter(i => isDismissedToday(notificationSignature(i)));
+
+        // Auto alert: pop up anything new that hasn't been announced yet today
+        announceNewAlerts(alerts);
 
         if (notificationBadgeEl) {
             if (alerts.length > 0) {
@@ -849,39 +1123,52 @@
             notificationCountTextEl.textContent = alerts.length > 0 ? `${alerts.length} alert${alerts.length === 1 ? "" : "s"}` : "";
         }
 
-        if (alerts.length === 0) {
+        if (lowItems.length === 0) {
             notificationListEl.innerHTML = `<div class="notification-empty">No alerts right now — everything is well stocked.</div>`;
             return;
         }
 
-        notificationListEl.innerHTML = alerts.map(i => {
+        const buildItemHtml = (i, isRead) => {
             const stock = getStock(i);
             const isOut = stock === 0;
             const message = isOut ? "is out of stock" : `is low — ${stock} ${getUnit(i)} left`;
             const id = i.id != null ? String(i.id) : "";
             const category = i.category || "";
+            const signature = notificationSignature(i);
+
+            let readLabel = "";
+            if (isRead) {
+                const who = dismissedToday.get(signature);
+                readLabel = `<span class="notification-read-label">✓ Marked read${who ? " by " + who : ""}</span>`;
+            }
 
             return `
-                <div class="notification-item" role="button" tabindex="0"
-                     data-item-id="${id}" data-category="${category}" data-signature="${notificationSignature(i)}">
+                <div class="notification-item${isRead ? " notification-item-read" : ""}" role="button" tabindex="0"
+                     data-item-id="${id}" data-category="${category}" data-signature="${signature}">
                     <i class='bx ${isOut ? "bxs-error-circle" : "bxs-error"}'></i>
                     <div class="notification-item-text">
                         <strong>${i.name || "Unnamed item"}</strong>
                         <span>${message}</span>
+                        ${readLabel}
                     </div>
+                    ${isRead ? "" : `
                     <button type="button" class="notification-dismiss-btn" title="Mark as read">
                         <i class='bx bx-check'></i>
-                    </button>
+                    </button>`}
                 </div>
             `;
-        }).join("");
+        };
+
+        notificationListEl.innerHTML =
+            alerts.map(i => buildItemHtml(i, false)).join("") +
+            readAlerts.map(i => buildItemHtml(i, true)).join("");
 
         // Clicking (or pressing Enter/Space on) an alert marks it read and
         // jumps to that product's category in Inventory, highlighting the
         // exact row/card so it's easy to find.
         notificationListEl.querySelectorAll(".notification-item[data-item-id]").forEach(el => {
-            const goToItem = () => {
-                markNotificationDismissed(el.dataset.signature);
+            const goToItem = async () => {
+                await markNotificationDismissed(el.dataset.signature);
 
                 const params = new URLSearchParams();
                 if (el.dataset.category) params.set("category", el.dataset.category);
@@ -906,9 +1193,18 @@
                     markNotificationDismissed(el.dataset.signature);
 
                     el.classList.add("notification-item-removing");
-                    el.addEventListener("transitionend", () => {
+
+                    // Re-render once the fade-out finishes. The timeout is a
+                    // fallback in case no CSS transition exists to fire
+                    // "transitionend"; whichever happens first wins.
+                    let done = false;
+                    const finish = () => {
+                        if (done) return;
+                        done = true;
                         renderNotifications(lastKnownItems);
-                    }, { once: true });
+                    };
+                    el.addEventListener("transitionend", finish, { once: true });
+                    setTimeout(finish, 300);
                 });
             }
         });
@@ -939,6 +1235,20 @@
                 window.location.href = "Inventory.html";
             });
         }
+
+        // Re-draw the bell the moment the Notifications switch is saved
+        // in System Setting (Profile_Setting.js fires this event), so the
+        // change shows up without reloading the page.
+        window.addEventListener("banchetoSettingsChanged", () => {
+            renderNotifications(lastKnownItems);
+        });
+
+        // Same thing if the setting was changed in another open tab.
+        window.addEventListener("storage", (e) => {
+            if (e.key === SETTINGS_KEY || e.key === DISMISSED_NOTIFICATIONS_KEY) {
+                renderNotifications(lastKnownItems);
+            }
+        });
     }
 
     // ---------- VIEW ALL BUTTON NAVIGATION ----------
@@ -955,6 +1265,32 @@
     }
 
     // ---------- INIT ----------
+
+    // Pulls this account's saved settings from the database and copies the
+    // notification switch into the local cache that notificationsEnabled()
+    // reads, so the setting follows the account across browsers/devices.
+    async function syncSettingsFromDb() {
+        try {
+            const { data: { user } } = await sb.auth.getUser();
+            if (!user) return;
+
+            const { data, error } = await sb
+                .from("user_settings")
+                .select("notifications, last_backup")
+                .eq("user_id", user.id)
+                .maybeSingle();
+
+            if (error || !data) return;
+
+            const cached = JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {};
+
+            localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+                ...cached,
+                notifications: data.notifications,
+                lastBackup: data.last_backup ? new Date(data.last_backup).getTime() : null
+            }));
+        } catch (e) { /* fall back to whatever is cached locally */ }
+    }
 
     async function refresh() {
         const [items, transactions, logs] = await Promise.all([
@@ -1040,11 +1376,14 @@
     }
 
     async function init() {
+        await syncSettingsFromDb();
+        await loadDismissedFromDb();
         await refresh();
         wireViewAllButtons();
         wireNotificationBell();
         wireChartHover();
         wireChartResize();
+        startAutoAlerts();
     }
 
     document.addEventListener("DOMContentLoaded", init);
