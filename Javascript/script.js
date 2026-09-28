@@ -314,13 +314,19 @@ document.addEventListener("DOMContentLoaded", function () {
             // the server side — this works whether or not "Confirm
             // email" is turned on, since it doesn't depend on the
             // client having an active session yet.
+            //
+            // emailRedirectTo is a fixed address so the confirmation link
+            // always opens the "Email confirmed" page, no matter which
+            // device or local server the sign-up happened from. This
+            // address must also be listed under Authentication → URL
+            // Configuration → Redirect URLs in the Supabase dashboard.
 
             const { data: signUpData, error: signUpError } =
                 await sb.auth.signUp({
                     email: emailOrPhone,
                     password: password,
                     options: {
-                        emailRedirectTo: new URL("SignIn.html?confirmed=1", window.location.href).href,
+                        emailRedirectTo: "https://zuka-gif.github.io/Bancheto_System/Log_In/Email_Confirmed.html",
                         data: {
                             fullname: fullname,
                             username: username,
@@ -423,19 +429,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     if (signinForm) {
-
-        // SHOW "EMAIL CONFIRMED" AFTER CLICKING THE BUTTON IN THE EMAIL
-        if (new URLSearchParams(window.location.search).get("confirmed") === "1") {
-
-            // Supabase auto-signs the person in from the email link.
-            // Sign out so they log in normally through this page.
-            sb.auth.signOut();
-
-            showMessage("Email confirmed! You can now sign in.", "success");
-
-            // Remove ?confirmed=1 and the token from the address bar
-            history.replaceState(null, "", window.location.pathname);
-        }
 
         signinForm.addEventListener("submit", async function (event) {
 
