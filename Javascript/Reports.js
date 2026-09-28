@@ -552,7 +552,11 @@
         btnEl.classList.add("active");
 
         document.querySelectorAll(".report-content").forEach(el => {
-            el.style.display = el.id === tabId ? "block" : "none";
+            // "flex" (not "block") so the visible tab keeps the column-flex
+            // layout that makes .report-table-container fill the leftover
+            // height and scroll — see Reports.css. The inactive tab still
+            // gets "none", which correctly drops it out of the flex flow.
+            el.style.display = el.id === tabId ? "flex" : "none";
         });
     };
 
@@ -568,7 +572,7 @@
     // Catches Ctrl+P / browser menu printing too, not just our own
     // Print/Export PDF buttons, so the printed header is always fresh.
     window.addEventListener("beforeprint", () => {
-        const visibleTab = document.querySelector(".report-content[style*='block'], .report-content:not([style*='display'])");
+        const visibleTab = document.querySelector(".report-content[style*='flex'], .report-content:not([style*='display'])");
         const tabId = visibleTab ? visibleTab.id : "sales";
         if (document.getElementById(`${tabId}-printMeta`)) {
             preparePrintHeader(tabId);

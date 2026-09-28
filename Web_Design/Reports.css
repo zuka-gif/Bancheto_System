@@ -20,6 +20,8 @@
     gap: 10px;
     margin-bottom: 28px;
 
+    flex-shrink: 0;
+
     border-bottom: 2px solid #eee0da;
 }
 
@@ -60,6 +62,27 @@
 
 
 /* ========================================
+   TAB CONTENT
+   Each .report-content (sales / inventory) is itself a column flex
+   container, so the table wrapper below can flex to fill whatever
+   vertical space is left after the filter bar and be the one thing
+   that scrolls — instead of the whole report getting clipped by
+   .reports-main's fixed 100vh height. Only the ACTIVE tab's content
+   participates in this layout; the inactive one is display:none (set
+   by showReport() in Reports.js) and drops out of the flex flow
+   entirely, so it never affects the active tab's sizing.
+======================================== */
+
+.report-content {
+    display: flex;
+    flex-direction: column;
+
+    min-height: 0;
+    flex: 1;
+}
+
+
+/* ========================================
    FILTER BAR
 ======================================== */
  
@@ -68,6 +91,8 @@
     align-items: center;
     gap: 12px;
     flex-wrap: wrap;
+
+    flex-shrink: 0;
  
     margin-bottom: 18px;
 }
@@ -249,11 +274,38 @@
  
 /* ========================================
    TABLE
+   Split into two layers on purpose:
+
+   .report-table-container — the SCROLLING layer. flex:1 + min-height:0
+   lets it take whatever vertical space .report-content has left after
+   the filter bar, and overflow-y:auto is what makes a long report
+   scroll instead of being clipped by the page's fixed height. It has
+   no border or border-radius of its own, so its native scrollbar
+   renders as a plain straight bar in the small right-hand gutter
+   (padding-right below) — sitting outside the card, not on top of
+   its rounded corner.
+
+   .report-table-card — the VISUAL layer (border, rounded corners,
+   shadow) that actually wraps the table. It doesn't scroll itself;
+   it's simply as tall as its content, and it's the container above
+   that scrolls it into view. overflow:hidden here is only what clips
+   the table's square corners into the card's rounded ones.
 ======================================== */
  
 .report-table-container {
     width: 100%;
- 
+
+    flex: 1;
+    min-height: 0;
+
+    overflow-y: auto;
+    overflow-x: auto;
+
+    /* Gutter the scrollbar sits in, clear of the card's border/shadow */
+    padding-right: 8px;
+}
+
+.report-table-card {
     border: 1px solid #e0cfc7;
     border-radius: 10px;
  
@@ -282,6 +334,13 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.4px;
+
+    /* Header stays visible while the rows scroll underneath — sticks
+       relative to .report-table-container, the nearest scrolling
+       ancestor, even though it's nested inside the non-scrolling card */
+    position: sticky;
+    top: 0;
+    z-index: 2;
 }
 
 /* Total Orders (3rd column) and Total Pax (4th column) on the Sales
@@ -299,7 +358,7 @@
 }
 
 .report-table tbody tr:hover {
-    background: #fdeeea;
+    background: #eed6cf;
 }
 
 .report-table tbody td {
@@ -325,12 +384,17 @@
 
     padding: 0 14px;
  
-    background: #fdeeea;
+    background: #eecac0;
     border-top: 2px solid #e7c2b8;
  
     font-size: 14px;
     font-weight: 800;
     color: #7a1010;
+
+    /* Total row stays visible at the bottom of the scroll area too */
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
 }
 
 .report-table .status-cell {
@@ -383,6 +447,8 @@
     display: flex;
     justify-content: flex-end;
     gap: 10px;
+
+    flex-shrink: 0;
  
     margin-top: 18px;
 }
@@ -509,12 +575,25 @@
         margin-top: 6px;
     }
 
-    /* everything below just keeps the table's normal on-screen
-       format (colors, padding, alignment) intact when printed —
-       most browsers silently drop background colors on print
-       unless told otherwise */
+    /* the scroll region + its gutter only exist so the report fits on
+       screen — printing should let the full table flow across as many
+       pages as it needs instead of being clipped to one scroll box,
+       and the header/footer's sticky positioning (which only makes
+       sense inside a scrolling box) is turned off too */
     .report-table-container {
+        flex: none !important;
+        overflow: visible !important;
+        max-height: none !important;
+        padding-right: 0 !important;
+    }
+
+    .report-table-card {
         box-shadow: none;
+    }
+
+    .report-table thead th,
+    .report-table tfoot .total-row td {
+        position: static !important;
     }
 
     .report-table thead th,
