@@ -60,7 +60,9 @@
     const menuPriceInput = document.getElementById("menuPriceInput");
     const menuDescriptionInput = document.getElementById("menuDescriptionInput");
 
-    let pendingImageDataUrl = "";
+    let pendingImageUrl = "";   // image already saved for this item (Storage URL, legacy base64, or "")
+    let pendingImageBlob = null; // newly picked image, compressed, not uploaded until Save
+    let pendingPreviewUrl = "";  // temporary blob: URL used only for the popup preview
 
     // Menu Saved confirmation popup elements — shown after Add/Update
     // Menu finishes, mirroring back everything that was just saved.
@@ -188,7 +190,7 @@
             }
 
             const imageHtml = item.image
-                ? `<img class="menu-image" src="${item.image}" alt="${item.name}">`
+                ? `<img class="menu-image" src="${item.image}" alt="${item.name}" loading="lazy" decoding="async">`
                 : `<div class="menu-image" style="display:flex;align-items:center;justify-content:center;background:#f1e6e2;color:#c46e6e;"><i class='bx bx-image' style='font-size:26px;'></i></div>`;
 
             const qty = getOrderQtyForMenuId(item.id);
@@ -421,6 +423,90 @@
         alert("Transaction recorded successfully.");
     }
 
+    // ---------- IMAGE STORAGE (Supabase Storage bucket "images") ----------
+
+    const IMAGE_BUCKET = "images";
+    const IMAGE_MAX_WIDTH = 800;   // px — plenty for a menu card
+    const IMAGE_QUALITY = 0.8;
+
+    // Shrinks a photo in the browser before upload (phone photos are
+    // often 3-8 MB; after this they are roughly 50-150 KB).
+    function compressImage(fileOrBlob) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            const objectUrl = URL.createObjectURL(fileOrBlob);
+
+            img.onload = () => {
+                const scale = Math.min(1, IMAGE_MAX_WIDTH / img.width);
+                const canvas = document.createElement("canvas");
+                canvas.width = Math.round(img.width * scale);
+                canvas.height = Math.round(img.height * scale);
+                canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+                URL.revokeObjectURL(objectUrl);
+
+                canvas.toBlob(
+                    (blob) => blob ? resolve(blob) : reject(new Error("Could not compress image.")),
+                    "image/webp",
+                    IMAGE_QUALITY
+                );
+            };
+            img.onerror = () => {
+                URL.revokeObjectURL(objectUrl);
+                reject(new Error("That file could not be read as an image."));
+            };
+            img.src = objectUrl;
+        });
+    }
+
+    // Uploads a compressed image and returns its public URL.
+    async function uploadMenuImage(blob) {
+        const path = "menu/" + crypto.randomUUID() + ".webp";
+
+        const { error } = await sb.storage
+            .from(IMAGE_BUCKET)
+            .upload(path, blob, {
+                contentType: "image/webp",
+                cacheControl: "31536000"
+            });
+
+        if (error) throw error;
+
+        return sb.storage.from(IMAGE_BUCKET).getPublicUrl(path).data.publicUrl;
+    }
+
+    // Deletes a file from Storage given its public URL. Ignores empty
+    // values, legacy base64 images, and URLs that aren't in our bucket.
+    async function deleteMenuImage(publicUrl) {
+        if (!publicUrl) return;
+
+        const marker = "/object/public/" + IMAGE_BUCKET + "/";
+        const idx = publicUrl.indexOf(marker);
+        if (idx === -1) return;
+
+        const path = decodeURIComponent(publicUrl.slice(idx + marker.length).split("?")[0]);
+        const { error } = await sb.storage.from(IMAGE_BUCKET).remove([path]);
+        if (error) console.warn("Could not delete old image:", error.message);
+    }
+
+    function clearPreviewUrl() {
+        if (pendingPreviewUrl) {
+            URL.revokeObjectURL(pendingPreviewUrl);
+            pendingPreviewUrl = "";
+        }
+    }
+
+    function showImagePreview(src) {
+        if (src) {
+            menuImagePreview.src = src;
+            menuImagePreview.style.display = "block";
+            imageUploadText.style.display = "none";
+        } else {
+            menuImagePreview.src = "";
+            menuImagePreview.style.display = "none";
+            imageUploadText.style.display = "flex";
+        }
+    }
+
     // ---------- ADD / EDIT MENU POPUP ----------
 
     function openAddMenuPopup() {
@@ -429,10 +515,10 @@
         saveMenuBtn.textContent = "Save Menu";
 
         addMenuForm.reset();
-        pendingImageDataUrl = "";
-        menuImagePreview.src = "";
-        menuImagePreview.style.display = "none";
-        imageUploadText.style.display = "flex";
+        clearPreviewUrl();
+        pendingImageUrl = "";
+        pendingImageBlob = null;
+        showImagePreview("");
 
         addMenuOverlay.classList.add("show");
     }
@@ -446,17 +532,10 @@
         menuPriceInput.value = item.price;
         menuDescriptionInput.value = item.description || "";
 
-        pendingImageDataUrl = item.image || "";
-
-        if (pendingImageDataUrl) {
-            menuImagePreview.src = pendingImageDataUrl;
-            menuImagePreview.style.display = "block";
-            imageUploadText.style.display = "none";
-        } else {
-            menuImagePreview.src = "";
-            menuImagePreview.style.display = "none";
-            imageUploadText.style.display = "flex";
-        }
+        clearPreviewUrl();
+        pendingImageBlob = null;
+        pendingImageUrl = item.image || "";
+        showImagePreview(pendingImageUrl);
 
         addMenuOverlay.classList.add("show");
     }
@@ -466,17 +545,25 @@
         editingItemId = null;
     }
 
-    function handleImageUpload(file) {
+    async function handleImageUpload(file) {
         if (!file) return;
 
-        const reader = new FileReader();
-        reader.onload = function (e) {
-            pendingImageDataUrl = e.target.result;
-            menuImagePreview.src = pendingImageDataUrl;
-            menuImagePreview.style.display = "block";
-            imageUploadText.style.display = "none";
-        };
-        reader.readAsDataURL(file);
+        if (!file.type.startsWith("image/")) {
+            alert("Please choose an image file.");
+            return;
+        }
+
+        try {
+            // Compress now so the preview shows exactly what will be
+            // uploaded. Nothing is sent to Storage until Save is clicked.
+            pendingImageBlob = await compressImage(file);
+
+            clearPreviewUrl();
+            pendingPreviewUrl = URL.createObjectURL(pendingImageBlob);
+            showImagePreview(pendingPreviewUrl);
+        } catch (err) {
+            alert(err.message);
+        }
     }
 
     async function handleAddMenuSubmit(e) {
@@ -497,6 +584,34 @@
 
         saveMenuBtn.disabled = true;
 
+        // ----- Work out the final image URL (upload to Storage if needed) -----
+        const previousImageUrl = wasEditing
+            ? ((menuItems.find(m => m.id === editingItemId) || {}).image || "")
+            : "";
+
+        let finalImageUrl = pendingImageUrl;   // unchanged by default
+        let uploadedNewUrl = "";               // set only if we upload in this save
+
+        try {
+            let blobToUpload = pendingImageBlob;
+
+            // Legacy item whose image is still a base64 string in the DB:
+            // convert it to a real file the first time it is saved.
+            if (!blobToUpload && pendingImageUrl.startsWith("data:")) {
+                const legacyBlob = await (await fetch(pendingImageUrl)).blob();
+                blobToUpload = await compressImage(legacyBlob);
+            }
+
+            if (blobToUpload) {
+                uploadedNewUrl = await uploadMenuImage(blobToUpload);
+                finalImageUrl = uploadedNewUrl;
+            }
+        } catch (err) {
+            saveMenuBtn.disabled = false;
+            alert("Could not upload image: " + err.message);
+            return;
+        }
+
         if (editingItemId) {
 
             const { error } = await sb
@@ -505,15 +620,22 @@
                     name: name,
                     price: price,
                     description: description,
-                    image_url: pendingImageDataUrl
+                    image_url: finalImageUrl || null
                 })
                 .eq("id", editingItemId);
 
             saveMenuBtn.disabled = false;
 
             if (error) {
+                // DB write failed — don't leave an orphaned upload behind.
+                await deleteMenuImage(uploadedNewUrl);
                 alert("Could not update menu item: " + error.message);
                 return;
+            }
+
+            // Image was replaced or removed — delete the old file.
+            if (previousImageUrl && previousImageUrl !== finalImageUrl) {
+                await deleteMenuImage(previousImageUrl);
             }
 
             const item = menuItems.find(m => m.id === editingItemId);
@@ -521,7 +643,7 @@
                 item.name = name;
                 item.price = price;
                 item.description = description;
-                item.image = pendingImageDataUrl;
+                item.image = finalImageUrl;
             }
 
         } else {
@@ -532,7 +654,7 @@
                     name: name,
                     price: price,
                     description: description,
-                    image_url: pendingImageDataUrl
+                    image_url: finalImageUrl || null
                 })
                 .select()
                 .single();
@@ -540,6 +662,7 @@
             saveMenuBtn.disabled = false;
 
             if (error) {
+                await deleteMenuImage(uploadedNewUrl);
                 alert("Could not add menu item: " + error.message);
                 return;
             }
@@ -556,8 +679,11 @@
             name: name,
             price: price,
             description: description,
-            image: pendingImageDataUrl
+            image: finalImageUrl
         });
+
+        clearPreviewUrl();
+        pendingImageBlob = null;
     }
 
     function showMenuSavedPopup(wasEditing, item) {

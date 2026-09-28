@@ -423,7 +423,7 @@
             tr.dataset.id = item.id;
 
             const thumbHtml = item.image
-                ? `<img class="inventory-thumb" src="${item.image}" alt="${item.name}">`
+                ? `<img class="inventory-thumb" src="${item.image}" alt="${item.name}" loading="lazy" decoding="async">`
                 : `<div class="inventory-thumb"><i class='bx bx-image'></i></div>`;
 
             tr.innerHTML = `
@@ -461,7 +461,7 @@
         card.dataset.id = item.id;
 
         const imageHtml = item.image
-            ? `<img class="inventory-image" src="${item.image}" alt="${item.name}" style="object-fit:cover;">`
+            ? `<img class="inventory-image" src="${item.image}" alt="${item.name}" style="object-fit:cover;" loading="lazy" decoding="async">`
             : `<div class="inventory-image"><i class='bx bx-image'></i></div>`;
 
         card.innerHTML = `
@@ -683,19 +683,62 @@
         editingItemId = null;
     }
 
-    function handleImageUpload(file) {
+    // Shrinks a photo in the browser before upload (phone photos are
+    // often 3-8 MB; after this they are roughly 50-150 KB). The bucket
+    // only accepts jpeg/png/webp up to 2 MB, so this also keeps
+    // uploads from being rejected.
+    const IMAGE_MAX_WIDTH = 800;
+    const IMAGE_QUALITY = 0.8;
+
+    function compressImage(file) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            const objectUrl = URL.createObjectURL(file);
+
+            img.onload = () => {
+                const scale = Math.min(1, IMAGE_MAX_WIDTH / img.width);
+                const canvas = document.createElement("canvas");
+                canvas.width = Math.round(img.width * scale);
+                canvas.height = Math.round(img.height * scale);
+                canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+                URL.revokeObjectURL(objectUrl);
+
+                canvas.toBlob(
+                    (blob) => blob ? resolve(blob) : reject(new Error("Could not compress image.")),
+                    "image/webp",
+                    IMAGE_QUALITY
+                );
+            };
+            img.onerror = () => {
+                URL.revokeObjectURL(objectUrl);
+                reject(new Error("That file could not be read as an image."));
+            };
+            img.src = objectUrl;
+        });
+    }
+
+    async function handleImageUpload(file) {
         if (!file) return;
 
-        pendingImageFile = file;
+        if (!file.type.startsWith("image/")) {
+            alert("Please choose an image file.");
+            return;
+        }
 
-        const reader = new FileReader();
-        reader.onload = function (e) {
-            pendingImageDataUrl = e.target.result; // preview only — never sent to the database
+        try {
+            // pendingImageFile is now the compressed Blob (not the original File).
+            pendingImageFile = await compressImage(file);
+
+            if (pendingImageDataUrl.startsWith("blob:")) {
+                URL.revokeObjectURL(pendingImageDataUrl);
+            }
+            pendingImageDataUrl = URL.createObjectURL(pendingImageFile); // preview only
             productImagePreview.src = pendingImageDataUrl;
             productImagePreview.style.display = "block";
             productImageUploadText.style.display = "none";
-        };
-        reader.readAsDataURL(file);
+        } catch (err) {
+            alert(err.message);
+        }
     }
 
     // Uploads pendingImageFile to the "images" Storage bucket and
@@ -704,13 +747,13 @@
     async function uploadPendingImage(folder) {
         if (!pendingImageFile) return null;
 
-        const ext = (pendingImageFile.name.split(".").pop() || "jpg").toLowerCase();
-        const path = `${folder}/${crypto.randomUUID()}.${ext}`;
+        const path = `${folder}/${crypto.randomUUID()}.webp`;
 
         const { error } = await sb.storage
             .from("images")
             .upload(path, pendingImageFile, {
-                cacheControl: "3600",
+                contentType: "image/webp",
+                cacheControl: "31536000",
                 upsert: false
             });
 
@@ -803,7 +846,7 @@
                     category: category,
                     unit: unit,
                     price: price,
-                    image_url: imageUrl
+                    image_url: imageUrl || null
                 })
                 .eq("id", editingItemId);
 
@@ -858,7 +901,7 @@
                     stock: stock,
                     unit: unit,
                     price: price,
-                    image_url: imageUrl
+                    image_url: imageUrl || null
                 })
                 .select()
                 .single();
