@@ -14,11 +14,9 @@
 
 (function () {
 
-    const TRANSACTIONS_KEY = "yesunim_transactions";
-    const INVENTORY_ITEMS_KEY = "yesunim_inventoryItems";
-    const INVENTORY_LOGS_KEY = "yesunim_inventoryLogs";
+    const TRANSACTIONS_KEY = "yesunim_transactions"; // unused now, kept only as a comment anchor
     const DISMISSED_NOTIFICATIONS_KEY = "yesunim_dismissedNotifications";
-    const CURRENT_USER_KEY = "banchetoCurrentUser"; // set by User.js at Sign In
+    const CURRENT_USER_KEY = "banchetoCurrentUser"; // set by script.js at Sign In
     const LOW_STOCK_THRESHOLD = 5; // must match Inventory.js
 
     // ---------- ELEMENTS ----------
@@ -59,19 +57,83 @@
 
     // ---------- DATA LOADERS ----------
 
-    function loadTransactions() {
-        const saved = localStorage.getItem(TRANSACTIONS_KEY);
-        return saved ? JSON.parse(saved) : [];
+    // Each loader below fetches from the real table and maps every row
+    // into the SAME field names the localStorage version used
+    // (date/total/items, date/action/itemName/resultingStock, etc.) —
+    // that's what lets every render function further down the file stay
+    // completely untouched.
+
+    async function loadTransactions() {
+        // Capped at the most recent 500 — plenty for the 7-day chart,
+        // today/yesterday stat comparison, and the recent-activity feed,
+        // without pulling a permanently-growing table into the browser
+        // on every dashboard load.
+        const { data, error } = await sb
+            .from("transactions")
+            .select("*")
+            .order("created_at", { ascending: false })
+            .limit(500);
+
+        if (error) {
+            console.error("Could not load transactions:", error.message);
+            return [];
+        }
+
+        return (data || []).map(row => ({
+            id: row.id,
+            date: row.created_at,
+            role: row.role,
+            items: row.items || [],
+            subtotal: Number(row.subtotal) || 0,
+            discount: Number(row.discount) || 0,
+            total: Number(row.total) || 0,
+            cashReceived: Number(row.cash_received) || 0,
+            change: Number(row.change) || 0
+        }));
     }
 
-    function loadInventoryItems() {
-        const saved = localStorage.getItem(INVENTORY_ITEMS_KEY);
-        return saved ? JSON.parse(saved) : [];
+    async function loadInventoryItems() {
+        const { data, error } = await sb
+            .from("inventory_items")
+            .select("*");
+
+        if (error) {
+            console.error("Could not load inventory:", error.message);
+            return [];
+        }
+
+        return (data || []).map(row => ({
+            id: row.id,
+            name: row.name,
+            category: row.category,
+            stock: row.stock,
+            unit: row.unit,
+            price: Number(row.price) || 0
+        }));
     }
 
-    function loadInventoryLogs() {
-        const saved = localStorage.getItem(INVENTORY_LOGS_KEY);
-        return saved ? JSON.parse(saved) : [];
+    async function loadInventoryLogs() {
+        const { data, error } = await sb
+            .from("inventory_logs")
+            .select("*")
+            .order("created_at", { ascending: false })
+            .limit(200);
+
+        if (error) {
+            console.error("Could not load inventory logs:", error.message);
+            return [];
+        }
+
+        return (data || []).map(row => ({
+            id: row.id,
+            date: row.created_at,
+            role: row.role,
+            action: row.action,
+            itemName: row.item_name,
+            category: row.category,
+            change: row.change,
+            resultingStock: row.resulting_stock
+        }));
     }
 
     // ---------- HELPERS ----------
@@ -660,14 +722,13 @@
 
     function buildActivityFeed(transactions, logs) {
         const userName = getCurrentUserName();
-        const userRole = getCurrentUserRole();
         const feed = [];
 
         transactions.forEach(t => {
             feed.push({
                 date: new Date(t.date),
                 user: userName,
-                role: userRole,
+                role: t.role || "Unknown",
                 action: "New Order",
                 module: "Sales",
                 details: `Order total ${currency(Number(t.total) || 0)}`
@@ -682,7 +743,7 @@
             feed.push({
                 date: new Date(l.date),
                 user: userName,
-                role: userRole,
+                role: l.role || "Unknown",
                 action: l.action,
                 module: "Inventory",
                 details: `${l.itemName} (${changeText}, now ${resulting})`
@@ -889,10 +950,12 @@
 
     // ---------- INIT ----------
 
-    function refresh() {
-        const items = loadInventoryItems();
-        const transactions = loadTransactions();
-        const logs = loadInventoryLogs();
+    async function refresh() {
+        const [items, transactions, logs] = await Promise.all([
+            loadInventoryItems(),
+            loadTransactions(),
+            loadInventoryLogs()
+        ]);
 
         renderStatCards(items, transactions);
         renderSalesChart(transactions);
@@ -970,8 +1033,8 @@
         });
     }
 
-    function init() {
-        refresh();
+    async function init() {
+        await refresh();
         wireViewAllButtons();
         wireNotificationBell();
         wireChartHover();

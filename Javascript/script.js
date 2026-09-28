@@ -59,104 +59,6 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
 
-    // EMAIL / PHONE VALIDATION
-    //
-    // The "Email Address or Phone Number" field accepts either format,
-    // so a plain type="email" input won't work here. This checks the
-    // value matches one shape or the other before letting the form
-    // submit, instead of silently accepting anything typed in.
-
-    function isValidEmailOrPhone(value) {
-
-        const trimmed =
-            value.trim();
-
-        // Gmail only: something@gmail.com (case-insensitive)
-        const emailPattern =
-            /^[^\s@]+@gmail\.com$/i;
-
-        // Phone: 7-15 digits, optional leading +, spaces/dashes allowed
-        // between digits (e.g. "+63 912 345 6789", "0912-345-6789")
-        const phonePattern =
-            /^\+?\d[\d\s-]{6,14}$/;
-
-        return (
-            emailPattern.test(trimmed) ||
-            phonePattern.test(trimmed)
-        );
-
-    }
-
-
-    // FULLNAME VALIDATION
-    //
-    // Letters, spaces, periods, apostrophes, and hyphens only —
-    // rejects a fullname that is purely (or partly) numeric.
-
-    function isValidFullname(value) {
-
-        const trimmed =
-            value.trim();
-
-        const fullnamePattern =
-            /^[A-Za-z\s.'-]+$/;
-
-        return fullnamePattern.test(trimmed);
-
-    }
-
-
-    // USERNAME VALIDATION
-    //
-    // Letters, numbers, underscore, and period are allowed, but the
-    // username must contain at least one letter — so "12345" is
-    // rejected while "cashier1" or "user_02" are fine.
-
-    function isValidUsername(value) {
-
-        const trimmed =
-            value.trim();
-
-        const usernamePattern =
-            /^(?=.*[A-Za-z])[A-Za-z0-9_.]+$/;
-
-        return usernamePattern.test(trimmed);
-
-    }
-
-
-    // FULLNAME LIVE INPUT FILTER
-    //
-    // Strips digits as the user types, instead of only catching
-    // the problem on submit.
-
-    const signupFullnameInput =
-        document.getElementById("signupFullname");
-
-
-    if (signupFullnameInput) {
-
-        signupFullnameInput.addEventListener("input", function () {
-
-            const cleaned =
-                signupFullnameInput.value.replace(
-                    /[^A-Za-z\s.'-]/g,
-                    ""
-                );
-
-
-            if (cleaned !== signupFullnameInput.value) {
-
-                signupFullnameInput.value =
-                    cleaned;
-
-            }
-
-        });
-
-    }
-
-
     // SIGN UP
 
     const signupForm =
@@ -165,49 +67,76 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (signupForm) {
 
-        signupForm.addEventListener("submit", function (event) {
+        // HIDE "OWNER" OPTION IF ONE ALREADY EXISTS
+        // Only one Owner account should ever exist. This uses a
+        // security-definer RPC (see owner_exists.sql) since an anonymous
+        // visitor can't SELECT from "profiles" directly under RLS —
+        // same reason username_exists() below is an RPC instead of a
+        // normal query.
+
+        (async function hideOwnerOptionIfTaken() {
+
+            const roleSelect =
+                document.getElementById("signupRole");
+
+            if (!roleSelect) {
+                return;
+            }
+
+            const { data: ownerTaken, error: ownerCheckError } =
+                await sb.rpc("owner_exists");
+
+            if (ownerCheckError) {
+                console.error("Could not check for existing Owner:", ownerCheckError.message);
+                return;
+            }
+
+            if (ownerTaken) {
+
+                // The Owner <option> has no value="" attribute in the
+                // markup, so its .value property just falls back to its
+                // text content — checking textContent is the reliable way
+                // to find it either way.
+                Array.from(roleSelect.options).forEach(function (option) {
+
+                    if (option.textContent.trim() === "Owner") {
+                        option.remove();
+                    }
+
+                });
+
+            }
+
+        })();
+
+
+        signupForm.addEventListener("submit", async function (event) {
 
             event.preventDefault();
 
 
-            const fullnameInput =
-                document.getElementById("signupFullname");
-
-
-            const usernameInput =
-                document.getElementById("signupUsername");
-
-
-            const inputs =
-                signupForm.querySelectorAll("input");
-
-
             const fullname =
-                fullnameInput
-                    ? fullnameInput.value.trim()
-                    : inputs[0].value.trim();
+                document.getElementById("signupFullname").value.trim();
 
 
             const username =
-                usernameInput
-                    ? usernameInput.value.trim()
-                    : inputs[1].value.trim();
+                document.getElementById("signupUsername").value.trim();
 
 
             const emailOrPhone =
-                inputs[2].value.trim();
+                document.getElementById("signupEmailOrPhone").value.trim();
 
 
             const password =
-                inputs[3].value;
+                document.getElementById("signupPassword").value;
 
 
             const confirmPassword =
-                inputs[4].value;
+                document.getElementById("signupConfirmPassword").value;
 
 
             const roleSelect =
-                signupForm.querySelector("select");
+                document.getElementById("signupRole");
 
 
             const role =
@@ -246,45 +175,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 return;
             }
-
-
-            // FULLNAME FORMAT
-
-            if (!isValidFullname(fullname)) {
-
-                showMessage(
-                    "Fullname must contain letters only (no numbers).",
-                    "error"
-                );
-
-                return;
-            }
-
-
-            // USERNAME FORMAT
-
-            if (!isValidUsername(username)) {
-
-                showMessage(
-                    "Username must include at least one letter (not numbers only).",
-                    "error"
-                );
-
-                return;
-            }
-
-
-            // EMAIL / PHONE FORMAT
-
-            if (!isValidEmailOrPhone(emailOrPhone)) {
-
-                showMessage(
-                    "Please enter a valid Gmail address (e.g. name@gmail.com) or phone number.",
-                    "error"
-                );
-
-                return;
-            }
            
 
             // PASSWORD MATCH
@@ -305,10 +195,10 @@ document.addEventListener("DOMContentLoaded", function () {
             // PASSWORD LENGTH
             
 
-            if (password.length < 6) {
+            if (password.length < 8) {
 
                 showMessage(
-                    "Password must contain at least 6 characters.",
+                    "Password must contain at least 8 characters.",
                     "error"
                 );
 
@@ -331,108 +221,184 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
 
-            
-            // GET USERS
-           
+            const submitBtn =
+                signupForm.querySelector('button[type="submit"]');
 
-            let users =
-                JSON.parse(
-                    localStorage.getItem("banchetoUsers")
-                ) || [];
+            if (submitBtn) submitBtn.disabled = true;
 
 
-            
             // DUPLICATE USERNAME
-            
+            // (Supabase Auth itself will reject a duplicate email at
+            // the signUp() step below, so only username needs its own
+            // check here.)
+            //
+            // This runs BEFORE the person is authenticated (no
+            // auth.uid() yet), so it can't go through a normal
+            // .select() on "profiles" — RLS has no policy letting an
+            // anonymous visitor read that table. Instead it calls a
+            // security-definer RPC (see username_exists.sql) that only
+            // ever answers true/false, without exposing any row data.
 
-            const existingUsername =
-                users.find(function (user) {
-
-                    return (
-                        user.username &&
-                        user.username.toLowerCase() ===
-                        username.toLowerCase()
-                    );
-
+            const { data: usernameTaken, error: usernameCheckError } =
+                await sb.rpc("username_exists", {
+                    check_username: username
                 });
 
+            if (usernameCheckError) {
+                showMessage(
+                    "Something went wrong checking that username. Please try again.",
+                    "error"
+                );
+                if (submitBtn) submitBtn.disabled = false;
+                return;
+            }
 
-            if (existingUsername) {
+            if (usernameTaken) {
 
                 showMessage(
                     "Username is already registered.",
                     "error"
                 );
 
+                if (submitBtn) submitBtn.disabled = false;
                 return;
             }
 
 
-            
-            // DUPLICATE EMAIL / PHONE
-            
+            // PREVENT DUPLICATE OWNER (race-condition guard)
+            // The Owner option is already removed from the dropdown once
+            // one exists, but that only runs once at page load — if this
+            // tab had been open since before another Owner account was
+            // created, this catches that right before the account is
+            // actually made. This is a UX safeguard, not the real
+            // enforcement: since role also travels as signup metadata,
+            // final enforcement belongs in the handle_new_user trigger
+            // (or a DB constraint) on the server side, not here.
 
-            const existingContact =
-                users.find(function (user) {
+            if (role === "Owner") {
 
-                    return (
-                        user.emailOrPhone &&
-                        user.emailOrPhone.toLowerCase() ===
-                        emailOrPhone.toLowerCase()
+                const { data: ownerTaken, error: ownerCheckError } =
+                    await sb.rpc("owner_exists");
+
+                if (ownerCheckError) {
+                    showMessage(
+                        "Something went wrong checking Owner availability. Please try again.",
+                        "error"
                     );
+                    if (submitBtn) submitBtn.disabled = false;
+                    return;
+                }
 
+                if (ownerTaken) {
+                    showMessage(
+                        "An Owner account already exists. Please choose Manager or Cashier.",
+                        "error"
+                    );
+                    if (submitBtn) submitBtn.disabled = false;
+                    return;
+                }
+
+            }
+
+
+            // CREATE THE REAL AUTH ACCOUNT
+            // emailOrPhone must be a real, valid email address here —
+            // Supabase Auth (in its default email/password setup) signs
+            // people up by email, not by arbitrary phone numbers.
+            //
+            // fullname/username/role are passed as signup metadata
+            // (options.data) instead of being inserted into "profiles"
+            // directly from here. A database trigger
+            // (public.handle_new_user, fired on auth.users insert)
+            // reads this same metadata and creates the profiles row on
+            // the server side — this works whether or not "Confirm
+            // email" is turned on, since it doesn't depend on the
+            // client having an active session yet.
+
+            const { data: signUpData, error: signUpError } =
+                await sb.auth.signUp({
+                    email: emailOrPhone,
+                    password: password,
+                    options: {
+                        emailRedirectTo: new URL("SignIn.html?confirmed=1", window.location.href).href,
+                        data: {
+                            fullname: fullname,
+                            username: username,
+                            role: role
+                        }
+                    }
                 });
 
+            if (signUpError) {
 
-            if (existingContact) {
+                // The client-side owner_exists() check above already
+                // catches almost every case, but it's check-then-act,
+                // not atomic — two near-simultaneous Owner signups can
+                // both pass that check. The one_owner_only DB
+                // constraint is the real backstop for that race, and
+                // it fails with raw Postgres text ("duplicate key
+                // value violates unique constraint..."), which isn't
+                // something to show someone signing up.
+
+                const isDuplicateOwner =
+                    signUpError &&
+                    /one_owner_only/i.test(signUpError.message || "");
 
                 showMessage(
-                    "Email or phone number is already registered.",
+                    isDuplicateOwner
+                        ? "An Owner account already exists. Please choose Manager or Cashier."
+                        : (signUpError.message ||
+                            "Could not create your account. Please try again."),
                     "error"
                 );
 
+                if (submitBtn) submitBtn.disabled = false;
+                return;
+            }
+
+            const newUserId =
+                signUpData && signUpData.user
+                    ? signUpData.user.id
+                    : null;
+
+            if (!newUserId) {
+
+                showMessage(
+                    "Something went wrong creating your account. Please try again.",
+                    "error"
+                );
+
+                if (submitBtn) submitBtn.disabled = false;
                 return;
             }
 
 
-            
-            // CREATE USER
-            
+            // WITH "Confirm email" TURNED ON, signUp() creates the
+            // account but returns no session — signUpData.session is
+            // null until the person clicks the confirmation link in
+            // their inbox. Tell them that explicitly instead of
+            // promising an immediate sign-in.
 
-            const newUser = {
+            const needsEmailConfirmation =
+                !signUpData.session;
 
-                id: Date.now(),
+            if (needsEmailConfirmation) {
 
-                fullname: fullname,
+                showMessage(
+                    "Account created! Please check your email (" +
+                        emailOrPhone +
+                        ") and tap the Confirm button before signing in.",
+                    "success"
+                );
 
-                username: username,
+            } else {
 
-                emailOrPhone: emailOrPhone,
+                showMessage(
+                    "Account created successfully! Redirecting to Sign In...",
+                    "success"
+                );
 
-                password: password,
-
-                role: role,
-
-                lastLogin: null,
-
-                lastActivity: null
-
-            };
-
-
-            users.push(newUser);
-
-
-            localStorage.setItem(
-                "banchetoUsers",
-                JSON.stringify(users)
-            );
-
-
-            showMessage(
-                "Account created successfully! Redirecting to Sign In...",
-                "success"
-            );
+            }
 
 
             setTimeout(function () {
@@ -440,7 +406,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 window.location.href =
                     "../Log_In/SignIn.html";
 
-            }, 1500);
+            }, needsEmailConfirmation ? 4000 : 1500);
 
         });
 
@@ -458,7 +424,20 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (signinForm) {
 
-        signinForm.addEventListener("submit", function (event) {
+        // SHOW "EMAIL CONFIRMED" AFTER CLICKING THE BUTTON IN THE EMAIL
+        if (new URLSearchParams(window.location.search).get("confirmed") === "1") {
+
+            // Supabase auto-signs the person in from the email link.
+            // Sign out so they log in normally through this page.
+            sb.auth.signOut();
+
+            showMessage("Email confirmed! You can now sign in.", "success");
+
+            // Remove ?confirmed=1 and the token from the address bar
+            history.replaceState(null, "", window.location.pathname);
+        }
+
+        signinForm.addEventListener("submit", async function (event) {
 
             event.preventDefault();
 
@@ -510,116 +489,123 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
 
-            // EMAIL / PHONE FORMAT
+            const submitBtn =
+                signinForm.querySelector('button[type="submit"]');
 
-            if (!isValidEmailOrPhone(emailOrPhone)) {
-
-                showMessage(
-                    "Please enter a valid Gmail address (e.g. name@gmail.com) or phone number.",
-                    "error"
-                );
-
-                return;
-            }
+            if (submitBtn) submitBtn.disabled = true;
 
 
-            
-            // GET USERS
+            // SIGN IN AGAINST THE REAL SUPABASE ACCOUNT
 
-
-            const users =
-                JSON.parse(
-                    localStorage.getItem("banchetoUsers")
-                ) || [];
-
-
-            
-            // FIND ACCOUNT
-
-
-            const user =
-                users.find(function (account) {
-
-                    return (
-                        account.emailOrPhone &&
-                        account.emailOrPhone.toLowerCase() ===
-                        emailOrPhone.toLowerCase() &&
-                        account.password === password
-                    );
-
+            const { data: signInData, error: signInError } =
+                await sb.auth.signInWithPassword({
+                    email: emailOrPhone,
+                    password: password
                 });
-
 
 
             // FAILED LOGIN
 
+            if (signInError || !signInData || !signInData.user) {
 
-            if (!user) {
-
+                // Logged in the background — the person needs to see the
+                // error right away, not wait on a write they'll never see
+                // the result of.
                 saveLoginHistory(
                     "Unknown User",
                     emailOrPhone,
                     "Unknown",
                     "Failed"
-                );
+                ).catch(function (err) {
+                    console.error("Could not log failed attempt:", err);
+                });
 
+
+                // Supabase returns this specific message when "Confirm
+                // email" is on and the person hasn't clicked the link
+                // in their inbox yet — worth telling them that plainly
+                // instead of the generic invalid-credentials message.
+
+                const isUnconfirmed =
+                    signInError &&
+                    /email not confirmed/i.test(signInError.message || "");
 
                 showMessage(
-                    "Invalid email/phone number or password.",
+                    isUnconfirmed
+                        ? "Please confirm your email address before signing in. Check your inbox for the confirmation link."
+                        : "Invalid email/phone number or password.",
                     "error"
                 );
 
+                if (submitBtn) submitBtn.disabled = false;
+                return;
+            }
+
+
+            // LOAD THE REST OF THIS ACCOUNT'S INFO (fullname, username, role)
+
+            const { data: profile, error: profileError } =
+                await sb
+                    .from("profiles")
+                    .select("*")
+                    .eq("id", signInData.user.id)
+                    .single();
+
+            if (profileError || !profile) {
+
+                showMessage(
+                    "Your account was found, but its profile is missing. Please contact an administrator.",
+                    "error"
+                );
+
+                if (submitBtn) submitBtn.disabled = false;
                 return;
             }
 
 
             
-            // UPDATE ACTIVITY
+            // TIMESTAMP FOR THIS LOGIN
             
 
-            const now =
-                Date.now();
-
-
-            user.lastLogin =
-                now;
-
-
-            user.lastActivity =
-                now;
-
-
-            localStorage.setItem(
-                "banchetoUsers",
-                JSON.stringify(users)
-            );
+            const nowIso =
+                new Date().toISOString();
 
 
             
             // LOGIN SESSION
+            // Kept in the same shape/keys your other pages already read
+            // (getCurrentUserRole(), Access-guard.js, etc. all expect
+            // this exact "banchetoCurrentUser" object) — only WHERE this
+            // data comes from changed, not what the rest of the app sees.
             
 
             const loginSession = {
 
-                id: user.id,
+                id: profile.id,
 
-                fullname: user.fullname,
+                fullname: profile.fullname,
 
-                username: user.username,
+                username: profile.username,
 
-                emailOrPhone: user.emailOrPhone,
+                emailOrPhone: signInData.user.email,
 
-                role: user.role,
+                role: profile.role,
 
-                lastLogin: user.lastLogin,
+                lastLogin: nowIso,
 
-                lastActivity: user.lastActivity
+                lastActivity: nowIso
 
             };
 
 
             
             // REMEMBER ME
+            // Note: this only controls where the CONVENIENCE copy above
+            // is kept. Supabase's own real session (the thing that
+            // actually authenticates your database queries) persists in
+            // its own storage regardless — see logout() in sidebar.js,
+            // which now calls sb.auth.signOut() to properly end that
+            // real session on logout rather than relying on this alone.
             
 
             if (rememberMe) {
@@ -650,15 +636,34 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
             
-            // LOGIN HISTORY
+            // ACTIVITY UPDATE + LOGIN HISTORY
+            // Neither of these needs to finish before the person sees
+            // "Login successful" or gets redirected — they're bookkeeping,
+            // not something the next page depends on. Running them
+            // together in the background (instead of one-after-another,
+            // awaited) removes two full network round trips from what the
+            // person actually has to wait through. The 1s delay below,
+            // already there for the redirect, doubles as their window to
+            // finish quietly.
             
 
-            saveLoginHistory(
-                user.fullname,
-                user.username,
-                user.role,
-                "Successful"
-            );
+            Promise.all([
+
+                sb
+                    .from("profiles")
+                    .update({ last_login: nowIso, last_activity: nowIso })
+                    .eq("id", profile.id),
+
+                saveLoginHistory(
+                    profile.fullname,
+                    profile.username,
+                    profile.role,
+                    "Successful"
+                )
+
+            ]).catch(function (err) {
+                console.error("Post-login bookkeeping failed:", err);
+            });
 
 
             
@@ -715,8 +720,33 @@ document.addEventListener("DOMContentLoaded", function () {
         );
 
 
-    let accountToReset =
+    // Tracks the email a code was just sent to, and whether the person
+    // is completing the reset via that typed-in code (mobile-safe) or
+    // via an emailed link they clicked (desktop fallback — see the
+    // PASSWORD_RECOVERY listener below). Mobile mail apps often
+    // "prescan" links before they're tapped, which silently burns the
+    // one-time link token — typing in a code sidesteps that entirely.
+
+    let resetEmail =
         null;
+
+    let resetViaLink =
+        false;
+
+
+    function resetRecoveryState() {
+
+        resetEmail = null;
+        resetViaLink = false;
+
+        const codeInput =
+            document.getElementById("resetCode");
+
+        if (codeInput) {
+            codeInput.value = "";
+        }
+
+    }
 
 
 
@@ -775,15 +805,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
         forgotPasswordForm.addEventListener(
             "submit",
-            function (event) {
+            async function (event) {
 
                 event.preventDefault();
-
-
-                const contactInput =
-                    document.getElementById(
-                        "forgotContact"
-                    );
 
 
                 const message =
@@ -791,126 +815,92 @@ document.addEventListener("DOMContentLoaded", function () {
                         "forgotPasswordMessage"
                     );
 
+                const contactInput =
+                    document.getElementById("forgotContact");
 
-                const contact =
+                const email =
                     contactInput
                         ? contactInput.value.trim()
                         : "";
 
-
-                
-                // VALIDATE CONTACT
-                
-
-                if (!contact) {
-
+                if (!email) {
                     setModalMessage(
                         message,
-                        "Please enter your email or phone number.",
+                        "Please enter your email address.",
                         "error"
                     );
-
                     return;
                 }
 
+                const submitBtn =
+                    forgotPasswordForm.querySelector('button[type="submit"]');
 
-                // EMAIL / PHONE FORMAT
-
-                if (!isValidEmailOrPhone(contact)) {
-
-                    setModalMessage(
-                        message,
-                        "Please enter a valid Gmail address (e.g. name@gmail.com) or phone number.",
-                        "error"
-                    );
-
-                    return;
-                }
+                if (submitBtn) submitBtn.disabled = true;
 
 
-                
-                // GET USERS
-            
+                // Sends a password-reset email via Supabase Auth. As long
+                // as the "Reset Password" email template (Authentication →
+                // Email Templates, in the Supabase dashboard) includes
+                // {{ .Token }}, this email will contain a 6-digit code the
+                // person can type in directly — that's what the Reset
+                // Password modal below asks for. This no longer depends
+                // on the person tapping a link, which is what was failing
+                // on mobile.
 
-                const users =
-                    JSON.parse(
-                        localStorage.getItem("banchetoUsers")
-                    ) || [];
+                const redirectTo =
+                    window.location.origin + window.location.pathname;
 
-
-                
-                // FIND USER
-                
-
-                const user =
-                    users.find(function (account) {
-
-                        return (
-                            account.emailOrPhone &&
-                            account.emailOrPhone.toLowerCase() ===
-                            contact.toLowerCase()
-                        );
-
+                const { error } =
+                    await sb.auth.resetPasswordForEmail(email, {
+                        redirectTo: redirectTo
                     });
 
+                if (submitBtn) submitBtn.disabled = false;
 
-                
-                // USER NOT FOUND
-                
+                // Supabase intentionally doesn't reveal whether the
+                // email is actually registered (that would let someone
+                // probe for valid accounts), so this message stays the
+                // same either way — that's expected, not a bug.
 
-                if (!user) {
-
+                if (error) {
+                    console.error("resetPasswordForEmail error:", error);
                     setModalMessage(
                         message,
-                        "No account was found with that email or phone number.",
+                        error.message ||
+                            "Something went wrong sending the reset code. Please try again.",
                         "error"
                     );
-
                     return;
                 }
 
-
-                
-                // SAVE ACCOUNT
-                
-
-                accountToReset =
-                    user;
-
+                resetEmail = email;
+                resetViaLink = false;
 
                 setModalMessage(
                     message,
-                    "Account found! You can now create a new password.",
+                    "A verification code has been sent to your email.",
                     "success"
                 );
 
-
-                
-                // OPEN RESET PASSWORD
-                
+                // Move straight into the Reset Password modal with the
+                // code field showing, instead of waiting on a link click.
 
                 setTimeout(function () {
 
-                    forgotPasswordModal.classList.remove(
-                        "show"
-                    );
+                    forgotPasswordModal.classList.remove("show");
 
+                    const codeGroup =
+                        document.getElementById("resetCodeGroup");
 
-                    const resetModal =
-                        document.getElementById(
-                            "resetPasswordModal"
-                        );
-
-
-                    if (resetModal) {
-
-                        resetModal.classList.add(
-                            "show"
-                        );
-
+                    if (codeGroup) {
+                        codeGroup.style.display = "flex";
                     }
 
-                }, 700);
+                    if (resetPasswordModal) {
+                        resetPasswordModal.classList.add("show");
+                    }
+
+                }, 1200);
 
             }
         );
@@ -945,167 +935,171 @@ document.addEventListener("DOMContentLoaded", function () {
 
         resetPasswordForm.addEventListener(
             "submit",
-            function (event) {
+            async function (event) {
 
                 event.preventDefault();
 
+                const codeInput =
+                    document.getElementById("resetCode");
 
-                
-                // CHECK ACCOUNT
-                
+                const newPasswordInput =
+                    document.getElementById("newPassword");
 
-                if (!accountToReset) {
+                const confirmNewPasswordInput =
+                    document.getElementById("confirmNewPassword");
 
-                    showResetMessage(
-                        "No account was selected.",
-                        "error"
-                    );
-
-                    return;
-                }
-
-
-                
-                // GET PASSWORDS
-            
+                const code =
+                    codeInput ? codeInput.value.trim() : "";
 
                 const newPassword =
-                    document.getElementById(
-                        "newPassword"
-                    ).value;
-
+                    newPasswordInput ? newPasswordInput.value : "";
 
                 const confirmNewPassword =
-                    document.getElementById(
-                        "confirmNewPassword"
-                    ).value;
+                    confirmNewPasswordInput ? confirmNewPasswordInput.value : "";
 
-
-                
-                // PASSWORD LENGTH
-
-
-                if (newPassword.length < 6) {
-
+                if (!resetViaLink && !code) {
                     showResetMessage(
-                        "Password must contain at least 6 characters.",
+                        "Please enter the verification code from your email.",
                         "error"
                     );
-
                     return;
                 }
 
+                if (!newPassword || !confirmNewPassword) {
+                    showResetMessage(
+                        "Please fill in both password fields.",
+                        "error"
+                    );
+                    return;
+                }
 
-                
-                // PASSWORD MATCH
-                
-
-                if (
-                    newPassword !==
-                    confirmNewPassword
-                ) {
-
+                if (newPassword !== confirmNewPassword) {
                     showResetMessage(
                         "Passwords do not match.",
                         "error"
                     );
-
                     return;
                 }
 
-
-                
-                // GET USERS
-                
-
-                let users =
-                    JSON.parse(
-                        localStorage.getItem("banchetoUsers")
-                    ) || [];
-
-
-                
-                // FIND ACCOUNT
-                
-
-                const userIndex =
-                    users.findIndex(function (user) {
-
-                        return (
-                            user.id ===
-                            accountToReset.id
-                        );
-
-                    });
-
-
-                if (userIndex === -1) {
-
+                if (newPassword.length < 8) {
                     showResetMessage(
-                        "Account could not be found.",
+                        "Password must be at least 8 characters.",
                         "error"
                     );
-
                     return;
                 }
 
+                const submitBtn =
+                    resetPasswordForm.querySelector('button[type="submit"]');
 
-                
-                // UPDATE PASSWORD
-                
-
-                users[userIndex].password =
-                    newPassword;
+                if (submitBtn) submitBtn.disabled = true;
 
 
-                
-                // SAVE USERS
-            
+                // If the person got here by typing their email into the
+                // Forgot Password form (the mobile-safe path), there's no
+                // recovery session yet — verifyOtp() exchanges their
+                // 6-digit code for one. If they got here by clicking the
+                // emailed link instead (resetViaLink === true, desktop
+                // fallback), Supabase already gave them a recovery
+                // session automatically, so this step is skipped.
 
-                localStorage.setItem(
-                    "banchetoUsers",
-                    JSON.stringify(users)
-                );
+                if (!resetViaLink) {
+
+                    if (!resetEmail) {
+                        showResetMessage(
+                            "Something went wrong. Please request a new code.",
+                            "error"
+                        );
+                        if (submitBtn) submitBtn.disabled = false;
+                        return;
+                    }
+
+                    const { error: verifyError } =
+                        await sb.auth.verifyOtp({
+                            email: resetEmail,
+                            token: code,
+                            type: "recovery"
+                        });
+
+                    if (verifyError) {
+                        showResetMessage(
+                            verifyError.message ||
+                                "That code is invalid or has expired. Please request a new one.",
+                            "error"
+                        );
+                        if (submitBtn) submitBtn.disabled = false;
+                        return;
+                    }
+
+                }
 
 
-                
-                // SUCCESS
+                const { error } =
+                    await sb.auth.updateUser({ password: newPassword });
 
+                if (error) {
+                    showResetMessage(
+                        error.message ||
+                            "Could not update your password. Please request a new code and try again.",
+                        "error"
+                    );
+                    if (submitBtn) submitBtn.disabled = false;
+                    return;
+                }
 
                 showResetMessage(
-                    "Password reset successfully! Redirecting to Sign In...",
+                    "Password updated successfully! Please sign in with your new password.",
                     "success"
                 );
 
+                // Sign out of the temporary recovery session so the
+                // person has to actually sign in with the new password,
+                // rather than being left silently logged in.
 
-                accountToReset =
-                    null;
+                setTimeout(async function () {
 
-
-                
-                // REDIRECT
-
-
-                setTimeout(function () {
+                    await sb.auth.signOut();
 
                     if (resetPasswordModal) {
-
-                        resetPasswordModal.classList.remove(
-                            "show"
-                        );
-
+                        resetPasswordModal.classList.remove("show");
                     }
 
+                    resetRecoveryState();
 
-                    window.location.href =
-                        "../Log_In/SignIn.html";
+                    window.location.href = window.location.pathname;
 
-                }, 1500);
+                }, 2000);
 
             }
         );
 
     }
+
+
+    // Fires if the person instead clicks the link in the emailed
+    // message (desktop fallback path) — Supabase reads the one-time
+    // token out of the URL automatically and establishes a temporary
+    // recovery session, then emits this event. In this case the code
+    // field isn't needed, since a session already exists.
+
+    sb.auth.onAuthStateChange(function (event, session) {
+
+        if (event === "PASSWORD_RECOVERY" && resetPasswordModal) {
+
+            resetViaLink = true;
+
+            const codeGroup =
+                document.getElementById("resetCodeGroup");
+
+            if (codeGroup) {
+                codeGroup.style.display = "none";
+            }
+
+            resetPasswordModal.classList.add("show");
+
+        }
+
+    });
 
 
 
@@ -1128,8 +1122,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
 
 
-                accountToReset =
-                    null;
+                resetRecoveryState();
 
             }
         );
@@ -1399,8 +1392,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     );
 
 
-                    accountToReset =
-                        null;
+                    resetRecoveryState();
 
                 }
 
@@ -1430,8 +1422,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 });
 
 
-                accountToReset =
-                    null;
+                resetRecoveryState();
 
             }
 
@@ -1663,56 +1654,25 @@ document.addEventListener("DOMContentLoaded", function () {
 // SAVE LOGIN HISTORY
 
 
-function saveLoginHistory(
+async function saveLoginHistory(
     name,
     username,
     role,
     status
 ) {
 
-    let history =
-        JSON.parse(
-            localStorage.getItem("loginHistory")
-        ) || [];
+    const { error } =
+        await sb.from("login_history").insert({
+            name: name,
+            username: username,
+            role: role,
+            status: status
+        });
 
-
-    const now =
-        new Date();
-
-
-    history.unshift({
-
-        name: name,
-
-        username: username,
-
-        role: role,
-
-        date: now.toLocaleDateString(
-            "en-US",
-            {
-                month: "long",
-                day: "numeric",
-                year: "numeric"
-            }
-        ),
-
-        time: now.toLocaleTimeString(
-            "en-US",
-            {
-                hour: "2-digit",
-                minute: "2-digit"
-            }
-        ),
-
-        status: status
-
-    });
-
-
-    localStorage.setItem(
-        "loginHistory",
-        JSON.stringify(history)
-    );
+    if (error) {
+        // Not fatal to the login flow either way — just log it so a
+        // silent failure here doesn't go completely unnoticed.
+        console.error("Could not save login history:", error.message);
+    }
 
 }

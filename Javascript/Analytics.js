@@ -17,9 +17,6 @@
 
 (function () {
 
-    const TRANSACTIONS_KEY = "yesunim_transactions";
-    const INVENTORY_ITEMS_KEY = "yesunim_inventoryItems";
-    const INVENTORY_LOGS_KEY = "yesunim_inventoryLogs";
     const LOW_STOCK_THRESHOLD = 5; // must match Inventory.js
 
     const DONUT_COLORS = ["#2e8b57", "#4a90d9", "#f0c14b", "#c0564f", "#8e6fc9"];
@@ -51,21 +48,89 @@
     const trendSummaryPeakEl = document.getElementById("trendSummaryPeak");
     const trendSummaryAvgEl = document.getElementById("trendSummaryAvg");
 
-    // ---------- DATA LOADERS ----------
+    // ---------- DATA LOADERS (Supabase) ----------
+    // Mapped into the same field names the localStorage version used
+    // (date/total/items, name/category/stock/unit/price, date/itemName)
+    // so every metric/render function below stays unchanged.
 
-    function loadTransactions() {
-        const saved = localStorage.getItem(TRANSACTIONS_KEY);
-        return saved ? JSON.parse(saved) : [];
+    async function loadTransactions() {
+        const { data, error } = await sb.from("transactions").select("*");
+
+        if (error) {
+            console.error("Could not load transactions:", error.message);
+            return [];
+        }
+
+        return (data || []).map(row => ({
+            id: row.id,
+            date: row.created_at,
+            role: row.role,
+            items: row.items || [],
+            subtotal: Number(row.subtotal) || 0,
+            discount: Number(row.discount) || 0,
+            total: Number(row.total) || 0,
+            cashReceived: Number(row.cash_received) || 0,
+            change: Number(row.change) || 0
+        }));
     }
 
-    function loadInventoryItems() {
-        const saved = localStorage.getItem(INVENTORY_ITEMS_KEY);
-        return saved ? JSON.parse(saved) : [];
+    async function loadInventoryItems() {
+        const { data, error } = await sb.from("inventory_items").select("*");
+
+        if (error) {
+            console.error("Could not load inventory:", error.message);
+            return [];
+        }
+
+        return (data || []).map(row => ({
+            id: row.id,
+            name: row.name,
+            category: row.category,
+            stock: row.stock,
+            unit: row.unit,
+            price: Number(row.price) || 0
+        }));
     }
 
-    function loadInventoryLogs() {
-        const saved = localStorage.getItem(INVENTORY_LOGS_KEY);
-        return saved ? JSON.parse(saved) : [];
+    async function loadInventoryLogs() {
+        const { data, error } = await sb.from("inventory_logs").select("*");
+
+        if (error) {
+            console.error("Could not load inventory logs:", error.message);
+            return [];
+        }
+
+        return (data || []).map(row => ({
+            id: row.id,
+            date: row.created_at,
+            role: row.role,
+            action: row.action,
+            itemName: row.item_name,
+            category: row.category,
+            change: row.change,
+            resultingStock: row.resulting_stock
+        }));
+    }
+
+    // Menu items — the actual sellable products (e.g. "Unli Samgyup"),
+    // as opposed to inventory_items which is raw stock/ingredients (e.g.
+    // "Pork Belly"). Slow Moving needs this list: an ingredient can
+    // never be a "slow moving product" since it was never something a
+    // customer could order in the first place — that's what was showing
+    // "Pork Belly" instead of an actual menu item before this fix.
+    async function loadMenuItems() {
+        const { data, error } = await sb.from("menu_items").select("*");
+
+        if (error) {
+            console.error("Could not load menu items:", error.message);
+            return [];
+        }
+
+        return (data || []).map(row => ({
+            id: row.id,
+            name: row.name,
+            price: Number(row.price) || 0
+        }));
     }
 
     // ---------- HELPERS ----------
@@ -182,11 +247,11 @@
     }
 
     // Products that sold the least (or not at all) this period, out of
-    // everything currently in inventory.
-    function computeSlowMoving(items, transactions) {
+    // everything currently on the menu.
+    function computeSlowMoving(menuItems, transactions) {
         const counts = computeItemSalesCounts(transactions);
 
-        return items
+        return menuItems
             .map(i => ({ name: i.name, qty: counts[i.name] || 0 }))
             .sort((a, b) => a.qty - b.qty)
             .slice(0, 5);
@@ -399,7 +464,7 @@
 
     function renderSlowMoving(slowMoving) {
         if (slowMoving.length === 0) {
-            slowMovingListEl.innerHTML = `<li class="empty-note">No inventory items yet.</li>`;
+            slowMovingListEl.innerHTML = `<li class="empty-note">No menu items yet.</li>`;
             return;
         }
         slowMovingListEl.innerHTML = slowMoving.map(p => `<li>${p.name}</li>`).join("");
@@ -417,13 +482,16 @@
 
     // ---------- MAIN REFRESH ----------
 
-    function refresh() {
+    async function refresh() {
         const { start, end } = getSelectedRange();
         const granularity = trendGranularitySelect.value;
 
-        const items = loadInventoryItems();
-        const allTransactions = loadTransactions();
-        const allLogs = loadInventoryLogs();
+        const [items, menuItems, allTransactions, allLogs] = await Promise.all([
+            loadInventoryItems(),
+            loadMenuItems(),
+            loadTransactions(),
+            loadInventoryLogs()
+        ]);
 
         const transactions = allTransactions.filter(t => inRange(new Date(t.date), start, end));
         const logs = allLogs.filter(l => inRange(new Date(l.date), start, end));
@@ -434,7 +502,7 @@
 
         const lowStockCount = computeLowStockCount(items);
         const bestSelling = computeBestSelling(transactions);
-        const slowMoving = computeSlowMoving(items, transactions);
+        const slowMoving = computeSlowMoving(menuItems, transactions);
         const trendData = buildSalesTrendData(transactions, { start, end }, granularity);
 
         renderStatCards(metrics, lowStockCount);
@@ -484,9 +552,9 @@
 
         setupDatePickerBox();
 
-        filterBtn.addEventListener("click", refresh);
-        trendGranularitySelect.addEventListener("change", refresh);
-        periodSelect.addEventListener("change", refresh);
+        filterBtn.addEventListener("click", () => refresh());
+        trendGranularitySelect.addEventListener("change", () => refresh());
+        periodSelect.addEventListener("change", () => refresh());
 
         refresh();
     }

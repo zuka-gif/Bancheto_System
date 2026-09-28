@@ -9,8 +9,6 @@
 
 (function () {
 
-    const STORAGE_KEY = "yesunim_inventoryItems";
-    const LOGS_KEY = "yesunim_inventoryLogs";
     const LOW_STOCK_THRESHOLD = 5; // stock at or below this (but above 0) = "Low on Stock"
 
     // Base categories that always show up first, even with no items yet.
@@ -22,33 +20,13 @@
     // typeable, so any custom unit can be entered as well.
     const baseUnits = ["kg", "g", "pcs", "L", "mL", "pack", "box", "bottle", "can", "sack", "dozen"];
 
-    // ---------- DEFAULT SEED DATA (used only the first time) ----------
-    const defaultItems = [
-        { id: "i1", name: "Pork Belly",    category: "Meat",       stock: 25, unit: "kg", price: 320, image: "" },
-        { id: "i2", name: "Pork Ribs",     category: "Meat",       stock: 2,  unit: "kg", price: 280, image: "" },
-        { id: "i3", name: "Chicken Thigh", category: "Meat",       stock: 0,  unit: "kg", price: 180, image: "" },
-        { id: "i4", name: "Beef Slices",   category: "Meat",       stock: 15, unit: "kg", price: 380, image: "" },
-
-        { id: "i5", name: "Shrimp",        category: "Sea Food",   stock: 10, unit: "kg", price: 420, image: "" },
-        { id: "i6", name: "Squid",         category: "Sea Food",   stock: 1,  unit: "kg", price: 350, image: "" },
-        { id: "i7", name: "Bangus",        category: "Sea Food",   stock: 0,  unit: "kg", price: 220, image: "" },
-        { id: "i8", name: "Crab",          category: "Sea Food",   stock: 5,  unit: "kg", price: 450, image: "" },
-
-        { id: "i9",  name: "Cabbage",      category: "Vegetables", stock: 8,  unit: "kg", price: 60,  image: "" },
-        { id: "i10", name: "Carrot",       category: "Vegetables", stock: 1,  unit: "kg", price: 80,  image: "" },
-        { id: "i11", name: "Potato",       category: "Vegetables", stock: 0,  unit: "kg", price: 90,  image: "" },
-        { id: "i12", name: "Lettuce",      category: "Vegetables", stock: 6,  unit: "kg", price: 70,  image: "" },
-
-        { id: "i13", name: "Cooking Oil",  category: "Others",     stock: 5,  unit: "L",  price: 110, image: "" },
-        { id: "i14", name: "Rice",         category: "Others",     stock: 20, unit: "kg", price: 55,  image: "" }
-    ];
-
     // ---------- STATE ----------
     let items = [];
     let activeCategory = "All";
     let searchQuery = "";
     let editingItemId = null; // null = adding a new product, otherwise editing this item's id
-    let pendingImageDataUrl = "";
+    let pendingImageDataUrl = ""; // used for the <img> preview only now
+    let pendingImageFile = null; // the real File, uploaded to Storage on submit
     let previousUnit = "";    // remembered so an emptied Unit field can be restored
 
     // ---------- ELEMENTS ----------
@@ -90,11 +68,13 @@
     const unitListEl = document.getElementById("unitList");
     const unitChevronEl = document.getElementById("unitChevron");
 
-    // ---------- STORAGE ----------
-
-    function saveItems() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-    }
+    // ---------- STORAGE (Supabase) ----------
+    // `items` is a plain in-memory mirror of public.inventory_items, kept
+    // in the exact shape the rendering code below already expects
+    // (id/name/category/stock/unit/price/image). Every mutation below
+    // writes through to Supabase FIRST, then updates this mirror only
+    // once the database confirms it worked — so the UI never shows a
+    // change that didn't actually get saved.
 
     function getCurrentUserRole() {
         try {
@@ -108,22 +88,40 @@
         return "Unknown";
     }
 
-    function logInventoryActivity(action, item, change) {
-        const saved = localStorage.getItem(LOGS_KEY);
-        const logs = saved ? JSON.parse(saved) : [];
+    // Maps a public.inventory_items row (image_url) to the shape the
+    // rendering code uses (image).
+    function mapRow(row) {
+        return {
+            id: row.id,
+            name: row.name,
+            category: row.category,
+            stock: row.stock,
+            unit: row.unit,
+            price: Number(row.price) || 0,
+            image: row.image_url || ""
+        };
+    }
 
-        logs.push({
-            id: "log_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
-            date: new Date().toISOString(),
-            role: getCurrentUserRole(),
-            itemName: item.name,
+    // Used only for "Added"/"Deleted" log rows, where there's no
+    // existing row to lock — the atomic adjust_inventory_stock() RPC
+    // (used everywhere else) covers +/- changes on an existing item.
+    async function logInventoryActivity(itemId, action, item, change, resultingStock) {
+        const { data: userData } = await sb.auth.getUser();
+
+        const { error } = await sb.from("inventory_logs").insert({
+            item_id: itemId,
+            item_name: item.name,
             category: item.category,
-            action: action, // "Stock In" | "Stock Out" | "Added" | "Edited" | "Deleted"
-            change: change, // positive = added, negative = removed
-            resultingStock: item.stock
+            action: action,
+            change: change,
+            resulting_stock: resultingStock,
+            role: getCurrentUserRole(),
+            created_by: userData && userData.user ? userData.user.id : null
         });
 
-        localStorage.setItem(LOGS_KEY, JSON.stringify(logs));
+        if (error) {
+            console.error("Could not save inventory log:", error.message);
+        }
     }
 
     // Normalizes a stored item so missing/legacy fields (an older item
@@ -161,23 +159,20 @@
         };
     }
 
-    function loadItems() {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-            try {
-                items = JSON.parse(saved).map(normalizeItem);
-                // Persist the normalized (type-corrected) values back so
-                // a price/stock that was stored as a string is fixed for
-                // good, instead of silently drifting toward 0 on every
-                // future save that happens to touch these items.
-                saveItems();
-                return;
-            } catch (e) {
-                // fall through to default
-            }
+    async function loadItems() {
+        const { data, error } = await sb
+            .from("inventory_items")
+            .select("*")
+            .order("name", { ascending: true });
+
+        if (error) {
+            console.error("Could not load inventory:", error.message);
+            alert("Could not load inventory from the database. Please refresh the page.");
+            items = [];
+            return;
         }
-        items = defaultItems;
-        saveItems();
+
+        items = (data || []).map(mapRow).map(normalizeItem);
     }
 
     // ---------- FORMATTING ----------
@@ -549,33 +544,57 @@
         }
     }
 
-    function changeStock(itemId, delta) {
+    async function changeStock(itemId, delta) {
         const item = items.find(i => i.id === itemId);
         if (!item) return;
 
-        const previousStock = item.stock;
-        item.stock = Math.max(0, item.stock + delta);
-        const actualChange = item.stock - previousStock;
+        // Guard against going below 0 up front so a rejected RPC call
+        // (adjust_inventory_stock also refuses this server-side) doesn't
+        // even need a round trip for the common "already at 0" case.
+        if (delta < 0 && item.stock <= 0) return;
 
-        if (actualChange !== 0) {
-            logInventoryActivity(actualChange > 0 ? "Stock In" : "Stock Out", item, actualChange);
+        const { data: log, error } = await sb.rpc("adjust_inventory_stock", {
+            p_item_id: itemId,
+            p_change: delta,
+            p_action: delta > 0 ? "Stock In" : "Stock Out"
+        });
+
+        if (error) {
+            alert("Could not update stock: " + error.message);
+            return;
         }
 
-        saveItems();
+        item.stock = log.resulting_stock;
         updateItemInDOM(item);
         updateStats();
     }
 
-    function deleteProduct(item) {
+    async function deleteProduct(item) {
         const confirmed = confirm(`Delete "${item.name}" from Inventory? This can't be undone.`);
         if (!confirmed) return;
 
-        if (item.stock > 0) {
-            logInventoryActivity("Deleted", item, -item.stock);
+        // Logged BEFORE the delete, while item_id can still point at a
+        // real row. inventory_logs.item_id is ON DELETE SET NULL, so
+        // this row survives the delete below (item_name/category are
+        // stored directly on the log too) — it just loses the live FK
+        // link afterward. Logged unconditionally (not just when stock >
+        // 0) so deleting an already-empty item still shows up in Recent
+        // Activities/Reports instead of vanishing without a trace.
+        await logInventoryActivity(item.id, "Deleted", item, -item.stock, 0);
+
+        const { error } = await sb
+            .from("inventory_items")
+            .delete()
+            .eq("id", item.id);
+
+        if (error) {
+            alert("Could not delete product: " + error.message);
+            return;
         }
 
+        await deleteStorageImage(item.image);
+
         items = items.filter(i => i.id !== item.id);
-        saveItems();
         renderTabs();
         renderView();
         updateStats();
@@ -620,6 +639,7 @@
         productCategoryInput.value = activeCategory !== "All" ? activeCategory : "";
 
         pendingImageDataUrl = "";
+        pendingImageFile = null;
         productImagePreview.src = "";
         productImagePreview.style.display = "none";
         productImageUploadText.style.display = "flex";
@@ -643,6 +663,7 @@
         productPriceInput.value = item.price || 0;
 
         pendingImageDataUrl = item.image || "";
+        pendingImageFile = null;
 
         if (pendingImageDataUrl) {
             productImagePreview.src = pendingImageDataUrl;
@@ -665,9 +686,11 @@
     function handleImageUpload(file) {
         if (!file) return;
 
+        pendingImageFile = file;
+
         const reader = new FileReader();
         reader.onload = function (e) {
-            pendingImageDataUrl = e.target.result;
+            pendingImageDataUrl = e.target.result; // preview only — never sent to the database
             productImagePreview.src = pendingImageDataUrl;
             productImagePreview.style.display = "block";
             productImageUploadText.style.display = "none";
@@ -675,7 +698,57 @@
         reader.readAsDataURL(file);
     }
 
-    function handleAddProductSubmit(e) {
+    // Uploads pendingImageFile to the "images" Storage bucket and
+    // returns its public URL. Returns null if no new file was chosen
+    // (caller should keep the item's existing image_url in that case).
+    async function uploadPendingImage(folder) {
+        if (!pendingImageFile) return null;
+
+        const ext = (pendingImageFile.name.split(".").pop() || "jpg").toLowerCase();
+        const path = `${folder}/${crypto.randomUUID()}.${ext}`;
+
+        const { error } = await sb.storage
+            .from("images")
+            .upload(path, pendingImageFile, {
+                cacheControl: "3600",
+                upsert: false
+            });
+
+        if (error) {
+            throw new Error("Image upload failed: " + error.message);
+        }
+
+        const { data } = sb.storage.from("images").getPublicUrl(path);
+        return data.publicUrl;
+    }
+
+    // Reverses getPublicUrl() — pulls the path back out of a public URL
+    // so it can be passed to storage.remove(). Returns null for
+    // anything that isn't one of our own "images" bucket URLs (empty
+    // string, some other host, or a leftover base64 string from before
+    // this bucket existed) so cleanup never touches those.
+    function getStoragePathFromPublicUrl(url) {
+        if (!url) return null;
+        const marker = "/storage/v1/object/public/images/";
+        const idx = url.indexOf(marker);
+        if (idx === -1) return null;
+        return url.slice(idx + marker.length);
+    }
+
+    // Best-effort cleanup: failures here are logged but never block or
+    // alert on the calling action, since the database change (the part
+    // that actually matters) already succeeded by the time this runs.
+    async function deleteStorageImage(url) {
+        const path = getStoragePathFromPublicUrl(url);
+        if (!path) return;
+
+        const { error } = await sb.storage.from("images").remove([path]);
+        if (error) {
+            console.error("Could not delete old image from storage:", error.message);
+        }
+    }
+
+    async function handleAddProductSubmit(e) {
         e.preventDefault();
 
         const name = productNameInput.value.trim();
@@ -689,42 +762,124 @@
             return;
         }
 
-        if (editingItemId) {
-            const item = items.find(i => i.id === editingItemId);
-            if (item) {
-                const previousStock = item.stock;
+        saveProductBtn.disabled = true;
 
-                item.name = name;
-                item.category = category;
-                item.stock = stock;
-                item.unit = unit;
-                item.price = price;
-                item.image = pendingImageDataUrl;
-
-                const netChange = stock - previousStock;
-                if (netChange !== 0) {
-                    logInventoryActivity("Edited", item, netChange);
-                }
-            }
-        } else {
-            const newItem = {
-                id: "i_" + Date.now(),
-                name: name,
-                category: category,
-                stock: stock,
-                unit: unit,
-                price: price,
-                image: pendingImageDataUrl
-            };
-
-            items.push(newItem);
-
-            if (stock > 0) {
-                logInventoryActivity("Added", newItem, stock);
-            }
+        let imageUrl;
+        try {
+            const uploadedUrl = await uploadPendingImage("inventory");
+            // null means no new file was chosen — keep whatever's
+            // already there (existing item's URL on edit, or none for
+            // a brand new item without a picture).
+            imageUrl = uploadedUrl !== null
+                ? uploadedUrl
+                : (editingItemId ? (items.find(i => i.id === editingItemId) || {}).image || "" : "");
+        } catch (uploadError) {
+            alert(uploadError.message);
+            saveProductBtn.disabled = false;
+            return;
         }
 
-        saveItems();
+        if (editingItemId) {
+
+            const item = items.find(i => i.id === editingItemId);
+            if (!item) {
+                saveProductBtn.disabled = false;
+                return;
+            }
+
+            const previousStock = item.stock;
+            const netChange = stock - previousStock;
+            const previousImageUrl = item.image;
+
+            // Non-stock fields go through a plain update. Stock is
+            // deliberately left OUT of this update — it's only ever
+            // changed via adjust_inventory_stock() below, so every stock
+            // change (whether from +/- buttons or from editing this
+            // form) is logged the same atomic way.
+            const { error: updateError } = await sb
+                .from("inventory_items")
+                .update({
+                    name: name,
+                    category: category,
+                    unit: unit,
+                    price: price,
+                    image_url: imageUrl
+                })
+                .eq("id", editingItemId);
+
+            if (updateError) {
+                alert("Could not update product: " + updateError.message);
+                saveProductBtn.disabled = false;
+                return;
+            }
+
+            item.name = name;
+            item.category = category;
+            item.unit = unit;
+            item.price = price;
+            item.image = imageUrl;
+
+            if (imageUrl !== previousImageUrl) {
+                await deleteStorageImage(previousImageUrl);
+            }
+
+            if (netChange !== 0) {
+                const { data: log, error: stockError } = await sb.rpc("adjust_inventory_stock", {
+                    p_item_id: editingItemId,
+                    p_change: netChange,
+                    p_action: "Edited"
+                });
+
+                if (stockError) {
+                    alert(
+                        "Product details were saved, but the stock change failed: " +
+                        stockError.message
+                    );
+                } else {
+                    item.stock = log.resulting_stock;
+                }
+            } else {
+                // Stock didn't change, but name/category/unit/price still
+                // might have — adjust_inventory_stock() is the only thing
+                // that writes an "Edited" log row, and it's only called
+                // above when there's an actual stock delta. Without this,
+                // editing a product's details while leaving its quantity
+                // untouched (a very normal edit) never got logged at all.
+                await logInventoryActivity(editingItemId, "Edited", item, 0, item.stock);
+            }
+
+        } else {
+
+            const { data: inserted, error: insertError } = await sb
+                .from("inventory_items")
+                .insert({
+                    name: name,
+                    category: category,
+                    stock: stock,
+                    unit: unit,
+                    price: price,
+                    image_url: imageUrl
+                })
+                .select()
+                .single();
+
+            if (insertError) {
+                alert("Could not add product: " + insertError.message);
+                saveProductBtn.disabled = false;
+                return;
+            }
+
+            const newItem = mapRow(inserted);
+            items.push(newItem);
+
+            // Logged unconditionally (not just when stock > 0) so a
+            // product added with 0 starting stock still shows up in
+            // Recent Activities/Reports instead of vanishing without
+            // a trace.
+            await logInventoryActivity(newItem.id, "Added", newItem, stock, stock);
+        }
+
+        saveProductBtn.disabled = false;
 
         // A brand-new category may have just been typed in, so the tab
         // list (and active tab, if it changed) needs to be rebuilt too.
@@ -783,8 +938,8 @@
 
     // ---------- INIT ----------
 
-    function init() {
-        loadItems();
+    async function init() {
+        await loadItems();
 
         applyDeepLinkCategory();
 

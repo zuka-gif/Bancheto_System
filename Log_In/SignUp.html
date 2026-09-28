@@ -7,6 +7,8 @@
     <link href="../Web_Design/Log_In.css" rel="stylesheet" />
     <link rel="icon" href="../Logo/yesunim.png" type="image/png" />
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../Javascript/Supabaseclient.js"></script>
   </head>
 
   <body>
@@ -39,9 +41,9 @@
                     <input type="text" id="signupUsername" placeholder="Enter your username" required minlength="6" maxlength="30" title="Username must include at least one letter (not numbers only).">
                 </div>
 
-                <label>Email Address or Phone Number</label>
+                <label>Email Address</label>
                 <div class="input-box">
-                    <input type="text" placeholder="Enter your email or phone number" required minlength="8" maxlength="50">
+                    <input type="email" id="signupEmailOrPhone" placeholder="Enter your email address" required minlength="8" maxlength="50">
                 </div>
 
                 <label>Password</label>
@@ -60,8 +62,8 @@
 
                 <label>Role</label>
                 <div class="input-box">
-                    <select required>
-                        <option selected disabled>Select your Role</option>
+                    <select id="signupRole" required>
+                        <option selected disabled value="">Select your Role</option>
                         <option>Owner</option>
                         <option>Manager</option>
                         <option>Cashier</option>
@@ -195,7 +197,7 @@
 
             <p>
                 <strong>
-                    Last Updated: September 7, 2026
+                    Last Updated: September 26, 2026
                 </strong>
             </p>
 
@@ -203,58 +205,78 @@
             <h3>1. Information We Collect</h3>
 
             <p>
-                The system may collect fullname, username,
-                email address or phone number, password,
-                and user role during account registration.
+                During account registration, Bancheto De Bustos collects your
+                fullname, username, email address (or phone number, where
+                phone sign-in is enabled), and assigned role. Your password
+                is never stored directly by Bancheto De Bustos — it is
+                securely hashed and managed by our authentication provider,
+                Supabase.
             </p>
 
 
             <h3>2. Use of Information</h3>
 
             <p>
-                Information is used to authenticate users
-                and provide appropriate system access.
+                Information you provide is used to authenticate your account
+                and apply the correct, role-based access to the system
+                (Owner, Manager, or Cashier).
             </p>
 
 
             <h3>3. Login Activity</h3>
 
             <p>
-                Login date, time, username, role, and
-                login status may be recorded for security
-                and monitoring.
+                Login date, time, username, role, and login status are
+                recorded for security and monitoring purposes.
             </p>
 
 
-            <h3>4. Local Storage</h3>
+            <h3>4. Data Storage</h3>
 
             <p>
-                This front-end version stores account and
-                session information in the browser.
+                Account and business data — profiles, menu items, inventory,
+                transactions, and login history — are stored in a secured
+                database managed by Supabase, not in your browser. Your
+                browser only keeps a temporary session token so you stay
+                signed in; this token never contains your password and is
+                cleared when you log out.
             </p>
 
 
-            <h3>5. Information Protection</h3>
+            <h3>5. Data Retention</h3>
 
             <p>
-                Users should keep their account credentials
-                private and secure.
+                Account and activity records are retained for as long as
+                your account remains active, or as needed for business,
+                security, or legal recordkeeping. Login history and
+                inventory logs are kept to support auditing and security
+                monitoring.
             </p>
 
 
-            <h3>6. Data Removal</h3>
+            <h3>6. Information Protection</h3>
 
             <p>
-                Authorized users may remove accounts when
-                permitted by the system.
+                Users should keep their account credentials private and
+                secure, and should avoid sharing their login with anyone
+                else.
             </p>
 
 
-            <h3>7. Updates</h3>
+            <h3>7. Data Removal</h3>
 
             <p>
-                This Privacy Policy may be updated when
-                necessary.
+                Authorized administrators (Owners) may disable or remove
+                accounts when appropriate. If you would like your personal
+                information removed, please contact your system
+                administrator using the Support details on this page.
+            </p>
+
+
+            <h3>8. Updates</h3>
+
+            <p>
+                This Privacy Policy may be updated when necessary.
             </p>
 
         </div>

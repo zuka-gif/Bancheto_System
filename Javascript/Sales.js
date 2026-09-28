@@ -7,21 +7,14 @@
 
 (function () {
 
-    const MENU_STORAGE_KEY = "yesunim_menuItems";
-    const TRANSACTIONS_KEY = "yesunim_transactions";
-
-    // ---------- DEFAULT MENU (used only the first time, if nothing saved yet) ----------
-    const defaultMenu = [
-        { id: "m1", name: "Unli Samgyup", price: 199, image: "", description: "" },
-        { id: "m2", name: "Unli Samgyup", price: 279, image: "", description: "" },
-        { id: "m3", name: "Unli Samgyup", price: 299, image: "", description: "" },
-        { id: "m4", name: "Unli Beef Samgyup", price: 399, image: "", description: "" },
-        { id: "m5", name: "Unli All Beef Samgyup", price: 499, image: "", description: "" },
-        { id: "m6", name: "Unli Steak", price: 699, image: "", description: "" },
-        { id: "m7", name: "Unli Fried Chicken (Assorted)", price: 299, image: "", description: "" },
-        { id: "m8", name: "Unli Fried Chicken (Wings only)", price: 399, image: "", description: "" },
-        { id: "m9", name: "Unli Samgyup x Fried Chicken", price: 499, image: "", description: "" }
-    ];
+    // Fired the instant this script runs — the network request is now
+    // already in flight while the rest of init() (cache paint, event
+    // listeners, etc.) is still being set up below, instead of only
+    // starting once init() sequentially reaches loadMenuItems().
+    const initialMenuFetchPromise = sb
+        .from("menu_items")
+        .select("id, name, price, description, image_url, created_at")
+        .order("created_at", { ascending: true });
 
     // ---------- STATE ----------
     let menuItems = [];
@@ -97,22 +90,69 @@
         return isNaN(value) ? 0 : value;
     }
 
-    function saveMenuItems() {
-        localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify(menuItems));
+    function mapMenuRow(row) {
+        return {
+            id: row.id,
+            name: row.name,
+            price: Number(row.price) || 0,
+            description: row.description || "",
+            image: row.image_url || ""
+        };
     }
 
-    function loadMenuItems() {
-        const saved = localStorage.getItem(MENU_STORAGE_KEY);
-        if (saved) {
-            try {
-                menuItems = JSON.parse(saved);
-                return;
-            } catch (e) {
-                // fall through to default
-            }
+    // Menu is cached in localStorage so the grid can paint instantly on
+    // page load (no blank screen or spinner while waiting on the
+    // network) and then gets silently refreshed from Supabase in the
+    // background once the real data comes back.
+    const MENU_CACHE_KEY = "yesunimMenuCache";
+
+    function loadCachedMenuItems() {
+        try {
+            const raw = localStorage.getItem(MENU_CACHE_KEY);
+            return raw ? JSON.parse(raw) : null;
+        } catch (e) {
+            return null;
         }
-        menuItems = defaultMenu;
-        saveMenuItems();
+    }
+
+    function saveCachedMenuItems(items) {
+        try {
+            localStorage.setItem(MENU_CACHE_KEY, JSON.stringify(items));
+        } catch (e) { /* ignore — cache is a nice-to-have, not required */ }
+    }
+
+    // useInitialFetch: true only on the very first call in init(), so
+    // it reuses the request already kicked off at script load instead
+    // of firing a second, redundant query. Any later refresh (after
+    // add/edit/delete) calls this normally and fires a fresh query.
+    async function loadMenuItems(useInitialFetch) {
+        // Only pulling the columns actually rendered on this page
+        // (not select("*")) keeps the payload smaller. Ordered by
+        // created_at (i.e. the order items were added in), not
+        // alphabetically by name. For best results, add an index on
+        // created_at in Supabase:
+        //   create index if not exists idx_menu_items_created_at
+        //     on menu_items (created_at);
+        const { data, error } = useInitialFetch
+            ? await initialMenuFetchPromise
+            : await sb
+                .from("menu_items")
+                .select("id, name, price, description, image_url, created_at")
+                .order("created_at", { ascending: true });
+
+        if (error) {
+            console.error("Could not load menu:", error.message);
+            // Only alert if there's nothing at all on screen (no cache
+            // to fall back on either) — otherwise leave the cached
+            // menu showing and fail quietly.
+            if (menuItems.length === 0) {
+                alert("Could not load the menu from the database. Please refresh the page.");
+            }
+            return;
+        }
+
+        menuItems = (data || []).map(mapMenuRow);
+        saveCachedMenuItems(menuItems);
     }
 
     // ---------- QUANTITY-IN-ORDER LOOKUP ----------
@@ -183,12 +223,22 @@
         });
     }
 
-    function deleteMenuItem(item) {
+    async function deleteMenuItem(item) {
         const confirmed = confirm(`Delete "${item.name}" from the menu? This can't be undone.`);
         if (!confirmed) return;
 
+        const { error } = await sb
+            .from("menu_items")
+            .delete()
+            .eq("id", item.id);
+
+        if (error) {
+            alert("Could not delete menu item: " + error.message);
+            return;
+        }
+
         menuItems = menuItems.filter(m => m.id !== item.id);
-        saveMenuItems();
+        saveCachedMenuItems(menuItems);
         renderMenuGrid(menuSearchInput.value);
     }
 
@@ -320,7 +370,7 @@
         renderMenuGrid(menuSearchInput.value);
     }
 
-    function recordTransaction() {
+    async function recordTransaction() {
         if (currentOrder.length === 0) {
             alert("Add at least one item to the order before recording a transaction.");
             return;
@@ -336,11 +386,18 @@
             return;
         }
 
-        const transaction = {
-            id: "t_" + Date.now(),
-            date: new Date().toISOString(),
+        recordBtn.disabled = true;
+
+        const { data: userData } = await sb.auth.getUser();
+
+        const { error } = await sb.from("transactions").insert({
             role: getCurrentUserRole(),
+            created_by: userData && userData.user ? userData.user.id : null,
+            // menu_id is kept alongside name/price/pax so this line item
+            // stays traceable back to the menu_items row even if the
+            // menu item's name or price is edited later.
             items: currentOrder.map(o => ({
+                menu_id: o.menuId,
                 name: o.name,
                 price: o.price,
                 pax: o.pax,
@@ -349,14 +406,16 @@
             subtotal: subtotal,
             discount: discount,
             total: total,
-            cashReceived: cash,
+            cash_received: cash,
             change: cash - total
-        };
+        });
 
-        const saved = localStorage.getItem(TRANSACTIONS_KEY);
-        const transactions = saved ? JSON.parse(saved) : [];
-        transactions.push(transaction);
-        localStorage.setItem(TRANSACTIONS_KEY, JSON.stringify(transactions));
+        recordBtn.disabled = false;
+
+        if (error) {
+            alert("Could not record transaction: " + error.message);
+            return;
+        }
 
         clearOrder();
         alert("Transaction recorded successfully.");
@@ -420,7 +479,7 @@
         reader.readAsDataURL(file);
     }
 
-    function handleAddMenuSubmit(e) {
+    async function handleAddMenuSubmit(e) {
         e.preventDefault();
 
         const name = menuNameInput.value.trim();
@@ -436,7 +495,27 @@
         // confirmation message can say "updated" vs. "added" correctly.
         const wasEditing = Boolean(editingItemId);
 
+        saveMenuBtn.disabled = true;
+
         if (editingItemId) {
+
+            const { error } = await sb
+                .from("menu_items")
+                .update({
+                    name: name,
+                    price: price,
+                    description: description,
+                    image_url: pendingImageDataUrl
+                })
+                .eq("id", editingItemId);
+
+            saveMenuBtn.disabled = false;
+
+            if (error) {
+                alert("Could not update menu item: " + error.message);
+                return;
+            }
+
             const item = menuItems.find(m => m.id === editingItemId);
             if (item) {
                 item.name = name;
@@ -444,17 +523,31 @@
                 item.description = description;
                 item.image = pendingImageDataUrl;
             }
+
         } else {
-            menuItems.push({
-                id: "m_" + Date.now(),
-                name: name,
-                price: price,
-                description: description,
-                image: pendingImageDataUrl
-            });
+
+            const { data: inserted, error } = await sb
+                .from("menu_items")
+                .insert({
+                    name: name,
+                    price: price,
+                    description: description,
+                    image_url: pendingImageDataUrl
+                })
+                .select()
+                .single();
+
+            saveMenuBtn.disabled = false;
+
+            if (error) {
+                alert("Could not add menu item: " + error.message);
+                return;
+            }
+
+            menuItems.push(mapMenuRow(inserted));
         }
 
-        saveMenuItems();
+        saveCachedMenuItems(menuItems);
         renderMenuGrid(menuSearchInput.value);
 
         closeAddMenuPopup();
@@ -539,8 +632,15 @@
 
     // ---------- INIT ----------
 
-    function init() {
-        loadMenuItems();
+    async function init() {
+        // Paint instantly from cache (if we have one) so there's no
+        // blank grid / delay on click — then quietly fetch the real
+        // menu in the background and re-render if it changed.
+        const cached = loadCachedMenuItems();
+        if (cached && cached.length > 0) {
+            menuItems = cached;
+        }
+
         renderMenuGrid("");
         renderOrderList();
 
@@ -585,6 +685,15 @@
         });
 
         addMenuForm.addEventListener("submit", handleAddMenuSubmit);
+
+        // Fetch the real menu from Supabase in the background. If it
+        // differs from what's on screen (or nothing was cached), re-render.
+        const before = JSON.stringify(menuItems);
+        await loadMenuItems(true);
+        if (JSON.stringify(menuItems) !== before) {
+            renderMenuGrid(menuSearchInput.value);
+            renderOrderList();
+        }
     }
 
     if (document.readyState === "loading") {

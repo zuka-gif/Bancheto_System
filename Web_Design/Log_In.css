@@ -95,7 +95,7 @@ body{
     margin-top:5px;
     color:#555;
     margin-bottom:24px;
-    font-size:14px;
+    font-size:12px;
 }
 
 label{
@@ -479,19 +479,36 @@ hr{
 
     max-height: 90vh;
 
+    padding: 30px;
+
     overflow-y: auto;
+    overflow-x: hidden;
 
     background: #ffffff;
 
     border-radius: 15px;
 
-    padding: 30px;
-
-
     box-shadow:
         0 10px 40px rgba(0, 0, 0, 0.25);
 
     animation: modalOpen 0.2s ease;
+}
+
+
+
+.modal-scroll {
+
+    max-height: 90vh;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+
+    padding: 30px 22px 30px 30px;
+
+    margin-right: 8px;
 }
 
 
@@ -678,31 +695,38 @@ hr{
 
 
 
-.policy-content::-webkit-scrollbar {
+/* Firefox scrollbar — the color still applies even though Firefox
+   ignores margin/border-radius on the scrollbar itself; the inset
+   look for Firefox now comes from .modal-scroll's margin-right above,
+   not from scrollbar-specific styling. */
+.modal-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: #8d2121 transparent;
+}
 
-    width: 7px;
+.modal-scroll::-webkit-scrollbar {
+
+    width: 9px;
 }
 
 
-.policy-content::-webkit-scrollbar-track {
+.modal-scroll::-webkit-scrollbar-track {
 
-    background: #f1f1f1;
+    background: transparent;
+}
+
+
+.modal-scroll::-webkit-scrollbar-thumb {
+
+    background: #8d2121;
 
     border-radius: 10px;
 }
 
 
-.policy-content::-webkit-scrollbar-thumb {
+.modal-scroll::-webkit-scrollbar-thumb:hover {
 
-    background: #c5c5c5;
-
-    border-radius: 10px;
-}
-
-
-.policy-content::-webkit-scrollbar-thumb:hover {
-
-    background: #999;
+    background: #6e1a1a;
 }
 
 
@@ -716,6 +740,9 @@ hr{
     max-height: 90vh;
 
     overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
 
     background: #ffffff;
 
@@ -953,32 +980,36 @@ hr{
 
 .modal-content::-webkit-scrollbar {
 
-    width: 7px;
+    width: 9px;
 
 }
 
 
 .modal-content::-webkit-scrollbar-track {
 
-    background: #f1f1f1;
+    background: transparent;
 
     border-radius: 10px;
+
+    margin: 16px 6px 16px 0;
 
 }
 
 
 .modal-content::-webkit-scrollbar-thumb {
 
-    background: #c5c5c5;
+    background: #8d2121;
 
     border-radius: 10px;
+
+    border: 2px solid #ffffff;
 
 }
 
 
 .modal-content::-webkit-scrollbar-thumb:hover {
 
-    background: #999;
+    background: #6e1a1a;
 
 }
 

@@ -8,9 +8,6 @@
 
 (function () {
 
-    const TRANSACTIONS_KEY = "yesunim_transactions";
-    const INVENTORY_LOGS_KEY = "yesunim_inventoryLogs";
-    const INVENTORY_ITEMS_KEY = "yesunim_inventoryItems";
     const LOW_STOCK_THRESHOLD = 5; // must match Inventory.js
 
     // Each tab keeps its own filter selection
@@ -19,21 +16,69 @@
         inventory: { mode: "last7", customStart: "", customEnd: "" }
     };
 
-    // ---------- DATA ----------
+    // ---------- DATA (Supabase) ----------
+    // Mapped into the same field names the old localStorage version
+    // used (date/total/items, name/category/stock/unit/price,
+    // date/itemName) so none of the report-building code below needs
+    // to change.
 
-    function loadTransactions() {
-        const saved = localStorage.getItem(TRANSACTIONS_KEY);
-        return saved ? JSON.parse(saved) : [];
+    async function loadTransactions() {
+        const { data, error } = await sb.from("transactions").select("*");
+
+        if (error) {
+            console.error("Could not load transactions:", error.message);
+            return [];
+        }
+
+        return (data || []).map(row => ({
+            id: row.id,
+            date: row.created_at,
+            role: row.role,
+            items: row.items || [],
+            subtotal: Number(row.subtotal) || 0,
+            discount: Number(row.discount) || 0,
+            total: Number(row.total) || 0,
+            cashReceived: Number(row.cash_received) || 0,
+            change: Number(row.change) || 0
+        }));
     }
 
-    function loadInventoryLogs() {
-        const saved = localStorage.getItem(INVENTORY_LOGS_KEY);
-        return saved ? JSON.parse(saved) : [];
+    async function loadInventoryLogs() {
+        const { data, error } = await sb.from("inventory_logs").select("*");
+
+        if (error) {
+            console.error("Could not load inventory logs:", error.message);
+            return [];
+        }
+
+        return (data || []).map(row => ({
+            id: row.id,
+            date: row.created_at,
+            role: row.role,
+            action: row.action,
+            itemName: row.item_name,
+            category: row.category,
+            change: row.change,
+            resultingStock: row.resulting_stock
+        }));
     }
 
-    function loadInventoryItems() {
-        const saved = localStorage.getItem(INVENTORY_ITEMS_KEY);
-        return saved ? JSON.parse(saved) : [];
+    async function loadInventoryItems() {
+        const { data, error } = await sb.from("inventory_items").select("*");
+
+        if (error) {
+            console.error("Could not load inventory:", error.message);
+            return [];
+        }
+
+        return (data || []).map(row => ({
+            id: row.id,
+            name: row.name,
+            category: row.category,
+            stock: row.stock,
+            unit: row.unit,
+            price: Number(row.price) || 0
+        }));
     }
 
     // ---------- STOCK STATUS DECISION (same rule as Inventory.js) ----------
@@ -178,9 +223,10 @@
 
     // ---------- RENDER: SALES ----------
 
-    function renderSalesTable(tabId) {
+    async function renderSalesTable(tabId) {
         const { start, end } = computeRange(tabId);
-        const transactions = loadTransactions().filter(t => inRange(new Date(t.date), start, end));
+        const allTransactions = await loadTransactions();
+        const transactions = allTransactions.filter(t => inRange(new Date(t.date), start, end));
 
         const grouped = {};
         transactions.forEach(t => {
@@ -260,10 +306,11 @@
     // stock × price — so the footer always adds up to what's shown
     // above it.
 
-    function renderInventoryTable(tabId) {
+    async function renderInventoryTable(tabId) {
         const { start, end } = computeRange(tabId);
-        const items = loadInventoryItems();
-        const logs = loadInventoryLogs().filter(l => inRange(new Date(l.date), start, end));
+        const items = await loadInventoryItems();
+        const allLogs = await loadInventoryLogs();
+        const logs = allLogs.filter(l => inRange(new Date(l.date), start, end));
 
         const activeNames = new Set(logs.map(l => l.itemName));
         const isAllTime = state[tabId].mode === "all";
@@ -323,11 +370,11 @@
         `;
     }
 
-    function generateReport(tabId) {
+    async function generateReport(tabId) {
         if (tabId === "sales") {
-            renderSalesTable(tabId);
+            await renderSalesTable(tabId);
         } else {
-            renderInventoryTable(tabId);
+            await renderInventoryTable(tabId);
         }
     }
 
@@ -423,7 +470,7 @@
 
     // ---------- SET UP ONE TAB ----------
 
-    function setupTab(tabId) {
+    async function setupTab(tabId) {
         const container = document.getElementById(tabId);
         container.innerHTML = buildTabMarkup(tabId);
 
@@ -458,7 +505,7 @@
             }
         });
 
-        generateBtn.addEventListener("click", () => {
+        generateBtn.addEventListener("click", async () => {
             if (state[tabId].mode === "custom") {
                 state[tabId].customStart = customStartInput.value;
                 state[tabId].customEnd = customEndInput.value;
@@ -469,7 +516,7 @@
                 }
             }
 
-            generateReport(tabId);
+            await generateReport(tabId);
         });
 
         exportBtn.addEventListener("click", () => {
@@ -495,7 +542,7 @@
         });
 
         updateDateRangeText(tabId);
-        generateReport(tabId);
+        await generateReport(tabId);
     }
 
     // ---------- TAB SWITCHING (called from the HTML's inline onclick) ----------
@@ -511,9 +558,9 @@
 
     // ---------- INIT ----------
 
-    function init() {
-        setupTab("sales");
-        setupTab("inventory");
+    async function init() {
+        await setupTab("sales");
+        await setupTab("inventory");
     }
 
     document.addEventListener("DOMContentLoaded", init);

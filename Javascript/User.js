@@ -21,7 +21,15 @@ function escapeHTML(value) {
 // GET USER STATUS
 // ==========================================
 
-function getUserStatus(lastActivity) {
+function getUserStatus(lastActivity, disabled) {
+
+    if (disabled) {
+        return {
+            text: "Disabled",
+            time: "Account disabled",
+            className: "inactive"
+        };
+    }
 
     if (!lastActivity) {
         return {
@@ -31,7 +39,10 @@ function getUserStatus(lastActivity) {
         };
     }
 
-    const difference = Date.now() - Number(lastActivity);
+    // last_activity comes back from Supabase as an ISO timestamp string
+    // (e.g. "2026-09-24T01:06:10.117+00:00"), not a Date.now()-style
+    // millisecond number, so it needs new Date(...) rather than Number(...).
+    const difference = Date.now() - new Date(lastActivity).getTime();
 
     const minutes = Math.floor(
         difference / (1000 * 60)
@@ -87,9 +98,10 @@ function getUserStatus(lastActivity) {
 }
 
 
-// ==========================================
-// USERS PAGE
-// ==========================================
+// Populated by loadUsers(); editUser()/toggleUserStatus() (called from
+// inline onclick handlers, so they live outside this closure) read from
+// this shared array by index.
+let loadedUsers = [];
 
 document.addEventListener("DOMContentLoaded", function () {
 
@@ -109,25 +121,52 @@ document.addEventListener("DOMContentLoaded", function () {
     // ==========================================
     // LOAD USERS
     // ==========================================
+    // Owner accounts are excluded here (.neq("role", "Owner")) since this
+    // table is for the Owner to manage Manager/Cashier accounts only —
+    // the Owner's own account (or any other Owner account) should never
+    // show up as something to edit/disable from here. This filters at
+    // the database level so Owner rows are never even sent to the browser.
 
-    function loadUsers() {
+    async function loadUsers() {
 
-        const users =
-            JSON.parse(
-                localStorage.getItem("banchetoUsers")
-            ) || [];
+        const { data, error } =
+            await sb
+                .from("profiles")
+                .select("*")
+                .neq("role", "Owner")
+                .order("fullname", { ascending: true });
 
         const entriesText =
             document.getElementById("entriesText");
 
         usersTableBody.innerHTML = "";
 
+        if (error) {
+
+            usersTableBody.innerHTML = `
+                <tr>
+                    <td colspan="5"
+                        style="text-align:center; padding:30px;">
+                        Could not load accounts: ${escapeHTML(error.message)}
+                    </td>
+                </tr>
+            `;
+
+            if (entriesText) {
+                entriesText.textContent = "Showing 0 entries";
+            }
+
+            return;
+        }
+
+        loadedUsers = data || [];
+
 
         // ==========================================
         // NO USERS
         // ==========================================
 
-        if (users.length === 0) {
+        if (loadedUsers.length === 0) {
 
             usersTableBody.innerHTML = `
                 <tr>
@@ -151,10 +190,10 @@ document.addEventListener("DOMContentLoaded", function () {
         // DISPLAY USERS
         // ==========================================
 
-        users.forEach(function (user, index) {
+        loadedUsers.forEach(function (user, index) {
 
             const status =
-                getUserStatus(user.lastActivity);
+                getUserStatus(user.last_activity, user.disabled);
 
             const row =
                 document.createElement("tr");
@@ -192,10 +231,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
                     <button
                         class="delete-btn"
-                        onclick="deleteUser(${index})"
-                        title="Delete User"
+                        onclick="toggleUserStatus(${index})"
+                        title="${user.disabled ? "Enable User" : "Disable User"}"
                     >
-                        <i class='bx bx-trash'></i>
+                        <i class='bx ${user.disabled ? "bx-check-circle" : "bx-block"}'></i>
                     </button>
 
                 </td>
@@ -208,9 +247,14 @@ document.addEventListener("DOMContentLoaded", function () {
         if (entriesText) {
 
             entriesText.textContent =
-                `Showing 1 to ${users.length} entries`;
+                `Showing 1 to ${loadedUsers.length} entries`;
         }
     }
+
+    // Exposed so editUser()/toggleUserStatus() below can refresh the
+    // table after a successful change, matching what the inline
+    // onclick handlers already expect (reloadUsers()).
+    window.reloadUsers = loadUsers;
 });
 
 
@@ -219,12 +263,9 @@ document.addEventListener("DOMContentLoaded", function () {
 // EDIT USER
 // ==========================================
 
-function editUser(index) {
+async function editUser(index) {
 
-    let users =
-        JSON.parse(localStorage.getItem("banchetoUsers")) || [];
-
-    const user = users[index];
+    const user = loadedUsers[index];
 
     if (!user) {
         alert("User not found.");
@@ -253,7 +294,7 @@ function editUser(index) {
 
 
     const newRole = prompt(
-        "Enter role (Owner, Manager, or Cashier):",
+        "Enter role (Manager or Cashier):",
         user.role
     );
 
@@ -263,8 +304,11 @@ function editUser(index) {
 
 
     // Validate role
+    // Owner is intentionally excluded here — since Owner accounts never
+    // load into loadedUsers in the first place, this dialog should only
+    // ever be editing a Manager or Cashier, and shouldn't offer a way to
+    // promote someone to Owner either.
     const validRoles = [
-        "Owner",
         "Manager",
         "Cashier"
     ];
@@ -278,37 +322,41 @@ function editUser(index) {
     if (!roleExists) {
 
         alert(
-            "Invalid role.\n\nPlease use:\nOwner\nManager\nCashier"
+            "Invalid role.\n\nPlease use:\nManager\nCashier"
         );
 
         return;
     }
 
 
-    // Check duplicate username
-    const duplicateUsername = users.some(
-        (existingUser, i) =>
-            i !== index &&
-            existingUser.username.toLowerCase() ===
-            newUsername.trim().toLowerCase()
-    );
+    const trimmedUsername = newUsername.trim();
 
-    if (duplicateUsername) {
 
+    // CHECK DUPLICATE USERNAME
+    // Excludes this user's own row, since keeping their existing
+    // username unchanged shouldn't count as a duplicate against
+    // themselves.
+
+    const { data: duplicate, error: duplicateCheckError } =
+        await sb
+            .from("profiles")
+            .select("id")
+            .ilike("username", trimmedUsername)
+            .neq("id", user.id)
+            .maybeSingle();
+
+    if (duplicateCheckError) {
+        alert("Something went wrong checking that username. Please try again.");
+        return;
+    }
+
+    if (duplicate) {
         alert("That username is already being used.");
-
         return;
     }
 
 
-    // Update account
-    users[index].fullname =
-        newFullname.trim();
-
-    users[index].username =
-        newUsername.trim();
-
-    users[index].role =
+    const resolvedRole =
         validRoles.find(
             role =>
                 role.toLowerCase() ===
@@ -316,16 +364,24 @@ function editUser(index) {
         );
 
 
-    // Save changes
-    localStorage.setItem(
-        "banchetoUsers",
-        JSON.stringify(users)
-    );
+    const { error: updateError } =
+        await sb
+            .from("profiles")
+            .update({
+                fullname: newFullname.trim(),
+                username: trimmedUsername,
+                role: resolvedRole
+            })
+            .eq("id", user.id);
+
+    if (updateError) {
+        alert("Could not update user: " + updateError.message);
+        return;
+    }
 
 
     alert("User information updated successfully.");
 
-    // Refresh table
     if (typeof reloadUsers === "function") {
         reloadUsers();
     } else {
@@ -335,24 +391,30 @@ function editUser(index) {
 
 
 // ==========================================
-// DELETE USER
+// DISABLE / ENABLE USER
 // ==========================================
+// There's no client-safe way to truly delete a Supabase Auth account —
+// that requires a privileged service-role key, which must never be
+// exposed in frontend code. Disabling has the same practical effect
+// (they can't sign in or act) without needing that key, and it keeps
+// their name intact on past transactions/logs instead of orphaning
+// those records.
 
-function deleteUser(index) {
+async function toggleUserStatus(index) {
 
-    let users =
-        JSON.parse(localStorage.getItem("banchetoUsers")) || [];
-
-    const user = users[index];
+    const user = loadedUsers[index];
 
     if (!user) {
         alert("User not found.");
         return;
     }
 
+    const nowDisabling = !user.disabled;
 
     const confirmation = confirm(
-        `Are you sure you want to delete ${user.fullname}'s account?`
+        nowDisabling
+            ? `Disable ${user.fullname}'s account? They won't be able to sign in until re-enabled.`
+            : `Re-enable ${user.fullname}'s account?`
     );
 
     if (!confirmation) {
@@ -360,21 +422,25 @@ function deleteUser(index) {
     }
 
 
-    // Delete user
-    users.splice(index, 1);
+    const { error } =
+        await sb
+            .from("profiles")
+            .update({ disabled: nowDisabling })
+            .eq("id", user.id);
+
+    if (error) {
+        alert("Could not update account status: " + error.message);
+        return;
+    }
 
 
-    // Save updated users
-    localStorage.setItem(
-        "banchetoUsers",
-        JSON.stringify(users)
+    alert(
+        nowDisabling
+            ? "User account disabled."
+            : "User account re-enabled."
     );
 
 
-    alert("User account deleted successfully.");
-
-
-    // Refresh table
     if (typeof reloadUsers === "function") {
         reloadUsers();
     } else {
@@ -427,7 +493,7 @@ function closeLoginHistory() {
    LOAD LOGIN HISTORY
    ===================================================== */
 
-function loadLoginHistory() {
+async function loadLoginHistory() {
 
     const tableBody =
         document.getElementById(
@@ -446,17 +512,40 @@ function loadLoginHistory() {
 
 
     /*
-       Get real login records
-       saved by the login system.
+       Get real login records from Supabase.
     */
 
-    const loginHistory =
-        JSON.parse(
-            localStorage.getItem("loginHistory")
-        ) || [];
+    const { data, error } =
+        await sb
+            .from("login_history")
+            .select("*")
+            .order("created_at", { ascending: false })
+            .limit(200);
 
 
     tableBody.innerHTML = "";
+
+
+    /* Load failed */
+
+    if (error) {
+
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="6" style="text-align:center; color:#888; height:60px;">
+                    Could not load login history: ${escapeHTML(error.message)}
+                </td>
+            </tr>
+        `;
+
+        if (entries) {
+            entries.textContent = "Showing 0 entries";
+        }
+
+        return;
+    }
+
+    const loginHistory = data || [];
 
 
     /* No records */
@@ -510,32 +599,48 @@ function loadLoginHistory() {
                 ? "login-success"
                 : "login-failed";
 
+        const when =
+            new Date(login.created_at);
+
+        const dateText =
+            when.toLocaleDateString("en-US", {
+                month: "long",
+                day: "numeric",
+                year: "numeric"
+            });
+
+        const timeText =
+            when.toLocaleTimeString("en-US", {
+                hour: "2-digit",
+                minute: "2-digit"
+            });
+
 
         row.innerHTML = `
 
             <td>
-                ${login.name}
+                ${escapeHTML(login.name)}
             </td>
 
             <td>
-                ${login.username}
+                ${escapeHTML(login.username)}
             </td>
 
             <td>
-                ${login.role}
+                ${escapeHTML(login.role)}
             </td>
 
             <td>
-                ${login.date}
+                ${dateText}
             </td>
 
             <td>
-                ${login.time}
+                ${timeText}
             </td>
 
             <td>
                 <span class="${statusClass}">
-                    ${login.status}
+                    ${escapeHTML(login.status)}
                 </span>
             </td>
 
@@ -607,41 +712,11 @@ document.addEventListener(
 
 
 
-function saveLoginHistory(name, username, role, status) {
-
-    let history =
-        JSON.parse(
-            localStorage.getItem("loginHistory")
-        ) || [];
-
-    const now = new Date();
-
-    history.unshift({
-
-        name: name,
-
-        username: username,
-
-        role: role,
-
-        date: now.toLocaleDateString("en-US", {
-            month: "long",
-            day: "numeric",
-            year: "numeric"
-        }),
-
-        time: now.toLocaleTimeString("en-US", {
-            hour: "2-digit",
-            minute: "2-digit"
-        }),
-
-        status: status
-
-    });
-
-    localStorage.setItem(
-        "loginHistory",
-        JSON.stringify(history)
-    );
-}
-
+// NOTE: saveLoginHistory() intentionally lives only in script.js now.
+// It used to be duplicated here too — since SignIn.html loads script.js
+// then User.js, this file's older localStorage version was silently
+// overriding script.js's real Supabase-backed one (both declared a
+// global function with the same name), so every login was actually
+// being saved to localStorage.loginHistory instead of the real
+// login_history table, invisibly. Removing the duplicate here lets
+// script.js's version be the one that actually runs.

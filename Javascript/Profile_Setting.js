@@ -1,124 +1,89 @@
 // =====================================================
-// BANCHETO DE BUSTOS
-// PROFILE & SYSTEM SETTINGS
+// YESUNIM — PROFILE & SYSTEM SETTINGS
+// Migrated to Supabase Auth + "profiles" table.
 // =====================================================
 
 
-
 // =====================================================
-// GET CURRENT LOGGED-IN USER
+// CACHED SESSION (fast, synchronous — written by script.js
+// at Sign In, kept up to date by saveProfile() below)
+// Used for things that don't need a guaranteed-fresh read,
+// like the dashboard greeting or the avatar storage key.
 // =====================================================
 
-function getCurrentUser() {
+function getCachedSession() {
 
-    const localUser =
-        localStorage.getItem("banchetoCurrentUser");
+    const local = localStorage.getItem("banchetoCurrentUser");
+    const session = sessionStorage.getItem("banchetoCurrentUser");
 
-    const sessionUser =
-        sessionStorage.getItem("banchetoCurrentUser");
-
-
-    if (localUser) {
-
-        return JSON.parse(localUser);
-
-    }
-
-
-    if (sessionUser) {
-
-        return JSON.parse(sessionUser);
-
-    }
-
+    try {
+        if (local) return JSON.parse(local);
+        if (session) return JSON.parse(session);
+    } catch (e) { /* ignore malformed data */ }
 
     return null;
-
 }
 
 
-
 // =====================================================
-// GET USERS
-// =====================================================
-
-function getUsers() {
-
-    return JSON.parse(
-        localStorage.getItem("banchetoUsers")
-    ) || [];
-
-}
-
-
-
-// =====================================================
-// FIND CURRENT USER IN DATABASE
+// LIVE PROFILE (authoritative — used whenever we're about
+// to show or save something, so we're never editing stale
+// or someone-else's-session data)
 // =====================================================
 
-function findCurrentUser() {
+async function getCurrentProfile() {
 
-    const currentUser = getCurrentUser();
+    const { data: { user: authUser }, error: authError } =
+        await sb.auth.getUser();
 
-    if (!currentUser) {
-
+    if (authError || !authUser) {
         return null;
-
     }
 
+    const { data: profile, error: profileError } =
+        await sb
+            .from("profiles")
+            .select("*")
+            .eq("id", authUser.id)
+            .single();
 
-    const users = getUsers();
+    if (profileError || !profile) {
+        return null;
+    }
 
-
-    return users.find(
-        user =>
-            Number(user.id) ===
-            Number(currentUser.id)
-    ) || null;
-
+    return { authUser, profile };
 }
 
 
 
 /* ===============================
    PROFILE PICTURE
+   Still stored locally (data URL in localStorage) — moving
+   this to Supabase Storage is a separate task (needs a
+   storage bucket + policies), not included in this pass.
+   Keyed by the user's UUID (stable) instead of username
+   (which can change).
 ================================ */
 
 const profileAvatar = document.getElementById("profileAvatar");
 const profilePictureInput = document.getElementById("profilePictureInput");
+const profileAvatarImage = document.getElementById("profileAvatarImage");
+const profileAvatarIcon = document.getElementById("profileAvatarIcon");
+const dashboardProfileImage = document.getElementById("dashboardProfileImage");
+const dashboardProfileIcon = document.getElementById("dashboardProfileIcon");
 
-const profileAvatarImage =
-    document.getElementById("profileAvatarImage");
-
-const profileAvatarIcon =
-    document.getElementById("profileAvatarIcon");
-
-const dashboardProfileImage =
-    document.getElementById("dashboardProfileImage");
-
-const dashboardProfileIcon =
-    document.getElementById("dashboardProfileIcon");
-
-
-/* ===============================
-   GET CURRENT ACCOUNT
-================================ */
 
 function getProfilePictureKey() {
 
-    const user = findCurrentUser();
+    const session = getCachedSession();
 
-    if (!user || !user.username) {
+    if (!session || !session.id) {
         return null;
     }
 
-    return "profilePicture_" + user.username;
+    return "profilePicture_" + session.id;
 }
 
-
-/* ===============================
-   LOAD PROFILE PICTURE
-================================ */
 
 function loadProfilePicture() {
 
@@ -130,1024 +95,485 @@ function loadProfilePicture() {
 
     const savedPicture = localStorage.getItem(key);
 
-
-    /* No picture yet */
-
     if (!savedPicture) {
 
-        profileAvatarImage.style.display = "none";
-        profileAvatarIcon.style.display = "block";
+        if (profileAvatarImage) profileAvatarImage.style.display = "none";
+        if (profileAvatarIcon) profileAvatarIcon.style.display = "block";
 
-
-        if (dashboardProfileImage) {
-            dashboardProfileImage.style.display = "none";
-        }
-
-        if (dashboardProfileIcon) {
-            dashboardProfileIcon.style.display = "block";
-        }
+        if (dashboardProfileImage) dashboardProfileImage.style.display = "none";
+        if (dashboardProfileIcon) dashboardProfileIcon.style.display = "block";
 
         return;
     }
 
-
-    /* Account Profile */
-
-    profileAvatarImage.src = savedPicture;
-    profileAvatarImage.style.display = "block";
-    profileAvatarIcon.style.display = "none";
-
-
-    /* Dashboard */
+    if (profileAvatarImage) {
+        profileAvatarImage.src = savedPicture;
+        profileAvatarImage.style.display = "block";
+    }
+    if (profileAvatarIcon) profileAvatarIcon.style.display = "none";
 
     if (dashboardProfileImage) {
-
         dashboardProfileImage.src = savedPicture;
         dashboardProfileImage.style.display = "block";
     }
-
-    if (dashboardProfileIcon) {
-
-        dashboardProfileIcon.style.display = "none";
-    }
+    if (dashboardProfileIcon) dashboardProfileIcon.style.display = "none";
 }
 
-
-/* ===============================
-   OPEN FILE SELECTOR
-================================ */
 
 if (profileAvatar && profilePictureInput) {
-
-    profileAvatar.addEventListener("click", () => {
-        profilePictureInput.click();
-    });
-
+    profileAvatar.addEventListener("click", () => profilePictureInput.click());
 }
 
-
-/* ===============================
-   SELECT PROFILE PICTURE
-================================ */
 
 if (profilePictureInput) {
 
     profilePictureInput.addEventListener("change", function () {
 
         const file = this.files[0];
-
-        if (!file) {
-            return;
-        }
-
-
-        /* Check image */
+        if (!file) return;
 
         if (!file.type.startsWith("image/")) {
-
             alert("Please select an image.");
-
             this.value = "";
-
             return;
         }
-
-
-        /* Get current account */
 
         const key = getProfilePictureKey();
 
         if (!key) {
-
             alert("No logged-in user found.");
-
             this.value = "";
-
             return;
         }
 
-
-        /* Read image */
-
         const reader = new FileReader();
-
 
         reader.onload = function (event) {
 
             const image = event.target.result;
 
-
-            /* ===============================
-               ACCOUNT PROFILE
-            =============================== */
-
-            profileAvatarImage.src = image;
-            profileAvatarImage.style.display = "block";
-
-            profileAvatarIcon.style.display = "none";
-
-
-            /* ===============================
-               DASHBOARD
-            =============================== */
+            if (profileAvatarImage) {
+                profileAvatarImage.src = image;
+                profileAvatarImage.style.display = "block";
+            }
+            if (profileAvatarIcon) profileAvatarIcon.style.display = "none";
 
             if (dashboardProfileImage) {
-
                 dashboardProfileImage.src = image;
                 dashboardProfileImage.style.display = "block";
             }
-
-
-            if (dashboardProfileIcon) {
-
-                dashboardProfileIcon.style.display = "none";
-            }
-
-
-            /* ===============================
-               SAVE TO CURRENT ACCOUNT
-            =============================== */
+            if (dashboardProfileIcon) dashboardProfileIcon.style.display = "none";
 
             localStorage.setItem(key, image);
-
         };
 
-
         reader.readAsDataURL(file);
-
     });
-
 }
 
-
-/* ===============================
-   LOAD PICTURE ON PAGE START
-================================ */
 
 loadProfilePicture();
 
 
 
-
 /* ===============================
    OPEN PROFILE POPUP
+   Fetches a live copy from Supabase, not the cached session,
+   so the popup always shows what's actually saved.
 ================================ */
 
-function openProfilePopup() {
+async function openProfilePopup() {
 
-    const overlay =
-        document.getElementById("profileOverlay");
+    const overlay = document.getElementById("profileOverlay");
+    if (!overlay) return;
 
+    const result = await getCurrentProfile();
 
-    if (!overlay) {
-        return;
-    }
-
-
-    const user = findCurrentUser();
-
-
-    if (!user) {
-
+    if (!result) {
         alert("No logged-in user found.");
-
         return;
     }
 
+    const { authUser, profile } = result;
 
-    /* ===============================
-       PROFILE INFORMATION
-    =============================== */
-
-    document.getElementById(
-        "profileFullname"
-    ).value = user.fullname || "";
-
-
-    document.getElementById(
-        "profileUsername"
-    ).value = user.username || "";
-
-
-    document.getElementById(
-        "profileEmailPhone"
-    ).value = user.emailOrPhone || "";
-
-
-    document.getElementById(
-        "profileRole"
-    ).value = user.role || "";
-
-
-    /* ===============================
-       LOAD THIS USER'S PICTURE
-    =============================== */
+    document.getElementById("profileFullname").value = profile.fullname || "";
+    document.getElementById("profileUsername").value = profile.username || "";
+    document.getElementById("profileEmailPhone").value = authUser.email || "";
+    document.getElementById("profileRole").value = profile.role || "";
 
     loadProfilePicture();
 
-
-    /* ===============================
-       SHOW POPUP
-    =============================== */
-
     overlay.classList.add("show");
-
 }
 
 
-
-
-// =====================================================
-// CLOSE PROFILE
-// =====================================================
-
 function closeProfilePopup() {
-
-    const overlay =
-        document.getElementById("profileOverlay");
-
-
-    if (overlay) {
-
-        overlay.classList.remove("show");
-
-    }
-
+    document.getElementById("profileOverlay")?.classList.remove("show");
 }
 
 
 
 // =====================================================
 // SAVE PROFILE
+// Updates fullname/username in "profiles". Role is
+// intentionally never sent here — self-editing role isn't
+// allowed; that only happens from the Users page. Email
+// changes go through Supabase Auth, not the profiles table.
 // =====================================================
 
-function saveProfile() {
+async function saveProfile() {
 
-    const currentUser =
-        getCurrentUser();
+    const result = await getCurrentProfile();
 
-
-    if (!currentUser) {
-
+    if (!result) {
         alert("No logged-in user found.");
-
         return;
-
     }
 
+    const { authUser, profile } = result;
 
-    const fullname =
-        document
-            .getElementById("profileFullname")
-            .value
-            .trim();
+    const fullname = document.getElementById("profileFullname").value.trim();
+    const username = document.getElementById("profileUsername").value.trim();
+    const emailOrPhone = document.getElementById("profileEmailPhone").value.trim();
 
-
-    const username =
-        document
-            .getElementById("profileUsername")
-            .value
-            .trim();
-
-
-    const emailOrPhone =
-        document
-            .getElementById("profileEmailPhone")
-            .value
-            .trim();
-
-
-    if (
-        !fullname ||
-        !username ||
-        !emailOrPhone
-    ) {
-
-        alert(
-            "Please complete all profile fields."
-        );
-
+    if (!fullname || !username || !emailOrPhone) {
+        alert("Please complete all profile fields.");
         return;
-
     }
 
 
-    let users = getUsers();
+    // CHECK USERNAME DUPLICATE (excluding this user's own row)
 
+    const { data: duplicate, error: duplicateCheckError } =
+        await sb
+            .from("profiles")
+            .select("id")
+            .ilike("username", username)
+            .neq("id", profile.id)
+            .maybeSingle();
 
-    const userIndex =
-        users.findIndex(
-            user =>
-                Number(user.id) ===
-                Number(currentUser.id)
-        );
-
-
-    if (userIndex === -1) {
-
-        alert("Account could not be found.");
-
+    if (duplicateCheckError) {
+        alert("Something went wrong checking that username. Please try again.");
         return;
-
     }
 
-
-
-    // ==========================================
-    // CHECK USERNAME DUPLICATE
-    // ==========================================
-
-    const duplicateUsername =
-        users.some(
-            (user, index) =>
-
-                index !== userIndex &&
-
-                user.username &&
-                user.username.toLowerCase() ===
-                username.toLowerCase()
-        );
-
-
-    if (duplicateUsername) {
-
-        alert(
-            "That username is already being used."
-        );
-
+    if (duplicate) {
+        alert("That username is already being used.");
         return;
-
     }
 
 
+    // UPDATE PROFILE ROW
 
-    // ==========================================
-    // CHECK EMAIL / PHONE DUPLICATE
-    // ==========================================
+    const { error: updateError } =
+        await sb
+            .from("profiles")
+            .update({
+                fullname: fullname,
+                username: username
+            })
+            .eq("id", profile.id);
 
-    const duplicateContact =
-        users.some(
-            (user, index) =>
-
-                index !== userIndex &&
-
-                user.emailOrPhone &&
-                user.emailOrPhone.toLowerCase() ===
-                emailOrPhone.toLowerCase()
-        );
-
-
-    if (duplicateContact) {
-
-        alert(
-            "That email or phone number is already being used."
-        );
-
+    if (updateError) {
+        alert("Could not update profile: " + updateError.message);
         return;
-
     }
 
 
+    // UPDATE EMAIL, IF CHANGED (lives in Supabase Auth, not "profiles")
 
-    // ==========================================
-    // UPDATE USER
-    // ==========================================
+    if (emailOrPhone !== authUser.email) {
 
-    users[userIndex].fullname =
-        fullname;
+        const { error: emailError } =
+            await sb.auth.updateUser({ email: emailOrPhone });
 
-    users[userIndex].username =
-        username;
-
-    users[userIndex].emailOrPhone =
-        emailOrPhone;
-
-
-
-    // ==========================================
-    // SAVE USERS
-    // ==========================================
-
-    localStorage.setItem(
-        "banchetoUsers",
-        JSON.stringify(users)
-    );
-
-
-
-    // ==========================================
-    // UPDATE CURRENT SESSION
-    // ==========================================
-
-    const updatedSession = {
-
-        id: users[userIndex].id,
-
-        fullname:
-            users[userIndex].fullname,
-
-        username:
-            users[userIndex].username,
-
-        emailOrPhone:
-            users[userIndex].emailOrPhone,
-
-        role:
-            users[userIndex].role,
-
-        lastLogin:
-            users[userIndex].lastLogin,
-
-        lastActivity:
-            users[userIndex].lastActivity
-
-    };
-
-
-
-    // Remember Me = localStorage
-
-    if (
-        localStorage.getItem(
-            "banchetoCurrentUser"
-        )
-    ) {
-
-        localStorage.setItem(
-            "banchetoCurrentUser",
-            JSON.stringify(updatedSession)
-        );
-
+        if (emailError) {
+            alert(
+                "Profile saved, but the email/phone could not be updated: " +
+                emailError.message
+            );
+            closeProfilePopup();
+            updateDashboardUser();
+            return;
+        }
     }
 
 
+    // KEEP THE CACHED SESSION IN SYNC
+    // (getCurrentUserRole(), Access-guard.js, the greeting, etc.
+    // all read this convenience copy)
 
-    // Normal login = sessionStorage
+    const cachedSession = getCachedSession();
 
-    if (
-        sessionStorage.getItem(
-            "banchetoCurrentUser"
-        )
-    ) {
+    if (cachedSession) {
 
-        sessionStorage.setItem(
-            "banchetoCurrentUser",
-            JSON.stringify(updatedSession)
-        );
+        const updatedSession = {
+            ...cachedSession,
+            fullname: fullname,
+            username: username,
+            emailOrPhone: emailOrPhone
+        };
 
+        if (localStorage.getItem("banchetoCurrentUser")) {
+            localStorage.setItem("banchetoCurrentUser", JSON.stringify(updatedSession));
+        }
+
+        if (sessionStorage.getItem("banchetoCurrentUser")) {
+            sessionStorage.setItem("banchetoCurrentUser", JSON.stringify(updatedSession));
+        }
     }
 
 
-
-    alert(
-        "Profile updated successfully."
-    );
-
+    alert("Profile updated successfully.");
 
     closeProfilePopup();
 
-
-    // Update dashboard greeting
-
     updateDashboardUser();
-
 }
 
 
 
 // =====================================================
 // UPDATE DASHBOARD USER + GREETING
+// Reads the cached session — fine here since it's just kept
+// in sync by saveProfile() and doesn't need a network round
+// trip on every page load.
 // =====================================================
 
 function updateDashboardUser() {
 
-    const currentUser = getCurrentUser();
+    const session = getCachedSession();
+    if (!session) return;
 
-    if (!currentUser) {
-        return;
-    }
+    const dashboardP = document.querySelector(".Dashboard-header p");
+    const dashboardSpan = document.querySelector(".Dashboard-header p span");
 
-    const dashboardP = document.querySelector(
-        ".Dashboard-header p"
-    );
-
-    const dashboardSpan = document.querySelector(
-        ".Dashboard-header p span"
-    );
-
-    // Update user role
     if (dashboardSpan) {
-        dashboardSpan.textContent =
-            (currentUser.role || "ADMIN") + "!";
+        dashboardSpan.textContent = (session.role || "ADMIN") + "!";
     }
 
-    // Update greeting based on current time
     if (dashboardP) {
 
         const hour = new Date().getHours();
-
         let greeting;
 
-        if (hour >= 5 && hour < 12) {
-            greeting = "Good morning";
-        } else if (hour >= 12 && hour < 18) {
-            greeting = "Good afternoon";
-        } else {
-            greeting = "Good evening";
-        }
+        if (hour >= 5 && hour < 12) greeting = "Good morning";
+        else if (hour >= 12 && hour < 18) greeting = "Good afternoon";
+        else greeting = "Good evening";
 
-        // Update only the text before the <span>
         dashboardP.firstChild.textContent = greeting + ", ";
     }
 }
 
 
 
-
 // =====================================================
-// OPEN PASSWORD POPUP
+// PASSWORD POPUP
 // =====================================================
 
 function openPasswordPopup() {
 
-    document.getElementById(
-        "currentPassword"
-    ).value = "";
+    document.getElementById("currentPassword").value = "";
+    document.getElementById("newPassword").value = "";
+    document.getElementById("confirmNewPassword").value = "";
 
-
-    document.getElementById(
-        "newPassword"
-    ).value = "";
-
-
-    document.getElementById(
-        "confirmNewPassword"
-    ).value = "";
-
-
-    document.getElementById(
-        "passwordOverlay"
-    ).classList.add("show");
-
+    document.getElementById("passwordOverlay").classList.add("show");
 }
 
 
-
-// =====================================================
-// CLOSE PASSWORD POPUP
-// =====================================================
-
 function closePasswordPopup() {
-
-    document.getElementById(
-        "passwordOverlay"
-    ).classList.remove("show");
-
+    document.getElementById("passwordOverlay")?.classList.remove("show");
 }
 
 
 
 // =====================================================
 // CHANGE PASSWORD
+// Supabase has no client-safe "check this password" call, so
+// the current password is verified by re-authenticating with
+// it via signInWithPassword() before updating to the new one.
 // =====================================================
 
-function changePassword() {
+async function changePassword() {
 
-    const currentUser =
-        getCurrentUser();
+    const result = await getCurrentProfile();
 
-
-    if (!currentUser) {
-
-        alert(
-            "No logged-in user found."
-        );
-
+    if (!result) {
+        alert("No logged-in user found.");
         return;
+    }
 
+    const { authUser } = result;
+
+    const currentPassword = document.getElementById("currentPassword").value;
+    const newPassword = document.getElementById("newPassword").value;
+    const confirmPassword = document.getElementById("confirmNewPassword").value;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+        alert("Please complete all password fields.");
+        return;
+    }
+
+    if (newPassword.length < 8) {
+        alert("Password must contain at least 8 characters.");
+        return;
+    }
+
+    if (newPassword !== confirmPassword) {
+        alert("New passwords do not match.");
+        return;
     }
 
 
-    const currentPassword =
-        document.getElementById(
-            "currentPassword"
-        ).value;
+    // VERIFY CURRENT PASSWORD
+    // Works for email today; phone here too once Twilio/phone
+    // auth is wired in, since authUser.email will be null for
+    // phone-based accounts and authUser.phone will be set.
 
+    const verifyCredentials = authUser.email
+        ? { email: authUser.email, password: currentPassword }
+        : { phone: authUser.phone, password: currentPassword };
 
-    const newPassword =
-        document.getElementById(
-            "newPassword"
-        ).value;
+    const { error: verifyError } =
+        await sb.auth.signInWithPassword(verifyCredentials);
 
-
-    const confirmPassword =
-        document.getElementById(
-            "confirmNewPassword"
-        ).value;
-
-
-
-    // ==========================================
-    // VALIDATE
-    // ==========================================
-
-    if (
-        !currentPassword ||
-        !newPassword ||
-        !confirmPassword
-    ) {
-
-        alert(
-            "Please complete all password fields."
-        );
-
+    if (verifyError) {
+        alert("Current password is incorrect.");
         return;
-
     }
 
 
-    let users = getUsers();
+    // UPDATE TO NEW PASSWORD
 
+    const { error: updateError } =
+        await sb.auth.updateUser({ password: newPassword });
 
-    const userIndex =
-        users.findIndex(
-            user =>
-                Number(user.id) ===
-                Number(currentUser.id)
-        );
-
-
-    if (userIndex === -1) {
-
-        alert(
-            "Account could not be found."
-        );
-
+    if (updateError) {
+        alert("Could not change password: " + updateError.message);
         return;
-
     }
 
-
-
-    // ==========================================
-    // CHECK CURRENT PASSWORD
-    // ==========================================
-
-    if (
-        users[userIndex].password !==
-        currentPassword
-    ) {
-
-        alert(
-            "Current password is incorrect."
-        );
-
-        return;
-
-    }
-
-
-
-    // ==========================================
-    // PASSWORD LENGTH
-    // ==========================================
-
-    if (
-        newPassword.length < 6
-    ) {
-
-        alert(
-            "Password must contain at least 6 characters."
-        );
-
-        return;
-
-    }
-
-
-
-    // ==========================================
-    // CONFIRM PASSWORD
-    // ==========================================
-
-    if (
-        newPassword !==
-        confirmPassword
-    ) {
-
-        alert(
-            "New passwords do not match."
-        );
-
-        return;
-
-    }
-
-
-
-    // ==========================================
-    // SAVE PASSWORD
-    // ==========================================
-
-    users[userIndex].password =
-        newPassword;
-
-
-    localStorage.setItem(
-        "banchetoUsers",
-        JSON.stringify(users)
-    );
-
-
-    alert(
-        "Password changed successfully."
-    );
-
+    alert("Password changed successfully.");
 
     closePasswordPopup();
-
 }
 
 
 
 // =====================================================
-// OPEN SETTINGS
+// SYSTEM SETTINGS
+// Device-level preferences (not shared data), so these stay
+// in localStorage intentionally — there's no "settings" table.
 // =====================================================
 
 function openSettingsPopup() {
-
     loadSettings();
-
-
-    document.getElementById(
-        "settingsOverlay"
-    ).classList.add("show");
-
+    document.getElementById("settingsOverlay").classList.add("show");
 }
 
-
-
-// =====================================================
-// CLOSE SETTINGS
-// =====================================================
 
 function closeSettingsPopup() {
-
-    document.getElementById(
-        "settingsOverlay"
-    ).classList.remove("show");
-
+    document.getElementById("settingsOverlay")?.classList.remove("show");
 }
 
-
-
-// =====================================================
-// LOAD SETTINGS
-// =====================================================
 
 function loadSettings() {
 
     const settings =
-        JSON.parse(
-            localStorage.getItem(
-                "banchetoSettings"
-            )
-        ) || {
+        JSON.parse(localStorage.getItem("banchetoSettings")) ||
+        { notifications: true, lastBackup: null };
 
-            notifications: true,
+    const toggle = document.getElementById("notificationToggle");
+    if (toggle) toggle.checked = settings.notifications;
 
-            lastBackup: null
+    const backupText = document.getElementById("lastBackupText");
 
-        };
-
-
-    const toggle =
-        document.getElementById(
-            "notificationToggle"
-        );
-
-
-    if (toggle) {
-
-        toggle.checked =
-            settings.notifications;
-
-    }
-
-
-    const backupText =
-        document.getElementById(
-            "lastBackupText"
-        );
-
-
-    if (
-        backupText &&
-        settings.lastBackup
-    ) {
-
+    if (backupText && settings.lastBackup) {
         backupText.textContent =
-            "Last Backup: " +
-            new Date(
-                settings.lastBackup
-            ).toLocaleString();
-
+            "Last Backup: " + new Date(settings.lastBackup).toLocaleString();
     }
-
 }
 
 
-
-// =====================================================
-// SAVE SETTINGS
-// =====================================================
-
 function saveSettings() {
 
-    const toggle =
-        document.getElementById(
-            "notificationToggle"
-        );
-
-
-    const oldSettings =
-        JSON.parse(
-            localStorage.getItem(
-                "banchetoSettings"
-            )
-        ) || {};
-
+    const toggle = document.getElementById("notificationToggle");
+    const oldSettings = JSON.parse(localStorage.getItem("banchetoSettings")) || {};
 
     const settings = {
-
-        notifications:
-            toggle
-                ? toggle.checked
-                : true,
-
-        lastBackup:
-            oldSettings.lastBackup || null
-
+        notifications: toggle ? toggle.checked : true,
+        lastBackup: oldSettings.lastBackup || null
     };
 
+    localStorage.setItem("banchetoSettings", JSON.stringify(settings));
 
-    localStorage.setItem(
-        "banchetoSettings",
-        JSON.stringify(settings)
-    );
-
-
-    alert(
-        "System settings saved successfully."
-    );
-
+    alert("System settings saved successfully.");
 
     closeSettingsPopup();
-
 }
 
 
 
 // =====================================================
 // BACKUP DATABASE
+// Pulls real data from Supabase now — this previously read
+// "banchetoUsers"/"loginHistory" from localStorage, which are
+// no longer written to, so the export was silently empty.
 // =====================================================
 
-function backupDatabase() {
+async function backupDatabase() {
 
-    const users =
-        JSON.parse(
-            localStorage.getItem(
-                "banchetoUsers"
-            )
-        ) || [];
+    const { data: users, error: usersError } =
+        await sb.from("profiles").select("*");
 
+    const { data: loginHistory, error: historyError } =
+        await sb.from("login_history").select("*");
 
-    const loginHistory =
-        JSON.parse(
-            localStorage.getItem(
-                "loginHistory"
-            )
-        ) || [];
-
+    if (usersError || historyError) {
+        alert(
+            "Could not create backup: " +
+            (usersError?.message || historyError?.message)
+        );
+        return;
+    }
 
     const settings =
-        JSON.parse(
-            localStorage.getItem(
-                "banchetoSettings"
-            )
-        ) || {};
-
-
-
-    // Create backup object
+        JSON.parse(localStorage.getItem("banchetoSettings")) || {};
 
     const backupData = {
-
-        system:
-            "Bancheto De Bustos",
-
-        version:
-            "1.0.0",
-
-        backupDate:
-            new Date().toISOString(),
-
-        users:
-            users,
-
-        loginHistory:
-            loginHistory,
-
-        settings:
-            settings
-
+        system: "Yesunim",
+        version: "1.0.0",
+        backupDate: new Date().toISOString(),
+        users: users || [],
+        loginHistory: loginHistory || [],
+        settings: settings
     };
 
+    const json = JSON.stringify(backupData, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
 
-
-    // Convert to JSON
-
-    const json =
-        JSON.stringify(
-            backupData,
-            null,
-            2
-        );
-
-
-    const blob =
-        new Blob(
-            [json],
-            {
-                type:
-                    "application/json"
-            }
-        );
-
-
-    const url =
-        URL.createObjectURL(
-            blob
-        );
-
-
-    const link =
-        document.createElement("a");
-
-
+    const link = document.createElement("a");
     link.href = url;
-
-
-    link.download =
-        "bancheto-backup-" +
-        new Date()
-            .toISOString()
-            .slice(0, 10) +
-        ".json";
-
+    link.download = "yesunim-backup-" + new Date().toISOString().slice(0, 10) + ".json";
 
     document.body.appendChild(link);
-
-
     link.click();
-
-
     document.body.removeChild(link);
-
 
     URL.revokeObjectURL(url);
 
 
-
-    // Save backup time
-
     const updatedSettings =
-        JSON.parse(
-            localStorage.getItem(
-                "banchetoSettings"
-            )
-        ) || {};
+        JSON.parse(localStorage.getItem("banchetoSettings")) || {};
 
+    updatedSettings.lastBackup = Date.now();
 
-    updatedSettings.lastBackup =
-        Date.now();
-
-
-    localStorage.setItem(
-        "banchetoSettings",
-        JSON.stringify(
-            updatedSettings
-        )
-    );
-
+    localStorage.setItem("banchetoSettings", JSON.stringify(updatedSettings));
 
     loadSettings();
 
-
-    alert(
-        "Database backup created successfully."
-    );
-
+    alert("Database backup created successfully.");
 }
 
 
@@ -1156,294 +582,80 @@ function backupDatabase() {
 // INITIALIZE
 // =====================================================
 
-document.addEventListener(
-    "DOMContentLoaded",
-    function () {
+document.addEventListener("DOMContentLoaded", function () {
+
+    const profileButton = document.querySelector(".Popup-icons .profile");
+    if (profileButton) profileButton.addEventListener("click", openProfilePopup);
+
+    const settingsButton = document.querySelector(".Popup-icons .setting");
+    if (settingsButton) settingsButton.addEventListener("click", openSettingsPopup);
+
+    document.getElementById("closeProfileBtn")?.addEventListener("click", closeProfilePopup);
+
+    document.getElementById("openPasswordBtn")?.addEventListener("click", openPasswordPopup);
+    document.getElementById("closePasswordBtn")?.addEventListener("click", closePasswordPopup);
+    document.getElementById("cancelPasswordBtn")?.addEventListener("click", closePasswordPopup);
+    document.getElementById("changePasswordBtn")?.addEventListener("click", changePassword);
+
+    document.getElementById("saveProfileBtn")?.addEventListener("click", saveProfile);
+
+    document.getElementById("closeSettingsBtn")?.addEventListener("click", closeSettingsPopup);
+    document.getElementById("saveSettingsBtn")?.addEventListener("click", saveSettings);
+    document.getElementById("backupBtn")?.addEventListener("click", backupDatabase);
 
 
-        // ==========================================
-        // PROFILE BUTTON
-        // ==========================================
+    document.getElementById("profileOverlay")?.addEventListener("click", function (event) {
+        if (event.target === this) closeProfilePopup();
+    });
 
-        const profileButton =
-            document.querySelector(
-                ".Popup-icons .profile"
-            );
+    document.getElementById("passwordOverlay")?.addEventListener("click", function (event) {
+        if (event.target === this) closePasswordPopup();
+    });
+
+    document.getElementById("settingsOverlay")?.addEventListener("click", function (event) {
+        if (event.target === this) closeSettingsPopup();
+    });
 
 
-        if (profileButton) {
-
-            profileButton.addEventListener(
-                "click",
-                openProfilePopup
-            );
-
+    document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") {
+            closeProfilePopup();
+            closePasswordPopup();
+            closeSettingsPopup();
         }
+    });
 
 
+    updateDashboardUser();
+    loadSettings();
+});
 
-        // ==========================================
-        // SETTINGS BUTTON
-        // ==========================================
 
-        const settingsButton =
-            document.querySelector(
-                ".Popup-icons .setting"
-            );
+document.addEventListener("DOMContentLoaded", function () {
 
+    const passwordToggleButtons = document.querySelectorAll(".toggle-password");
 
-        if (settingsButton) {
+    passwordToggleButtons.forEach(function (button) {
 
-            settingsButton.addEventListener(
-                "click",
-                openSettingsPopup
-            );
+        button.addEventListener("click", function () {
 
-        }
+            const targetId = button.getAttribute("data-target");
+            const passwordInput = document.getElementById(targetId);
+            const icon = button.querySelector("i");
 
+            if (!passwordInput || !icon) return;
 
-
-        // ==========================================
-        // PROFILE CLOSE
-        // ==========================================
-
-        document
-            .getElementById("closeProfileBtn")
-            ?.addEventListener(
-                "click",
-                closeProfilePopup
-            );
-
-
-
-        // ==========================================
-        // PASSWORD
-        // ==========================================
-
-        document
-            .getElementById("openPasswordBtn")
-            ?.addEventListener(
-                "click",
-                openPasswordPopup
-            );
-
-
-        document
-            .getElementById("closePasswordBtn")
-            ?.addEventListener(
-                "click",
-                closePasswordPopup
-            );
-
-
-        document
-            .getElementById("cancelPasswordBtn")
-            ?.addEventListener(
-                "click",
-                closePasswordPopup
-            );
-
-
-        document
-            .getElementById("changePasswordBtn")
-            ?.addEventListener(
-                "click",
-                changePassword
-            );
-
-
-
-        // ==========================================
-        // SAVE PROFILE
-        // ==========================================
-
-        document
-            .getElementById("saveProfileBtn")
-            ?.addEventListener(
-                "click",
-                saveProfile
-            );
-
-
-
-        // ==========================================
-        // SETTINGS
-        // ==========================================
-
-        document
-            .getElementById("closeSettingsBtn")
-            ?.addEventListener(
-                "click",
-                closeSettingsPopup
-            );
-
-
-        document
-            .getElementById("saveSettingsBtn")
-            ?.addEventListener(
-                "click",
-                saveSettings
-            );
-
-
-        document
-            .getElementById("backupBtn")
-            ?.addEventListener(
-                "click",
-                backupDatabase
-            );
-
-
-
-        // ==========================================
-        // CLICK OUTSIDE POPUP
-        // ==========================================
-
-        document
-            .getElementById("profileOverlay")
-            ?.addEventListener(
-                "click",
-                function (event) {
-
-                    if (
-                        event.target ===
-                        this
-                    ) {
-
-                        closeProfilePopup();
-
-                    }
-
-                }
-            );
-
-
-        document
-            .getElementById("passwordOverlay")
-            ?.addEventListener(
-                "click",
-                function (event) {
-
-                    if (
-                        event.target ===
-                        this
-                    ) {
-
-                        closePasswordPopup();
-
-                    }
-
-                }
-            );
-
-
-        document
-            .getElementById("settingsOverlay")
-            ?.addEventListener(
-                "click",
-                function (event) {
-
-                    if (
-                        event.target ===
-                        this
-                    ) {
-
-                        closeSettingsPopup();
-
-                    }
-
-                }
-            );
-
-
-
-        // ==========================================
-        // ESC KEY
-        // ==========================================
-
-        document.addEventListener(
-            "keydown",
-            function (event) {
-
-                if (
-                    event.key ===
-                    "Escape"
-                ) {
-
-                    closeProfilePopup();
-
-                    closePasswordPopup();
-
-                    closeSettingsPopup();
-
-                }
-
+            if (passwordInput.type === "password") {
+                passwordInput.type = "text";
+                icon.classList.remove("bx-show");
+                icon.classList.add("bx-hide");
+                button.setAttribute("aria-label", "Hide password");
+            } else {
+                passwordInput.type = "password";
+                icon.classList.remove("bx-hide");
+                icon.classList.add("bx-show");
+                button.setAttribute("aria-label", "Show password");
             }
-        );
-
-
-
-        // ==========================================
-        // DASHBOARD USER NAME
-        // ==========================================
-
-        updateDashboardUser();
-
-
-        // ==========================================
-        // SETTINGS
-        // ==========================================
-
-        loadSettings();
-
-    }
-);
-
-    
-        document.addEventListener("DOMContentLoaded", function () {
-
-            const passwordToggleButtons =
-                document.querySelectorAll(".toggle-password");
-
-            passwordToggleButtons.forEach(function (button) {
-
-                button.addEventListener("click", function () {
-
-                    const targetId =
-                        button.getAttribute("data-target");
-
-                    const passwordInput =
-                        document.getElementById(targetId);
-
-                    const icon =
-                        button.querySelector("i");
-
-                    if (!passwordInput || !icon) {
-                        return;
-                    }
-
-                    if (passwordInput.type === "password") {
-
-                        passwordInput.type = "text";
-
-                        icon.classList.remove("bx-show");
-                        icon.classList.add("bx-hide");
-
-                        button.setAttribute("aria-label", "Hide password");
-
-                    } else {
-
-                        passwordInput.type = "password";
-
-                        icon.classList.remove("bx-hide");
-                        icon.classList.add("bx-show");
-
-                        button.setAttribute("aria-label", "Show password");
-
-                    }
-
-                });
-
-            });
-
         });
+    });
+});

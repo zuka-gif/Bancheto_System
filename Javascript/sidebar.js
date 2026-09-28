@@ -1,4 +1,3 @@
-
 // ==========================================
 // ACTIVE SIDEBAR ITEM
 // ==========================================
@@ -57,33 +56,36 @@ function getCurrentUserRole() {
 // USER PRESENCE TRACKER
 // ==========================================
 
-function setUserActive() {
+async function setUserActive() {
 
-    const currentUser =
-        JSON.parse(localStorage.getItem("banchetoCurrentUser")) ||
-        JSON.parse(sessionStorage.getItem("banchetoCurrentUser"));
+    const saved =
+        localStorage.getItem("banchetoCurrentUser") ||
+        sessionStorage.getItem("banchetoCurrentUser");
 
-    if (!currentUser) {
+    if (!saved) {
         return;
     }
 
-    let users =
-        JSON.parse(localStorage.getItem("banchetoUsers")) || [];
+    let currentUser;
 
-    const user = users.find(
-        account => account.id === currentUser.id
-    );
-
-    if (!user) {
+    try {
+        currentUser = JSON.parse(saved);
+    } catch (e) {
         return;
     }
 
-    user.lastActivity = Date.now();
+    if (!currentUser || !currentUser.id) {
+        return;
+    }
 
-    localStorage.setItem(
-        "banchetoUsers",
-        JSON.stringify(users)
-    );
+    // Heartbeat: keeps profiles.last_activity fresh so the Users page
+    // status column (Active/Away) reflects real usage, not just login
+    // time. Fire-and-forget — a missed heartbeat isn't worth surfacing
+    // an error over.
+    await sb
+        .from("profiles")
+        .update({ last_activity: new Date().toISOString() })
+        .eq("id", currentUser.id);
 }
 
 
@@ -100,34 +102,17 @@ setInterval(setUserActive, 30000);
 // LOGOUT FUNCTION
 // ==========================================
 
-function logout(event) {
+async function logout(event) {
 
     event.preventDefault();
 
-    const currentUser =
-        JSON.parse(localStorage.getItem("banchetoCurrentUser")) ||
-        JSON.parse(sessionStorage.getItem("banchetoCurrentUser"));
-
-    if (currentUser) {
-
-        let users =
-            JSON.parse(localStorage.getItem("banchetoUsers")) || [];
-
-        const user = users.find(
-            account => account.id === currentUser.id
-        );
-
-        if (user) {
-            user.lastActivity = Date.now();
-
-            localStorage.setItem(
-                "banchetoUsers",
-                JSON.stringify(users)
-            );
-        }
-    }
-
     showLoading("Logging out...");
+
+    // Ends the REAL Supabase session (the thing that actually
+    // authenticates database queries) — clearing banchetoCurrentUser
+    // alone, below, only removed the convenience display copy that the
+    // rest of the app's UI reads; it never touched the real session.
+    await sb.auth.signOut();
 
     localStorage.removeItem("banchetoCurrentUser");
     sessionStorage.removeItem("banchetoCurrentUser");
