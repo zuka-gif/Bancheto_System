@@ -550,10 +550,18 @@
     }
 
     .print-header {
-        display: block !important;
+        display: flex !important;
+        align-items: center;
+        gap: 14px;
         margin-bottom: 18px;
         padding-bottom: 12px;
         border-bottom: 2px solid #000;
+    }
+
+    .print-header-logo {
+        height: 60px;
+        width: auto;
+        object-fit: contain;
     }
 
     .print-header-brand {
@@ -615,13 +623,16 @@
         page-break-inside: avoid;
     }
 
-    /* repeat the header/footer if the report spans multiple pages */
+    /* FIX: header prints once at the top and the Total row prints once
+       at the very end. table-header-group / table-footer-group make the
+       browser repeat them on every page, which caused the doubled
+       header and total. table-row-group does not repeat. */
     .report-table thead {
-        display: table-header-group;
+        display: table-row-group;
     }
 
     .report-table tfoot {
-        display: table-footer-group;
+        display: table-row-group;
     }
 }
  

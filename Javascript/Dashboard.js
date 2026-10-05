@@ -93,6 +93,25 @@
         }));
     }
 
+    // Best Selling products are the Sales menu items, so their pictures
+    // live in menu_items.image_url (same table Sales.js uses).
+    async function loadMenuItems() {
+        const { data, error } = await sb
+            .from("menu_items")
+            .select("id, name, image_url");
+
+        if (error) {
+            console.error("Could not load menu items:", error.message);
+            return [];
+        }
+
+        return (data || []).map(row => ({
+            id: row.id,
+            name: row.name,
+            image: row.image_url || ""
+        }));
+    }
+
     async function loadInventoryItems() {
         const { data, error } = await sb
             .from("inventory_items")
@@ -109,7 +128,9 @@
             category: row.category,
             stock: row.stock,
             unit: row.unit,
-            price: Number(row.price) || 0
+            price: Number(row.price) || 0,
+            image: row.image_url || row.image || row.img_url || row.img ||
+                   row.photo_url || row.photo || row.picture || ""
         }));
     }
 
@@ -597,23 +618,59 @@
 
     function computeBestSelling(transactions) {
         const counts = {};
+        const images = {};
+        const menuIds = {};
         transactions.forEach(t => {
             (t.items || []).forEach(li => {
                 const name = li.name || "Unknown Item";
                 counts[name] = (counts[name] || 0) + getItemQty(li);
+
+                // Keep an image if the sold line item carries one
+                const img = li.image_url || li.image || li.img || li.photo || "";
+                if (img && !images[name]) images[name] = img;
+                if (li.menu_id != null && !menuIds[name]) menuIds[name] = li.menu_id;
             });
         });
 
         return Object.entries(counts)
             .sort((a, b) => b[1] - a[1])
             .slice(0, 5)
-            .map(([name, qty]) => ({ name, qty }));
+            .map(([name, qty]) => ({ name, qty, menuId: menuIds[name], image: images[name] || "" }));
     }
 
-    function renderBestSelling(transactions) {
+    // Builds the small thumbnail box. Shows the picture when there is one,
+    // otherwise a neutral icon (also used if the picture fails to load).
+    function thumbHtml(cls, src, name) {
+        const safeName = String(name || "").replace(/"/g, "&quot;");
+        const fallback = `<i class="bx bx-package thumb-fallback"></i>`;
+
+        if (!src) return `<div class="${cls}">${fallback}</div>`;
+
+        return `<div class="${cls}">
+            <img src="${String(src).replace(/"/g, "&quot;")}" alt="${safeName}" loading="lazy"
+                 onerror="this.replaceWith(Object.assign(document.createElement('i'), { className: 'bx bx-package thumb-fallback' }))">
+        </div>`;
+    }
+
+    function renderBestSelling(transactions, menuItems) {
         if (!bestSellingListEl) return;
 
         const bestSelling = computeBestSelling(transactions);
+
+        // Look up the menu item's picture: by menu_id first (still correct if
+        // the item was renamed), then by name for older transactions.
+        const imageById = {};
+        const imageByName = {};
+        (menuItems || []).forEach(m => {
+            if (!m.image) return;
+            imageById[String(m.id)] = m.image;
+            if (m.name) imageByName[String(m.name).trim().toLowerCase()] = m.image;
+        });
+        bestSelling.forEach(p => {
+            if (p.image) return;
+            p.image = (p.menuId != null && imageById[String(p.menuId)]) ||
+                      imageByName[String(p.name).trim().toLowerCase()] || "";
+        });
 
         if (bestSelling.length === 0) {
             bestSellingListEl.innerHTML = `<p style="padding:12px 0;color:#999;font-size:12px;">No sales recorded yet.</p>`;
@@ -623,7 +680,7 @@
         bestSellingListEl.innerHTML = bestSelling.map((p, idx) => `
             <div class="product-item">
                 <span class="product-number">${idx + 1}</span>
-                <div class="product-image"></div>
+                ${thumbHtml("product-image", p.image, p.name)}
                 <div class="product-info">
                     <span>${p.name}</span>
                     <span>${p.qty} sold</span>
@@ -653,7 +710,7 @@
 
             return `
                 <div class="stock-item">
-                    <div class="stock-image"></div>
+                    ${thumbHtml("stock-image", i.image, i.name)}
                     <div class="stock-name">${i.name || "Unnamed item"}</div>
                     <div class="stock-quantity">${label}</div>
                 </div>
@@ -727,7 +784,7 @@
             " " + dateObj.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
     }
 
-    function buildActivityFeed(transactions, logs) {
+    function buildActivityFeed(transactions, logs, limit = 8) {
         const userName = getCurrentUserName();
         const feed = [];
 
@@ -757,7 +814,8 @@
             });
         });
 
-        return feed.sort((a, b) => b.date - a.date).slice(0, 8);
+        const sorted = feed.sort((a, b) => b.date - a.date);
+        return limit ? sorted.slice(0, limit) : sorted;
     }
 
     const ACTION_BADGE_CLASS = {
@@ -769,17 +827,12 @@
         "Deleted": "action-badge-out"
     };
 
-    function renderActivities(transactions, logs) {
-        if (!activitiesBodyEl) return;
+    // Kept so the "View All" pop-up can show the full list
+    let lastTransactions = [];
+    let lastLogs = [];
 
-        const feed = buildActivityFeed(transactions, logs);
-
-        if (feed.length === 0) {
-            activitiesBodyEl.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#999;">No recent activity yet.</td></tr>`;
-            return;
-        }
-
-        activitiesBodyEl.innerHTML = feed.map(entry => {
+    function activityRowsHtml(feed) {
+        return feed.map(entry => {
             const badgeClass = ACTION_BADGE_CLASS[entry.action] || "action-badge-default";
             return `
                 <tr>
@@ -791,6 +844,22 @@
                 </tr>
             `;
         }).join("");
+    }
+
+    function renderActivities(transactions, logs) {
+        if (!activitiesBodyEl) return;
+
+        lastTransactions = transactions;
+        lastLogs = logs;
+
+        const feed = buildActivityFeed(transactions, logs);
+
+        if (feed.length === 0) {
+            activitiesBodyEl.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#999;">No recent activity yet.</td></tr>`;
+            return;
+        }
+
+        activitiesBodyEl.innerHTML = activityRowsHtml(feed);
     }
 
     // ---------- NOTIFICATION BELL ----------
@@ -1241,6 +1310,11 @@
         // in System Setting (Profile_Setting.js fires this event), so the
         // change shows up without reloading the page.
         window.addEventListener("banchetoSettingsChanged", () => {
+            // Turned off: also clear any pop-up alerts still on screen
+            if (!notificationsEnabled()) {
+                document.getElementById("stockToastStack")?.remove();
+                toggleNotificationDropdown(false);
+            }
             renderNotifications(lastKnownItems);
         });
 
@@ -1254,13 +1328,129 @@
 
     // ---------- VIEW ALL BUTTON NAVIGATION ----------
 
+    // ---------- RECENT ACTIVITIES: VIEW ALL POP-UP ----------
+
+    function injectActivitiesModalStyles() {
+        if (document.getElementById("activitiesModalStyles")) return;
+
+        const style = document.createElement("style");
+        style.id = "activitiesModalStyles";
+        style.textContent = `
+            .activities-modal-overlay {
+                position: fixed;
+                inset: 0;
+                z-index: 10000;
+                display: none;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+                background: rgba(0, 0, 0, 0.45);
+            }
+            .activities-modal-overlay.show { display: flex; }
+            .activities-modal {
+                width: min(1000px, 100%);
+                max-height: 85vh;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+                background: #fff;
+                border-radius: 16px;
+                box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            }
+            .activities-modal-header {
+                flex-shrink: 0;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 14px 18px;
+                background: #fafafa;
+                border-bottom: 1px solid #f0f0f0;
+            }
+            .activities-modal-header h2 {
+                margin: 0;
+                font-size: 16px;
+                font-weight: 800;
+                color: #2b2b2b;
+            }
+            .activities-modal-close {
+                border: none;
+                background: #fdeeee;
+                color: #8b0000;
+                width: 30px;
+                height: 30px;
+                border-radius: 50%;
+                font-size: 18px;
+                line-height: 1;
+                cursor: pointer;
+            }
+            .activities-modal-close:hover { background: #f6d9d9; }
+            .activities-modal-body {
+                flex: 1;
+                min-height: 0;
+                overflow: auto;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    function openActivitiesModal() {
+        injectActivitiesModalStyles();
+
+        let overlay = document.getElementById("activitiesModalOverlay");
+        if (!overlay) {
+            overlay = document.createElement("div");
+            overlay.id = "activitiesModalOverlay";
+            overlay.className = "activities-modal-overlay";
+            overlay.innerHTML = `
+                <div class="activities-modal" role="dialog" aria-label="All recent activities">
+                    <div class="activities-modal-header">
+                        <h2>Recent Activities</h2>
+                        <button type="button" class="activities-modal-close" aria-label="Close">&times;</button>
+                    </div>
+                    <div class="activities-modal-body">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>TIME</th>
+                                    <th>ROLE</th>
+                                    <th>ACTION</th>
+                                    <th>MODULE</th>
+                                    <th>DETAILS</th>
+                                </tr>
+                            </thead>
+                            <tbody id="activitiesModalBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+
+            const close = () => overlay.classList.remove("show");
+            overlay.querySelector(".activities-modal-close").addEventListener("click", close);
+            overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+            document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
+        }
+
+        // Full list (not just the latest 8 shown on the dashboard)
+        const feed = buildActivityFeed(lastTransactions, lastLogs, 0);
+        document.getElementById("activitiesModalBody").innerHTML = feed.length
+            ? activityRowsHtml(feed)
+            : `<tr><td colspan="5" style="text-align:center;color:#999;">No recent activity yet.</td></tr>`;
+
+        overlay.classList.add("show");
+    }
+
     function wireViewAllButtons() {
         document.querySelectorAll(".view-all-button").forEach(btn => {
             // The Low Stock stat card's button jumps to Inventory;
-            // the Recent Activities button jumps to Reports.
+            // the Recent Activities button opens the full list right here.
             const goesToInventory = btn.closest(".stat-card");
             btn.addEventListener("click", () => {
-                window.location.href = goesToInventory ? "Inventory.html" : "Reports.html";
+                if (goesToInventory) {
+                    window.location.href = "Inventory.html";
+                } else {
+                    openActivitiesModal();
+                }
             });
         });
     }
@@ -1294,15 +1484,16 @@
     }
 
     async function refresh() {
-        const [items, transactions, logs] = await Promise.all([
+        const [items, transactions, logs, menuItems] = await Promise.all([
             loadInventoryItems(),
             loadTransactions(),
-            loadInventoryLogs()
+            loadInventoryLogs(),
+            loadMenuItems()
         ]);
 
         renderStatCards(items, transactions);
         renderSalesChart(transactions);
-        renderBestSelling(transactions);
+        renderBestSelling(transactions, menuItems);
         renderLowStock(items);
         renderNotifications(items);
         renderActivities(transactions, logs);

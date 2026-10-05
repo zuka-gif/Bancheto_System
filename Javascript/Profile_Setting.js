@@ -495,6 +495,19 @@ function loadSettings() {
 }
 
 
+async function saveNotificationSettingToDb(enabled) {
+    try {
+        const { data: { user } } = await sb.auth.getUser();
+        if (!user) return;
+
+        await sb.from("user_settings").upsert(
+            { user_id: user.id, notifications: enabled },
+            { onConflict: "user_id" }
+        );
+    } catch (e) { /* local setting is already saved */ }
+}
+
+
 function saveSettings() {
 
     const toggle = document.getElementById("notificationToggle");
@@ -506,6 +519,13 @@ function saveSettings() {
     };
 
     localStorage.setItem("banchetoSettings", JSON.stringify(settings));
+
+    // Tell the Dashboard right away so the bell turns on/off without a refresh
+    window.dispatchEvent(new CustomEvent("banchetoSettingsChanged", { detail: settings }));
+
+    // Also save to the database so the Dashboard's sync on load doesn't
+    // bring back the old value
+    saveNotificationSettingToDb(settings.notifications);
 
     alert("System settings saved successfully.");
 
@@ -647,13 +667,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
             if (passwordInput.type === "password") {
                 passwordInput.type = "text";
-                icon.classList.remove("bx-show");
-                icon.classList.add("bx-hide");
+                icon.classList.remove("bx-hide");
+                icon.classList.add("bx-show");
                 button.setAttribute("aria-label", "Hide password");
             } else {
                 passwordInput.type = "password";
-                icon.classList.remove("bx-hide");
-                icon.classList.add("bx-show");
+                icon.classList.remove("bx-show");
+                icon.classList.add("bx-hide");
                 button.setAttribute("aria-label", "Show password");
             }
         });

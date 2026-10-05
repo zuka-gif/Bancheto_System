@@ -30,8 +30,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 passwordInput.type = "text";
 
-                icon.classList.remove("bx-show");
-                icon.classList.add("bx-hide");
+                icon.classList.remove("bx-hide");
+                icon.classList.add("bx-show");
 
                 button.setAttribute(
                     "aria-label",
@@ -44,8 +44,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 passwordInput.type = "password";
 
-                icon.classList.remove("bx-hide");
-                icon.classList.add("bx-show");
+                icon.classList.remove("bx-show");
+                icon.classList.add("bx-hide");
 
                 button.setAttribute(
                     "aria-label",

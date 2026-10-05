@@ -1265,6 +1265,11 @@
     background: #f2f2f2;
 
     border-radius: 8px;
+
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .product-info {
@@ -1330,6 +1335,11 @@
     background: #f2f2f2;
 
     border-radius: 8px;
+
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .stock-name {
@@ -1609,4 +1619,74 @@ tbody td {
     .panel {
         margin-top: 0;
     }
+}
+
+.product-image img,
+.stock-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.thumb-fallback {
+    color: #b9b9b9;
+    font-size: 18px;
+}
+
+/* Best Selling: small version of the Sales menu card picture
+   (wide photo, whole picture visible, rounded corners) */
+.product-item {
+    min-height: 56px;
+}
+
+.product-item .product-image {
+    flex: 0 0 72px;
+    width: 72px;
+    min-width: 72px;
+    height: 44px;
+
+    border-radius: 8px;
+    background: #f7f0ec;
+    overflow: hidden;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.product-item .product-image img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+/* Low Stock: same picture style as Best Selling */
+.stock-item {
+    min-height: 56px;
+}
+
+.stock-item .stock-image {
+    flex: 0 0 72px;
+    width: 72px;
+    min-width: 72px;
+    height: 44px;
+
+    border-radius: 8px;
+    background: #f7f0ec;
+    overflow: hidden;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stock-item .stock-image img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 8px;
 }
