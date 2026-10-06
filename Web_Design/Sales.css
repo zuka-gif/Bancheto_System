@@ -1501,10 +1501,36 @@
         gap: 16px 20px;
     }
 
+    /* Cards are narrower on laptops, so the photo box keeps the same
+       shape it has on the PC screen (about 208 x 116) and scales with
+       the card width, instead of a fixed 118px height that turns into
+       big gray bars above and below the picture. */
+    .menu-image {
+        height: auto;
+        aspect-ratio: 208 / 116;
+        flex-shrink: 0;
+    }
+
+    /* Smaller photo = shorter card, so there isn't a big empty gap
+       between the photo, the name and the price. */
+    .menu-card {
+        height: 190px;
+    }
+
     .current-order {
         width: 420px;
         height: calc(100vh - 130px);
         max-height: calc(100vh - 130px);
+    }
+
+    /* Date/time box must be exactly as wide as the Current Order panel
+       so their left and right edges line up on laptop screens. */
+    .date-box-wrapper {
+        width: 420px;
+    }
+
+    .date-box {
+        width: 100%;
     }
 }
 @media screen and (min-width: 1101px) and (max-width: 1400px),
@@ -1532,5 +1558,13 @@
         width: 380px;
         height: calc(100vh - 118px);
         max-height: calc(100vh - 118px);
+    }
+
+    .date-box-wrapper {
+        width: 380px;
+    }
+
+    .date-box {
+        width: 100%;
     }
 }

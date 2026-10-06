@@ -242,6 +242,35 @@
         });
     }
 
+    // ---------- MENU ACTIVITY LOG ----------
+    // Writes one row to "menu_logs" every time a menu item is added,
+    // edited or deleted, so the Dashboard's Recent Activities can show it.
+    // Fire-and-forget: a logging failure must never block the real action.
+    async function logMenuAction(action, itemName, details) {
+        try {
+            const { data: userData } = await sb.auth.getUser();
+
+            const { error } = await sb.from("menu_logs").insert({
+                role: getCurrentUserRole(),
+                created_by: userData && userData.user ? userData.user.id : null,
+                action: action,
+                item_name: itemName,
+                details: details || null
+            });
+
+            if (error) console.error("Could not log menu activity:", error.message);
+        } catch (err) {
+            console.error("Could not log menu activity:", err);
+        }
+    }
+
+    function peso(n) {
+        return "₱" + (Number(n) || 0).toLocaleString("en-PH", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+
     async function deleteMenuItem(item) {
         if (isCashier) return; // cashiers can't delete menu items
 
@@ -257,6 +286,8 @@
             alert("Could not delete menu item: " + error.message);
             return;
         }
+
+        logMenuAction("Deleted", item.name, "was " + peso(item.price));
 
         menuItems = menuItems.filter(m => m.id !== item.id);
         saveCachedMenuItems(menuItems);
@@ -665,6 +696,16 @@
 
             const item = menuItems.find(m => m.id === editingItemId);
             if (item) {
+                // Work out what actually changed (before overwriting it) for the activity log.
+                const changes = [];
+                if (item.name !== name) changes.push(`name: ${item.name} → ${name}`);
+                if (Number(item.price) !== price) changes.push(`price: ${peso(item.price)} → ${peso(price)}`);
+                if ((item.description || "") !== description) changes.push("description updated");
+                if ((item.image || "") !== (finalImageUrl || "")) {
+                    changes.push(finalImageUrl ? "image changed" : "image removed");
+                }
+                if (changes.length) logMenuAction("Edited", name, changes.join(", "));
+
                 item.name = name;
                 item.price = price;
                 item.description = description;
@@ -691,6 +732,8 @@
                 alert("Could not add menu item: " + error.message);
                 return;
             }
+
+            logMenuAction("Added", name, peso(price));
 
             menuItems.push(mapMenuRow(inserted));
         }

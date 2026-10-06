@@ -158,7 +158,40 @@
         }));
     }
 
+    // Menu List add / edit / delete history, written by Sales.js into the
+    // "menu_logs" table. If the table doesn't exist yet this just returns
+    // an empty list so the rest of the dashboard keeps working.
+    async function loadMenuLogs() {
+        const { data, error } = await sb
+            .from("menu_logs")
+            .select("*")
+            .order("created_at", { ascending: false })
+            .limit(200);
+
+        if (error) {
+            console.error("Could not load menu logs:", error.message);
+            return [];
+        }
+
+        return (data || []).map(row => ({
+            id: row.id,
+            date: row.created_at,
+            role: row.role,
+            action: row.action,
+            itemName: row.item_name,
+            details: row.details
+        }));
+    }
+
     // ---------- HELPERS ----------
+
+    function escapeHtml(value) {
+        return String(value ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+    }
 
     function currency(n) {
         return "₱" + (isNaN(n) ? 0 : n).toLocaleString("en-PH", {
@@ -784,7 +817,7 @@
             " " + dateObj.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
     }
 
-    function buildActivityFeed(transactions, logs, limit = 8) {
+    function buildActivityFeed(transactions, logs, limit = 8, menuLogs = []) {
         const userName = getCurrentUserName();
         const feed = [];
 
@@ -814,6 +847,17 @@
             });
         });
 
+        menuLogs.forEach(l => {
+            feed.push({
+                date: new Date(l.date),
+                user: userName,
+                role: l.role || "Unknown",
+                action: l.action,
+                module: "Menu List",
+                details: l.details ? `${l.itemName} (${l.details})` : `${l.itemName}`
+            });
+        });
+
         const sorted = feed.sort((a, b) => b.date - a.date);
         return limit ? sorted.slice(0, limit) : sorted;
     }
@@ -830,6 +874,7 @@
     // Kept so the "View All" pop-up can show the full list
     let lastTransactions = [];
     let lastLogs = [];
+    let lastMenuLogs = [];
 
     function activityRowsHtml(feed) {
         return feed.map(entry => {
@@ -837,22 +882,23 @@
             return `
                 <tr>
                     <td>${formatActivityTime(entry.date)}</td>
-                    <td>${entry.role}</td>
-                    <td><span class="action-badge ${badgeClass}">${entry.action}</span></td>
-                    <td>${entry.module}</td>
-                    <td>${entry.details}</td>
+                    <td>${escapeHtml(entry.role)}</td>
+                    <td><span class="action-badge ${badgeClass}">${escapeHtml(entry.action)}</span></td>
+                    <td>${escapeHtml(entry.module)}</td>
+                    <td>${escapeHtml(entry.details)}</td>
                 </tr>
             `;
         }).join("");
     }
 
-    function renderActivities(transactions, logs) {
+    function renderActivities(transactions, logs, menuLogs = []) {
         if (!activitiesBodyEl) return;
 
         lastTransactions = transactions;
         lastLogs = logs;
+        lastMenuLogs = menuLogs;
 
-        const feed = buildActivityFeed(transactions, logs);
+        const feed = buildActivityFeed(transactions, logs, 8, menuLogs);
 
         if (feed.length === 0) {
             activitiesBodyEl.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#999;">No recent activity yet.</td></tr>`;
@@ -1432,7 +1478,7 @@
         }
 
         // Full list (not just the latest 8 shown on the dashboard)
-        const feed = buildActivityFeed(lastTransactions, lastLogs, 0);
+        const feed = buildActivityFeed(lastTransactions, lastLogs, 0, lastMenuLogs);
         document.getElementById("activitiesModalBody").innerHTML = feed.length
             ? activityRowsHtml(feed)
             : `<tr><td colspan="5" style="text-align:center;color:#999;">No recent activity yet.</td></tr>`;
@@ -1484,11 +1530,12 @@
     }
 
     async function refresh() {
-        const [items, transactions, logs, menuItems] = await Promise.all([
+        const [items, transactions, logs, menuItems, menuLogs] = await Promise.all([
             loadInventoryItems(),
             loadTransactions(),
             loadInventoryLogs(),
-            loadMenuItems()
+            loadMenuItems(),
+            loadMenuLogs()
         ]);
 
         renderStatCards(items, transactions);
@@ -1496,7 +1543,7 @@
         renderBestSelling(transactions, menuItems);
         renderLowStock(items);
         renderNotifications(items);
-        renderActivities(transactions, logs);
+        renderActivities(transactions, logs, menuLogs);
     }
 
     // Hovering anywhere over the chart (not just exactly on a dot) shows

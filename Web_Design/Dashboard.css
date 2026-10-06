@@ -1513,6 +1513,7 @@ tbody td {
     display: inline-block;
 
     padding: 3px 10px;
+    margin-left: -10px; 
 
     border-radius: 999px;
 
