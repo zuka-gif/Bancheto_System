@@ -1297,3 +1297,41 @@ input[type="password"]::-webkit-strong-password-auto-fill-button {
         height: 34px;
     }
 }
+
+
+
+/* ==========================================================
+   NO PAGE BOUNCE / NO PAGE MOVEMENT  (Sign In / Sign Up)
+   On laptops (Edge/Chrome with a touchpad) scrolling past the top or
+   bottom drags the WHOLE page with a rubber-band effect and shows a
+   white strip behind it.
+
+   1) overscroll-behavior stops that bounce everywhere.
+   2) On laptop/desktop screens the window itself is locked and the
+      page body is the thing that scrolls (only if the form is taller
+      than the screen). The bounce only affects the window, so it can
+      no longer drag the page. Phones/tablets are not changed.
+========================================================== */
+
+html,
+body {
+    overscroll-behavior: none;
+}
+
+@media screen and (min-width: 1101px) {
+
+    html {
+        height: 100%;
+        overflow: hidden;
+    }
+
+    body {
+        height: 100%;
+        overflow-x: hidden;
+        overflow-y: auto;
+
+        /* start at the top (not centered) so nothing can be pushed
+           above the visible area when the form is tall */
+        justify-content: flex-start;
+    }
+}

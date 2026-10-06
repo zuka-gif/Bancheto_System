@@ -322,3 +322,33 @@ body {
         bottom: 8px;
     }
 }
+
+
+
+/* ==========================================================
+   NO PAGE BOUNCE / NO PAGE MOVEMENT
+   On laptops (Edge/Chrome with a touchpad) scrolling past the top or
+   bottom drags the WHOLE page - sidebar included - with a rubber-band
+   effect and shows a white strip behind it.
+
+   1) overscroll-behavior stops that bounce everywhere.
+   2) On laptop/desktop screens the page itself is locked to the window
+      (it never scrolls or moves); only the content areas inside each
+      page (tables, lists, the main panel) scroll. Every page here is
+      already built that way. Phones/tablets keep normal page scrolling.
+   Screen only - printing (Reports) is not affected.
+========================================================== */
+
+html,
+body {
+    overscroll-behavior: none;
+}
+
+@media screen and (min-width: 1101px) {
+
+    html,
+    body {
+        height: 100%;
+        overflow: hidden;
+    }
+}
