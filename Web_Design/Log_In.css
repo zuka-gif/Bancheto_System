@@ -1204,3 +1204,96 @@ input[type="password"]::-webkit-strong-password-auto-fill-button {
         font-size: 12px;
     }
 }
+
+
+/* ==========================================================
+   SIGN UP FORM - FITS SHORT LAPTOP SCREENS
+   Sign Up has 7 fields, so it is the tallest form. On laptops with a
+   short screen (about 800px tall and below) the spacing is tightened
+   so the whole form fits without scrolling. Sign In is not affected
+   (everything here is limited to the Sign Up form).
+   Large monitors are NOT affected.
+========================================================== */
+
+@media screen and (min-width: 1101px) and (max-height: 800px) {
+
+    .login:has(#signupForm) {
+        padding: 12px 24px;
+    }
+
+    .login:has(#signupForm) h1 {
+        font-size: 20px;
+        margin-bottom: 0;
+    }
+
+    .login:has(#signupForm) > p {
+        margin-bottom: 6px;
+        font-size: 11px;
+    }
+
+    #signupForm label {
+        margin-bottom: 2px;
+        font-size: 11.5px;
+    }
+
+    #signupForm .input-box {
+        height: 32px;
+        margin-bottom: 5px;
+    }
+
+    #signupForm .option {
+        margin: 4px 0 6px;
+    }
+
+    /* keep "I agree to the Terms of Service and Privacy Policy"
+       as one flowing line instead of wrapping into separate pieces */
+    #signupForm .option .remember {
+        display: block;
+        font-size: 12px;
+        line-height: 1.45;
+    }
+
+    #signupForm .option .remember input {
+        vertical-align: middle;
+        margin-right: 6px;
+    }
+
+    #signupForm .option .remember a {
+        display: inline;
+        font-size: inherit;
+    }
+
+    #signupForm .signin {
+        height: 36px;
+        margin-bottom: 6px;
+    }
+
+    #signupForm .divider {
+        margin: 0 0 4px;
+    }
+}
+
+/* very short screens (about 640px tall and below) */
+@media screen and (min-width: 1101px) and (max-height: 640px) {
+
+    .login:has(#signupForm) {
+        padding: 8px 24px;
+    }
+
+    .login:has(#signupForm) > p {
+        display: none;
+    }
+
+    #signupForm label {
+        margin-bottom: 1px;
+    }
+
+    #signupForm .input-box {
+        height: 30px;
+        margin-bottom: 4px;
+    }
+
+    #signupForm .signin {
+        height: 34px;
+    }
+}
