@@ -364,6 +364,26 @@ async function editUser(index) {
         );
 
 
+    // Only one ACTIVE account per role: block switching to a role that
+    // another active account already holds.
+    if (!user.disabled && resolvedRole !== user.role) {
+
+        const roleInUse = loadedUsers.some(function (other) {
+            return other.id !== user.id &&
+                   other.role === resolvedRole &&
+                   !other.disabled;
+        });
+
+        if (roleInUse) {
+            alert(
+                "Can't change the role to " + resolvedRole + ".\n\n" +
+                "There is already an active " + resolvedRole + " account."
+            );
+            return;
+        }
+    }
+
+
     const { error: updateError } =
         await sb
             .from("profiles")
@@ -410,6 +430,27 @@ async function toggleUserStatus(index) {
     }
 
     const nowDisabling = !user.disabled;
+
+    // Only one ACTIVE account per role is allowed. If a new account
+    // took this role while this one was disabled, re-enabling it
+    // would create a second active Manager/Cashier.
+    if (!nowDisabling) {
+
+        const roleInUse = loadedUsers.some(function (other) {
+            return other.id !== user.id &&
+                   other.role === user.role &&
+                   !other.disabled;
+        });
+
+        if (roleInUse) {
+            alert(
+                "Can't re-enable this account.\n\n" +
+                "There is already an active " + user.role + " account. " +
+                "Disable that account first, then try again."
+            );
+            return;
+        }
+    }
 
     const confirmation = confirm(
         nowDisabling

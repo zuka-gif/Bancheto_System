@@ -67,14 +67,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (signupForm) {
 
-        // HIDE "OWNER" OPTION IF ONE ALREADY EXISTS
-        // Only one Owner account should ever exist. This uses a
-        // security-definer RPC (see owner_exists.sql) since an anonymous
-        // visitor can't SELECT from "profiles" directly under RLS —
-        // same reason username_exists() below is an RPC instead of a
-        // normal query.
+        // HIDE ROLE OPTIONS THAT ARE ALREADY TAKEN
+        // Only one account per role (Owner, Manager, Cashier) can be
+        // active at a time. A role disappears from the dropdown while
+        // an active account holds it, and comes back as soon as the
+        // Owner disables that account (disabled accounts don't count).
+        //
+        // Both checks use security-definer RPCs (see owner_exists.sql
+        // and active_roles.sql) since an anonymous visitor can't SELECT
+        // from "profiles" directly under RLS. If a check fails, the
+        // dropdown is simply left as-is rather than blocking sign-up.
 
-        (async function hideOwnerOptionIfTaken() {
+        (async function hideTakenRoleOptions() {
 
             const roleSelect =
                 document.getElementById("signupRole");
@@ -83,28 +87,61 @@ document.addEventListener("DOMContentLoaded", function () {
                 return;
             }
 
+            const takenRoles = [];
+
             const { data: ownerTaken, error: ownerCheckError } =
                 await sb.rpc("owner_exists");
 
             if (ownerCheckError) {
                 console.error("Could not check for existing Owner:", ownerCheckError.message);
-                return;
+            } else if (ownerTaken) {
+                takenRoles.push("Owner");
             }
 
-            if (ownerTaken) {
+            const { data: activeRoles, error: activeRolesError } =
+                await sb.rpc("active_roles");
 
-                // The Owner <option> has no value="" attribute in the
-                // markup, so its .value property just falls back to its
-                // text content — checking textContent is the reliable way
-                // to find it either way.
-                Array.from(roleSelect.options).forEach(function (option) {
-
-                    if (option.textContent.trim() === "Owner") {
-                        option.remove();
+            if (activeRolesError) {
+                console.error("Could not check for existing roles:", activeRolesError.message);
+            } else if (Array.isArray(activeRoles)) {
+                activeRoles.forEach(function (r) {
+                    if (r === "Manager" || r === "Cashier") {
+                        takenRoles.push(r);
                     }
+                });
+            }
 
+            // The <option> elements may have no value="" attribute, so
+            // their .value just falls back to the text content —
+            // checking textContent is the reliable way to find them.
+            Array.from(roleSelect.options).forEach(function (option) {
+
+                if (takenRoles.indexOf(option.textContent.trim()) !== -1) {
+                    option.remove();
+                }
+
+            });
+
+            // Every role is taken: nothing left to pick, so say so
+            // and stop the form from being submitted.
+            const stillSelectable =
+                Array.from(roleSelect.options).filter(function (option) {
+                    return !option.disabled;
                 });
 
+            if (stillSelectable.length === 0) {
+
+                if (roleSelect.options.length > 0) {
+                    roleSelect.options[0].textContent =
+                        "No roles available";
+                }
+
+                const submitButton =
+                    signupForm.querySelector('button[type="submit"]');
+
+                if (submitButton) {
+                    submitButton.disabled = true;
+                }
             }
 
         })();
@@ -265,6 +302,39 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
 
+            // ONE EMAIL = ONE ACCOUNT
+            // Supabase only blocks the exact same address. Gmail
+            // ignores dots and "+tags", so john.doe@gmail.com,
+            // johndoe@gmail.com and johndoe+cashier@gmail.com all
+            // reach the same inbox. email_exists() (see
+            // email_unique.sql) normalizes those before comparing, and
+            // counts disabled accounts too, so one inbox can never
+            // hold more than one account / role.
+
+            const { data: emailTaken, error: emailCheckError } =
+                await sb.rpc("email_exists", {
+                    check_email: email
+                });
+
+            if (emailCheckError) {
+                showMessage(
+                    "Something went wrong checking that email. Please try again.",
+                    "error"
+                );
+                if (submitBtn) submitBtn.disabled = false;
+                return;
+            }
+
+            if (emailTaken) {
+                showMessage(
+                    "This email is already registered. Please use a different email address, or sign in instead.",
+                    "error"
+                );
+                if (submitBtn) submitBtn.disabled = false;
+                return;
+            }
+
+
             // PREVENT DUPLICATE OWNER (race-condition guard)
             // The Owner option is already removed from the dropdown once
             // one exists, but that only runs once at page load — if this
@@ -292,6 +362,37 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (ownerTaken) {
                     showMessage(
                         "An Owner account already exists. Please choose Manager or Cashier.",
+                        "error"
+                    );
+                    if (submitBtn) submitBtn.disabled = false;
+                    return;
+                }
+
+            }
+
+
+            // PREVENT DUPLICATE MANAGER / CASHIER (race-condition guard)
+            // Same idea as the Owner check above: the dropdown only
+            // hides taken roles once at page load, so this re-checks
+            // right before the account is created.
+
+            if (role === "Manager" || role === "Cashier") {
+
+                const { data: activeRoles, error: activeRolesError } =
+                    await sb.rpc("active_roles");
+
+                if (activeRolesError) {
+                    showMessage(
+                        "Something went wrong checking role availability. Please try again.",
+                        "error"
+                    );
+                    if (submitBtn) submitBtn.disabled = false;
+                    return;
+                }
+
+                if (Array.isArray(activeRoles) && activeRoles.indexOf(role) !== -1) {
+                    showMessage(
+                        "A " + role + " account already exists. Please choose another role.",
                         "error"
                     );
                     if (submitBtn) submitBtn.disabled = false;
@@ -350,9 +451,21 @@ document.addEventListener("DOMContentLoaded", function () {
                     signUpError &&
                     /one_owner_only/i.test(signUpError.message || "");
 
+                const isDuplicateRole =
+                    signUpError &&
+                    /one_active_(manager|cashier)/i.test(signUpError.message || "");
+
+                const isDuplicateEmail =
+                    signUpError &&
+                    /email_already_registered|already registered/i.test(signUpError.message || "");
+
                 showMessage(
                     isDuplicateOwner
                         ? "An Owner account already exists. Please choose Manager or Cashier."
+                        : isDuplicateRole
+                        ? "That role is already taken. Please choose another role."
+                        : isDuplicateEmail
+                        ? "This email is already registered. Please use a different email address, or sign in instead."
                         : (signUpError.message ||
                             "Could not create your account. Please try again."),
                     "error"
@@ -361,6 +474,28 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (submitBtn) submitBtn.disabled = false;
                 return;
             }
+
+            // With "Confirm email" on, Supabase does NOT return an error
+            // for an email that already has an account (to avoid
+            // revealing which emails exist). It returns a fake success
+            // whose user has an empty identities list. Without this
+            // check the page would say "Account created!" when nothing
+            // was created.
+
+            if (
+                signUpData &&
+                signUpData.user &&
+                Array.isArray(signUpData.user.identities) &&
+                signUpData.user.identities.length === 0
+            ) {
+                showMessage(
+                    "This email is already registered. Please use a different email address, or sign in instead.",
+                    "error"
+                );
+                if (submitBtn) submitBtn.disabled = false;
+                return;
+            }
+
 
             const newUserId =
                 signUpData && signUpData.user
