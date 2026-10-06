@@ -461,7 +461,7 @@
         card.dataset.id = item.id;
 
         const imageHtml = item.image
-            ? `<img class="inventory-image" src="${item.image}" alt="${item.name}" style="object-fit:cover;" loading="lazy" decoding="async">`
+            ? `<img class="inventory-image" src="${item.image}" alt="${item.name}" loading="lazy" decoding="async">`
             : `<div class="inventory-image"><i class='bx bx-image'></i></div>`;
 
         card.innerHTML = `
@@ -687,7 +687,11 @@
     // often 3-8 MB; after this they are roughly 50-150 KB). The bucket
     // only accepts jpeg/png/webp up to 2 MB, so this also keeps
     // uploads from being rejected.
-    const IMAGE_MAX_WIDTH = 800;
+    // Every product photo is saved as a 3:2 landscape image. The WHOLE
+    // photo is kept visible (nothing is cropped): it is centered on top
+    // of a blurred, lightened copy of itself that fills the empty sides.
+    const IMAGE_WIDTH = 800;
+    const IMAGE_HEIGHT = 533; // 3:2
     const IMAGE_QUALITY = 0.8;
 
     function compressImage(file) {
@@ -696,11 +700,41 @@
             const objectUrl = URL.createObjectURL(file);
 
             img.onload = () => {
-                const scale = Math.min(1, IMAGE_MAX_WIDTH / img.width);
+                const W = IMAGE_WIDTH;
+                const H = IMAGE_HEIGHT;
                 const canvas = document.createElement("canvas");
-                canvas.width = Math.round(img.width * scale);
-                canvas.height = Math.round(img.height * scale);
-                canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+                canvas.width = W;
+                canvas.height = H;
+                const ctx = canvas.getContext("2d");
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = "high";
+
+                // Blurred background. Drawing the photo tiny and scaling it
+                // back up gives a soft blur that works on every browser
+                // (ctx.filter is not supported on Safari / iPhone).
+                const tiny = document.createElement("canvas");
+                tiny.width = 32;
+                tiny.height = Math.round(32 * H / W);
+                const tctx = tiny.getContext("2d");
+                tctx.imageSmoothingQuality = "high";
+                const cover = Math.max(tiny.width / img.width, tiny.height / img.height);
+                tctx.drawImage(
+                    img,
+                    (tiny.width - img.width * cover) / 2,
+                    (tiny.height - img.height * cover) / 2,
+                    img.width * cover,
+                    img.height * cover
+                );
+                ctx.drawImage(tiny, 0, 0, W, H);
+                ctx.fillStyle = "rgba(255, 255, 255, 0.18)"; // lighten
+                ctx.fillRect(0, 0, W, H);
+
+                // Whole photo, centered, never cropped.
+                const fit = Math.min(W / img.width, H / img.height);
+                const w = img.width * fit;
+                const h = img.height * fit;
+                ctx.drawImage(img, (W - w) / 2, (H - h) / 2, w, h);
+
                 URL.revokeObjectURL(objectUrl);
 
                 canvas.toBlob(
