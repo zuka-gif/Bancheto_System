@@ -1445,3 +1445,56 @@
         padding: 16px;
     }
 }
+
+
+/* ==========================================================
+   LAPTOP / SMALLER SCREENS  (auto-adjust)
+   Tier A: ~1600px wide or ~900px tall and below
+   Tier B: ~1400px wide or ~720px tall and below
+   Large monitors are NOT affected. Screen only (no effect on print).
+   Safety net: if content is still taller than the screen, the page
+   scrolls instead of cutting off the bottom.
+========================================================== */
+@media screen and (min-width: 1101px) and (max-width: 1600px),
+       screen and (min-width: 1101px) and (max-height: 900px) {
+
+    .inventory-main {
+        padding: 20px 26px;
+        overflow-y: auto;
+    }
+
+    .inventory-header h1 {
+        font-size: 25px;
+    }
+
+    .inventory-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 14px;
+    }
+
+    .inventory-card {
+        padding: 14px;
+        gap: 10px;
+    }
+}
+@media screen and (min-width: 1101px) and (max-width: 1400px),
+       screen and (min-width: 1101px) and (max-height: 720px) {
+
+    .inventory-main {
+        padding: 14px 20px;
+    }
+
+    .inventory-header h1 {
+        font-size: 22px;
+    }
+
+    .inventory-grid {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 12px;
+    }
+
+    .inventory-card {
+        padding: 12px;
+        gap: 8px;
+    }
+}

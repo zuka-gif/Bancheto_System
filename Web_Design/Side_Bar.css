@@ -222,3 +222,103 @@ body {
     }
 
 }
+
+
+/* ==========================================================
+   LAPTOP / SMALLER SCREENS  (auto-adjust)
+   Tier A: ~1600px wide or ~900px tall and below (most laptops)
+   Tier B: ~1400px wide or ~720px tall and below (small laptops)
+   Large monitors (above these sizes) are NOT affected.
+========================================================== */
+
+@media screen and (min-width: 1101px) and (max-width: 1600px),
+       screen and (min-width: 1101px) and (max-height: 900px) {
+
+    .sidebar {
+        width: 160px;
+        padding-top: 12px;
+        padding-bottom: 12px;
+    }
+
+    .logo {
+        height: 70px;
+        margin-bottom: 6px;
+    }
+
+    .logo img {
+        width: 86px;
+    }
+
+    .nav {
+        padding-top: 24px;
+    }
+
+    .nav-main {
+        gap: 4px;
+    }
+
+    .nav-item {
+        height: 54px;
+        padding: 0 28px;
+        font-size: 12.5px;
+    }
+
+    .nav-item:hover {
+        padding-left: 31px;
+    }
+
+    .nav-item i {
+        font-size: 19px;
+    }
+
+    .nav-footer {
+        padding-top: 8px;
+    }
+}
+
+@media screen and (min-width: 1101px) and (max-width: 1400px),
+       screen and (min-width: 1101px) and (max-height: 720px) {
+
+    .sidebar {
+        width: 148px;
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+
+    .logo {
+        height: 58px;
+        margin-bottom: 4px;
+    }
+
+    .logo img {
+        width: 70px;
+    }
+
+    .nav {
+        padding-top: 14px;
+    }
+
+    .nav-main {
+        gap: 2px;
+    }
+
+    .nav-item {
+        height: 46px;
+        padding: 0 22px;
+        gap: 10px;
+        font-size: 12px;
+    }
+
+    .nav-item:hover {
+        padding-left: 25px;
+    }
+
+    .nav-item i {
+        font-size: 18px;
+    }
+
+    .nav-item.active::before {
+        top: 8px;
+        bottom: 8px;
+    }
+}

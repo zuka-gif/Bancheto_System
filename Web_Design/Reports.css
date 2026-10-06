@@ -653,3 +653,74 @@
         align-items: stretch;
     }
 }
+
+
+/* ==========================================================
+   LAPTOP / SMALLER SCREENS  (auto-adjust)
+   Tier A: ~1600px wide or ~900px tall and below
+   Tier B: ~1400px wide or ~720px tall and below
+   Large monitors are NOT affected. Screen only (no effect on print).
+   Safety net: if content is still taller than the screen, the page
+   scrolls instead of cutting off the bottom.
+========================================================== */
+@media screen and (min-width: 1101px) and (max-width: 1600px),
+       screen and (min-width: 1101px) and (max-height: 900px) {
+
+    .reports-main {
+        padding: 20px 26px;
+    }
+
+    .report-tabs {
+        margin-bottom: 16px;
+    }
+
+    .report-tab {
+        padding: 10px 22px;
+        font-size: 13px;
+    }
+
+    .report-filters {
+        margin-bottom: 12px;
+    }
+
+    .report-footer-actions {
+        margin-top: 12px;
+    }
+
+    .print-btn,
+    .export-pdf-btn {
+        height: 38px;
+    }
+}
+@media screen and (min-width: 1101px) and (max-width: 1400px),
+       screen and (min-width: 1101px) and (max-height: 720px) {
+
+    .reports-main {
+        padding: 14px 20px;
+    }
+
+    .report-tabs {
+        margin-bottom: 10px;
+    }
+
+    .report-tab {
+        padding: 8px 18px;
+    }
+
+    .report-filters {
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+
+    .report-table thead th {
+        height: 40px;
+    }
+
+    .report-table tbody td {
+        height: 36px;
+    }
+
+    .report-footer-actions {
+        margin-top: 8px;
+    }
+}

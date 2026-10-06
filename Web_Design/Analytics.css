@@ -702,3 +702,94 @@ html, body {
         flex: 1 1 100%;
     }
 }
+
+
+/* ==========================================================
+   LAPTOP / SMALLER SCREENS  (auto-adjust)
+   Tier A: ~1600px wide or ~900px tall and below
+   Tier B: ~1400px wide or ~720px tall and below
+   Large monitors are NOT affected. Screen only (no effect on print).
+   Safety net: if content is still taller than the screen, the page
+   scrolls instead of cutting off the bottom.
+========================================================== */
+@media screen and (min-width: 1101px) and (max-width: 1600px),
+       screen and (min-width: 1101px) and (max-height: 900px) {
+
+    .analytics-main {
+        padding: 16px 26px;
+        overflow-y: auto;
+    }
+
+    .analytics-header h1 {
+        font-size: 25px;
+    }
+
+    .analytics-filters {
+        margin-top: 8px;
+        margin-bottom: 10px;
+    }
+
+    .analytics-stats {
+        gap: 12px;
+    }
+
+    .analytics-stat-card {
+        padding: 10px 14px;
+    }
+
+    .analytics-stat-value {
+        font-size: 20px;
+    }
+
+    .analytics-panel {
+        padding: 12px 14px;
+    }
+
+    .analytics-charts-row,
+    .analytics-bottom-row {
+        gap: 14px;
+    }
+
+    .sales-trend-panel .chart-wrap {
+        min-height: 200px;
+    }
+
+    .donut-wrap {
+        height: 115px;
+    }
+}
+@media screen and (min-width: 1101px) and (max-width: 1400px),
+       screen and (min-width: 1101px) and (max-height: 720px) {
+
+    .analytics-main {
+        padding: 12px 20px;
+    }
+
+    .analytics-header h1 {
+        font-size: 22px;
+    }
+
+    .analytics-stat-value {
+        font-size: 18px;
+    }
+
+    .analytics-scroll {
+        gap: 10px;
+    }
+
+    .analytics-stat-card {
+        padding: 8px 12px;
+    }
+
+    .analytics-panel {
+        padding: 10px 14px;
+    }
+
+    .sales-trend-panel .chart-wrap {
+        min-height: 140px;
+    }
+
+    .donut-wrap {
+        height: 90px;
+    }
+}

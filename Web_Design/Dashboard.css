@@ -1690,3 +1690,90 @@ tbody td {
     object-fit: contain;
     border-radius: 8px;
 }
+
+
+/* ==========================================================
+   LAPTOP / SMALLER SCREENS  (auto-adjust)
+   Tier A: ~1600px wide or ~900px tall and below
+   Tier B: ~1400px wide or ~720px tall and below
+   Large monitors are NOT affected.
+   Safety net: if the content is still taller than the screen,
+   the page scrolls instead of cutting off the bottom.
+========================================================== */
+
+@media screen and (min-width: 1101px) and (max-width: 1600px),
+       screen and (min-width: 1101px) and (max-height: 900px) {
+
+    .main {
+        padding: 20px 26px;
+        overflow-y: auto;
+    }
+
+    .Dashboard-header h1 {
+        font-size: 28px;
+    }
+
+    .stat-grid {
+        gap: 16px;
+        margin-bottom: 14px;
+    }
+
+    .stat-card {
+        min-height: 96px;
+        padding: 14px 16px;
+    }
+
+    .dashboard-content {
+        gap: 14px;
+    }
+
+    .sales-card {
+        height: 250px;
+    }
+
+    .panel {
+        height: 282px;
+    }
+
+    .activities {
+        min-height: 130px;
+    }
+}
+
+@media screen and (min-width: 1101px) and (max-width: 1400px),
+       screen and (min-width: 1101px) and (max-height: 720px) {
+
+    .main {
+        padding: 14px 20px;
+    }
+
+    .Dashboard-header h1 {
+        font-size: 24px;
+    }
+
+    .stat-grid {
+        gap: 12px;
+        margin-bottom: 10px;
+    }
+
+    .stat-card {
+        min-height: 82px;
+        padding: 10px 14px;
+    }
+
+    .dashboard-content {
+        gap: 12px;
+    }
+
+    .sales-card {
+        height: 200px;
+    }
+
+    .panel {
+        height: 232px;
+    }
+
+    .activities {
+        min-height: 120px;
+    }
+}
