@@ -1,5 +1,14 @@
 {
   "rewrites": [
-    { "source": "/", "destination": "/Log_In/SignIn.html" }
+    { "source": "/", "destination": "/Log_In/SignIn.html" },
+    { "source": "/signin", "destination": "/Log_In/SignIn.html" },
+    { "source": "/signup", "destination": "/Log_In/SignUp.html" },
+    { "source": "/email-confirmed", "destination": "/Log_In/Email_Confirmed.html" },
+    { "source": "/dashboard", "destination": "/Side_Bar/Dashboard.html" },
+    { "source": "/sales", "destination": "/Side_Bar/Sales.html" },
+    { "source": "/inventory", "destination": "/Side_Bar/Inventory.html" },
+    { "source": "/reports", "destination": "/Side_Bar/Reports.html" },
+    { "source": "/analytics", "destination": "/Side_Bar/Analytics.html" },
+    { "source": "/user", "destination": "/Side_Bar/User.html" }
   ]
 }
