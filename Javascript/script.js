@@ -78,6 +78,8 @@ document.addEventListener("DOMContentLoaded", function () {
         // from "profiles" directly under RLS. If a check fails, the
         // dropdown is simply left as-is rather than blocking sign-up.
 
+        let noRolesAvailable = false;
+
         (async function hideTakenRoleOptions() {
 
             const roleSelect =
@@ -136,12 +138,36 @@ document.addEventListener("DOMContentLoaded", function () {
                         "No roles available";
                 }
 
+                const noRolesText =
+                    "No roles are available. Owner, Manager, and Cashier already have active accounts, so a new account can't be created right now. Please contact your system administrator.";
+
+                // A disabled button swallows clicks, so the user got no
+                // feedback at all. Keep it clickable (just dimmed) and
+                // explain why signing up isn't possible.
+                noRolesAvailable = true;
+
                 const submitButton =
                     signupForm.querySelector('button[type="submit"]');
 
                 if (submitButton) {
-                    submitButton.disabled = true;
+
+                    submitButton.style.opacity = "0.6";
+                    submitButton.style.cursor = "not-allowed";
+
+                    submitButton.addEventListener("click", function (event) {
+
+                        if (noRolesAvailable) {
+                            event.preventDefault();
+                            showToast(
+                                "No roles available",
+                                noRolesText,
+                                "error"
+                            );
+                        }
+
+                    });
                 }
+
             }
 
         })();
@@ -1605,6 +1631,126 @@ document.addEventListener("DOMContentLoaded", function () {
     
     // MESSAGE FUNCTION
     
+
+    // TOAST POPUP (same look and 7-second timing as the dashboard alerts)
+
+    function showToast(title, message, type) {
+
+        if (!document.getElementById("signupToastStyles")) {
+
+            const style = document.createElement("style");
+
+            style.id = "signupToastStyles";
+            style.textContent = `
+                .signup-toast-stack {
+                    position: fixed; top: 15px; left: 50%;
+                    transform: translateX(-50%); z-index: 10000;
+                    display: flex; flex-direction: column; align-items: center; gap: 10px;
+                    pointer-events: none;
+                }
+                .signup-toast {
+                    pointer-events: auto;
+                    display: flex; align-items: flex-start; gap: 10px;
+                    width: 560px; max-width: calc(100vw - 40px);
+                    padding: 14px 16px; box-sizing: border-box;
+                    background: #ffffff;
+                    border: 1px solid #f0dcdc; border-left: 5px solid #cc292d;
+                    border-radius: 10px;
+                    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
+                    animation: signupToastIn 0.3s ease;
+                }
+                .signup-toast.toast-success { border-color: #d5e8da; border-left-color: #198754; }
+                .signup-toast.toast-success .signup-toast-icon { color: #198754; }
+                .signup-toast.leaving {
+                    opacity: 0; transform: translateY(-16px);
+                    transition: opacity 0.25s ease, transform 0.25s ease;
+                }
+                .signup-toast-icon { font-size: 22px; color: #cc292d; flex-shrink: 0; }
+                .signup-toast-text { flex: 1; min-width: 0; text-align: left; }
+                .signup-toast-text strong { display: block; font-size: 14px; color: #222; margin-bottom: 2px; }
+                .signup-toast-text span { display: block; font-size: 13px; color: #666; line-height: 1.5; text-align: left; word-break: normal; overflow-wrap: break-word; }
+                .signup-toast-close {
+                    margin-left: auto; flex-shrink: 0;
+                    width: 24px; height: 24px; padding: 0;
+                    display: flex; align-items: center; justify-content: center;
+                    border: none; border-radius: 50%; background: transparent;
+                    color: #999; font-size: 18px; line-height: 1; cursor: pointer;
+                    transform: none !important; box-shadow: none !important;
+                    transition: background 0.15s ease, color 0.15s ease;
+                }
+                .signup-toast-close:hover,
+                .signup-toast-close:focus,
+                .signup-toast-close:active {
+                    width: 24px; height: 24px; padding: 0;
+                    transform: none !important; box-shadow: none !important;
+                    background: #f1f1f1; color: #333;
+                }
+                @keyframes signupToastIn {
+                    from { opacity: 0; transform: translateY(-16px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+            `;
+
+            document.head.appendChild(style);
+        }
+
+        let stack = document.getElementById("signupToastStack");
+
+        if (!stack) {
+            stack = document.createElement("div");
+            stack.id = "signupToastStack";
+            stack.className = "signup-toast-stack";
+            document.body.appendChild(stack);
+        }
+
+        // One toast at a time, so repeated clicks don't pile them up
+        stack.innerHTML = "";
+
+        const isSuccess = type === "success";
+
+        const toast = document.createElement("div");
+        toast.className = "signup-toast" + (isSuccess ? " toast-success" : "");
+
+        const icon = document.createElement("i");
+        icon.className = "bx " + (isSuccess ? "bxs-check-circle" : "bxs-error-circle") + " signup-toast-icon";
+
+        const text = document.createElement("div");
+        text.className = "signup-toast-text";
+
+        const strong = document.createElement("strong");
+        strong.textContent = title;
+
+        const span = document.createElement("span");
+        span.textContent = message;
+
+        text.appendChild(strong);
+        text.appendChild(span);
+
+        const closeBtn = document.createElement("button");
+        closeBtn.type = "button";
+        closeBtn.className = "signup-toast-close";
+        closeBtn.textContent = "\u00d7";
+        closeBtn.setAttribute("aria-label", "Close");
+
+        toast.appendChild(icon);
+        toast.appendChild(text);
+        toast.appendChild(closeBtn);
+        stack.appendChild(toast);
+
+        let removed = false;
+
+        const removeToast = function () {
+            if (removed) return;
+            removed = true;
+            toast.classList.add("leaving");
+            setTimeout(function () { toast.remove(); }, 260);
+        };
+
+        closeBtn.addEventListener("click", removeToast);
+
+        setTimeout(removeToast, 7000);
+    }
+
 
     function showMessage(
         message,
