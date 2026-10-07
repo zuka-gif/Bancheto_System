@@ -55,6 +55,7 @@
     const notificationListEl = document.getElementById("notificationList");
     const notificationCountTextEl = document.getElementById("notificationCountText");
     const notificationViewAllEl = document.getElementById("notificationViewAll");
+    const notificationMarkAllEl = document.getElementById("notificationMarkAll");
 
     // ---------- DATA LOADERS ----------
 
@@ -975,6 +976,39 @@
         }
     }
 
+    // Marks every unread alert as read in one go (shared with all accounts).
+    async function markAllNotificationsDismissed(signatures) {
+        const fresh = signatures.filter(s => !dismissedToday.has(s));
+        if (fresh.length === 0) return;
+
+        const role = getCurrentUserRole();
+        fresh.forEach(s => dismissedToday.set(s, role));
+
+        try {
+            const { data: { user } } = await sb.auth.getUser();
+
+            const rows = fresh.map(signature => {
+                const cut = signature.lastIndexOf(":");
+                return {
+                    item_id: signature.slice(0, cut),
+                    stock: Number(signature.slice(cut + 1)),
+                    dismissed_on: todayKey(),
+                    dismissed_by: user ? user.id : null,
+                    dismissed_role: role
+                };
+            });
+
+            const { error } = await sb.from("dismissed_alerts").upsert(rows, {
+                onConflict: "item_id,stock,dismissed_on",
+                ignoreDuplicates: true
+            });
+
+            if (error) console.error("Could not save dismissed alerts:", error.message);
+        } catch (e) {
+            console.error("Could not save dismissed alerts:", e);
+        }
+    }
+
     function isDismissedToday(signature) {
         return dismissedToday.has(signature);
     }
@@ -1345,6 +1379,18 @@
                 toggleNotificationDropdown(false);
             }
         });
+
+        if (notificationMarkAllEl) {
+            notificationMarkAllEl.addEventListener("click", async (e) => {
+                e.stopPropagation();
+                const unread = lastKnownItems
+                    .filter(i => getStock(i) <= LOW_STOCK_THRESHOLD)
+                    .map(notificationSignature)
+                    .filter(s => !isDismissedToday(s));
+                await markAllNotificationsDismissed(unread);
+                renderNotifications(lastKnownItems);
+            });
+        }
 
         if (notificationViewAllEl) {
             notificationViewAllEl.addEventListener("click", () => {

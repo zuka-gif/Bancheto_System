@@ -207,8 +207,40 @@
 
 .notification-item:hover,
 .notification-item:focus-visible {
-    background: #fbf4f4;
+    background: #eef7ef;
+    box-shadow: inset 3px 0 0 #2e8034;
     outline: none;
+}
+
+/* When the row is hovered, light up its check button like its own hover */
+.notification-item:hover .notification-dismiss-btn,
+.notification-item:focus-visible .notification-dismiss-btn {
+    background: #2e8034;
+    border-color: #2e8034;
+    color: #ffffff;
+}
+
+.notification-header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.notification-mark-all {
+    border: none;
+    background: transparent;
+    padding: 4px 8px;
+    border-radius: 6px;
+    color: #2e8034;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.notification-mark-all:hover {
+    background: #2e8034;
+    color: #ffffff;
 }
 
 .notification-item:last-child {
