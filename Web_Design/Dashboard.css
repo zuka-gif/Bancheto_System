@@ -202,22 +202,13 @@
 
     overflow: hidden;
 
-    transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.25s ease, border-color 0.25s ease;
+    transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.25s ease, border-color 0.25s ease, background 0.15s ease;
 }
 
-.notification-item:hover,
-.notification-item:focus-visible {
-    background: #eef7ef;
-    box-shadow: inset 3px 0 0 #2e8034;
+.notification-dropdown .notification-list .notification-item:hover,
+.notification-dropdown .notification-list .notification-item:focus-visible {
+    background: #6fce7565;
     outline: none;
-}
-
-/* When the row is hovered, light up its check button like its own hover */
-.notification-item:hover .notification-dismiss-btn,
-.notification-item:focus-visible .notification-dismiss-btn {
-    background: #2e8034;
-    border-color: #2e8034;
-    color: #ffffff;
 }
 
 .notification-header-right {
@@ -227,20 +218,31 @@
 }
 
 .notification-mark-all {
-    border: none;
-    background: transparent;
-    padding: 4px 8px;
-    border-radius: 6px;
+    border: 1.5px solid #2e8034;
+    background: #ffffff;
+    padding: 5px 12px;
+    border-radius: 999px;
     color: #2e8034;
     font-size: 11px;
     font-weight: 700;
     cursor: pointer;
-    transition: background 0.2s ease, color 0.2s ease;
+    box-shadow: 0 1px 3px rgba(46, 128, 52, 0.25);
+    transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.1s ease;
 }
 
 .notification-mark-all:hover {
     background: #2e8034;
     color: #ffffff;
+    box-shadow: 0 2px 6px rgba(46, 128, 52, 0.4);
+}
+
+.notification-mark-all:active {
+    transform: scale(0.96);
+}
+
+.notification-mark-all:focus-visible {
+    outline: 2px solid #2e8034;
+    outline-offset: 2px;
 }
 
 .notification-item:last-child {
