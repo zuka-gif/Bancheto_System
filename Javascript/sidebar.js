@@ -6,7 +6,8 @@ const currentPage =
     window.location.pathname
         .split("/")
         .pop()
-        .toLowerCase();
+        .toLowerCase()
+        .replace(/\.html$/, "");
 
 document.querySelectorAll(".nav-item").forEach(function (item) {
 
@@ -18,7 +19,7 @@ document.querySelectorAll(".nav-item").forEach(function (item) {
     }
 
     const linkPage =
-        href.split("/").pop().toLowerCase();
+        href.split("/").pop().toLowerCase().replace(/\.html$/, "");
 
     if (linkPage === currentPage) {
         item.classList.add("active");
@@ -120,7 +121,7 @@ async function logout(event) {
     setTimeout(function () {
 
         window.location.href =
-            "../Log_In/SignIn.html";
+            "/signin";
 
     }, 1000);
 }

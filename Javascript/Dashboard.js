@@ -1289,7 +1289,7 @@
                 const params = new URLSearchParams();
                 if (el.dataset.category) params.set("category", el.dataset.category);
                 if (el.dataset.itemId) params.set("highlight", el.dataset.itemId);
-                window.location.href = "Inventory.html" + (params.toString() ? `?${params.toString()}` : "");
+                window.location.href = "/inventory" + (params.toString() ? `?${params.toString()}` : "");
             };
 
             el.addEventListener("click", goToItem);
@@ -1348,7 +1348,7 @@
 
         if (notificationViewAllEl) {
             notificationViewAllEl.addEventListener("click", () => {
-                window.location.href = "Inventory.html";
+                window.location.href = "/inventory";
             });
         }
 
@@ -1493,7 +1493,7 @@
             const goesToInventory = btn.closest(".stat-card");
             btn.addEventListener("click", () => {
                 if (goesToInventory) {
-                    window.location.href = "Inventory.html";
+                    window.location.href = "/inventory";
                 } else {
                     openActivitiesModal();
                 }

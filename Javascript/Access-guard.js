@@ -9,12 +9,12 @@
 (function () {
 
     const ROLE_PAGE_ACCESS = {
-        "owner":   ["dashboard.html", "sales.html", "inventory.html", "reports.html", "analytics.html", "user.html"],
-        "manager": ["dashboard.html", "sales.html", "inventory.html", "reports.html", "analytics.html"],
-        "cashier": ["dashboard.html", "sales.html"]
+        "owner":   ["dashboard", "sales", "inventory", "reports", "analytics", "user"],
+        "manager": ["dashboard", "sales", "inventory", "reports", "analytics"],
+        "cashier": ["dashboard", "sales"]
     };
 
-    const ALL_PAGES = ["dashboard.html", "sales.html", "inventory.html", "reports.html", "analytics.html", "user.html"];
+    const ALL_PAGES = ["dashboard", "sales", "inventory", "reports", "analytics", "user"];
 
     function getLoggedInUser() {
         try {
@@ -32,13 +32,14 @@
         window.location.pathname
             .split("/")
             .pop()
-            .toLowerCase();
+            .toLowerCase()
+            .replace(/\.html$/, "");
 
     const user = getLoggedInUser();
 
 
     if (!user) {
-        window.location.replace("../Log_In/SignIn.html");
+        window.location.replace("/signin");
         return;
     }
 
@@ -47,9 +48,7 @@
 
   
     if (currentPage && !allowedPages.includes(currentPage)) {
-        const fallbackFile = allowedPages[0];
-        const fallbackName = fallbackFile.charAt(0).toUpperCase() + fallbackFile.slice(1);
-        window.location.replace(fallbackName);
+        window.location.replace("/" + allowedPages[0]);
         return;
     }
 
@@ -59,8 +58,8 @@
     if (disallowed.length > 0) {
         const selectors = disallowed
             .map(function (p) {
-                const fileName = p.charAt(0).toUpperCase() + p.slice(1);
-                return '.nav-item[href="' + fileName + '"]';
+                const fileName = p;
+                return '.nav-item[href="/' + fileName + '"]';
             })
             .join(", ");
 
@@ -95,7 +94,7 @@
         alert("This account has been disabled. Please contact the owner.");
 
         function goToSignIn() {
-            window.location.replace("../Log_In/SignIn.html");
+            window.location.replace("/signin");
         }
 
         try {

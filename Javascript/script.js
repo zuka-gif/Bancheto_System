@@ -427,7 +427,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     email: email,
                     password: password,
                     options: {
-                        emailRedirectTo: "https://zuka-gif.github.io/Bancheto_System/Log_In/Email_Confirmed.html",
+                        emailRedirectTo: "https://yesunim.vercel.app/email-confirmed",
                         data: {
                             fullname: fullname,
                             username: username,
@@ -546,7 +546,7 @@ document.addEventListener("DOMContentLoaded", function () {
             setTimeout(function () {
 
                 window.location.href =
-                    "../Log_In/SignIn.html";
+                    "/signin";
 
             }, needsEmailConfirmation ? 4000 : 1000);
 
@@ -574,7 +574,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (new URLSearchParams(window.location.search).get("confirmed") === "1") {
 
             sb.auth.signOut().finally(function () {
-                window.location.replace("Email_Confirmed.html");
+                window.location.replace("/email-confirmed");
             });
 
         }
@@ -853,7 +853,7 @@ document.addEventListener("DOMContentLoaded", function () {
             setTimeout(function () {
 
                 window.location.href =
-                    "../Side_Bar/Dashboard.html";
+                    "/dashboard";
 
             }, 1000);
 
