@@ -55,7 +55,6 @@
     const notificationListEl = document.getElementById("notificationList");
     const notificationCountTextEl = document.getElementById("notificationCountText");
     const notificationViewAllEl = document.getElementById("notificationViewAll");
-    const notificationMarkAllEl = document.getElementById("notificationMarkAll");
 
     // ---------- DATA LOADERS ----------
 
@@ -155,7 +154,8 @@
             itemName: row.item_name,
             category: row.category,
             change: row.change,
-            resultingStock: row.resulting_stock
+            resultingStock: row.resulting_stock,
+            details: row.details
         }));
     }
 
@@ -809,6 +809,87 @@
         return "Unknown";
     }
 
+    // ---------- INVENTORY ACCESS (Cashier = read-only on Dashboard) ----------
+
+    // Cashiers may SEE the stock numbers on the Dashboard, but they are
+    // not allowed to open the Inventory page.
+    function canOpenInventory() {
+        return String(getCurrentUserRole()).trim().toLowerCase() !== "cashier";
+    }
+
+    function injectAccessDeniedStyles() {
+        if (document.getElementById("accessDeniedStyles")) return;
+        const style = document.createElement("style");
+        style.id = "accessDeniedStyles";
+        style.textContent = `
+            .access-denied-overlay {
+                position: fixed; inset: 0; z-index: 10000;
+                background: rgba(0, 0, 0, 0.5);
+                display: none; align-items: center; justify-content: center;
+                padding: 16px;
+            }
+            .access-denied-overlay.show { display: flex; }
+            .access-denied-box {
+                background: #fff; border-radius: 14px; width: 100%; max-width: 380px;
+                padding: 28px 24px 20px; text-align: center;
+                box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+                animation: accessDeniedIn 0.2s ease;
+            }
+            .access-denied-icon { font-size: 52px; color: #cc292d; line-height: 1; }
+            .access-denied-box h3 { margin: 10px 0 6px; font-size: 18px; color: #222; }
+            .access-denied-box p { margin: 0 0 18px; font-size: 13px; color: #666; line-height: 1.5; }
+            .access-denied-ok {
+                background: #8b0000; color: #fff; border: none; border-radius: 8px;
+                padding: 9px 28px; font-size: 13px; font-weight: 600; cursor: pointer;
+            }
+            .access-denied-ok:hover { background: #a30000; }
+            @keyframes accessDeniedIn {
+                from { opacity: 0; transform: scale(0.94); }
+                to { opacity: 1; transform: scale(1); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    function showAccessDenied() {
+        injectAccessDeniedStyles();
+
+        let overlay = document.getElementById("accessDeniedOverlay");
+        if (!overlay) {
+            overlay = document.createElement("div");
+            overlay.id = "accessDeniedOverlay";
+            overlay.className = "access-denied-overlay";
+            overlay.innerHTML = `
+                <div class="access-denied-box" role="alertdialog" aria-label="Access denied">
+                    <i class='bx bxs-lock-alt access-denied-icon'></i>
+                    <h3>Access Denied</h3>
+                    <p>Cashiers are not allowed to open the Inventory page.
+                       You can only view the stock alerts here on the Dashboard.</p>
+                    <button type="button" class="access-denied-ok">OK</button>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+
+            const close = () => overlay.classList.remove("show");
+            overlay.querySelector(".access-denied-ok").addEventListener("click", close);
+            overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+            document.addEventListener("keydown", (e) => {
+                if (e.key === "Escape") close();
+            });
+        }
+
+        overlay.classList.add("show");
+    }
+
+    // Goes to Inventory, or shows the pop-up when the role isn't allowed.
+    function goToInventory(query) {
+        if (!canOpenInventory()) {
+            showAccessDenied();
+            return;
+        }
+        window.location.href = "/inventory" + (query || "");
+    }
+
     function formatActivityTime(dateObj) {
         const now = new Date();
         if (isSameDay(dateObj, now)) {
@@ -844,7 +925,9 @@
                 role: l.role || "Unknown",
                 action: l.action,
                 module: "Inventory",
-                details: `${l.itemName} (${changeText}, now ${resulting})`
+                details: l.details
+                    ? `${l.action === "Deleted" ? "Deleting " : l.action === "Added" ? "Adding " : ""}${l.itemName} (${l.details})`
+                    : `${l.itemName} (${changeText}, now ${resulting})`
             });
         });
 
@@ -854,8 +937,10 @@
                 user: userName,
                 role: l.role || "Unknown",
                 action: l.action,
-                module: "Menu List",
-                details: l.details ? `${l.itemName} (${l.details})` : `${l.itemName}`
+                module: "Sales-Menu",
+                details: l.details
+                    ? `${l.action === "Deleted" ? "Deleting " : l.action === "Added" ? "Adding " : ""}${l.itemName} (${l.details})`
+                    : `${l.itemName}`
             });
         });
 
@@ -973,39 +1058,6 @@
             }
         } catch (e) {
             console.error("Could not save dismissed alert:", e);
-        }
-    }
-
-    // Marks every unread alert as read in one go (shared with all accounts).
-    async function markAllNotificationsDismissed(signatures) {
-        const fresh = signatures.filter(s => !dismissedToday.has(s));
-        if (fresh.length === 0) return;
-
-        const role = getCurrentUserRole();
-        fresh.forEach(s => dismissedToday.set(s, role));
-
-        try {
-            const { data: { user } } = await sb.auth.getUser();
-
-            const rows = fresh.map(signature => {
-                const cut = signature.lastIndexOf(":");
-                return {
-                    item_id: signature.slice(0, cut),
-                    stock: Number(signature.slice(cut + 1)),
-                    dismissed_on: todayKey(),
-                    dismissed_by: user ? user.id : null,
-                    dismissed_role: role
-                };
-            });
-
-            const { error } = await sb.from("dismissed_alerts").upsert(rows, {
-                onConflict: "item_id,stock,dismissed_on",
-                ignoreDuplicates: true
-            });
-
-            if (error) console.error("Could not save dismissed alerts:", error.message);
-        } catch (e) {
-            console.error("Could not save dismissed alerts:", e);
         }
     }
 
@@ -1323,7 +1375,7 @@
                 const params = new URLSearchParams();
                 if (el.dataset.category) params.set("category", el.dataset.category);
                 if (el.dataset.itemId) params.set("highlight", el.dataset.itemId);
-                window.location.href = "/inventory" + (params.toString() ? `?${params.toString()}` : "");
+                goToInventory(params.toString() ? `?${params.toString()}` : "");
             };
 
             el.addEventListener("click", goToItem);
@@ -1380,21 +1432,9 @@
             }
         });
 
-        if (notificationMarkAllEl) {
-            notificationMarkAllEl.addEventListener("click", async (e) => {
-                e.stopPropagation();
-                const unread = lastKnownItems
-                    .filter(i => getStock(i) <= LOW_STOCK_THRESHOLD)
-                    .map(notificationSignature)
-                    .filter(s => !isDismissedToday(s));
-                await markAllNotificationsDismissed(unread);
-                renderNotifications(lastKnownItems);
-            });
-        }
-
         if (notificationViewAllEl) {
             notificationViewAllEl.addEventListener("click", () => {
-                window.location.href = "/inventory";
+                goToInventory();
             });
         }
 
@@ -1539,7 +1579,7 @@
             const goesToInventory = btn.closest(".stat-card");
             btn.addEventListener("click", () => {
                 if (goesToInventory) {
-                    window.location.href = "/inventory";
+                    goToInventory();
                 } else {
                     openActivitiesModal();
                 }

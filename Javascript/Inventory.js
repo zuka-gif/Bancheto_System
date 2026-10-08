@@ -105,10 +105,10 @@
     // Used only for "Added"/"Deleted" log rows, where there's no
     // existing row to lock — the atomic adjust_inventory_stock() RPC
     // (used everywhere else) covers +/- changes on an existing item.
-    async function logInventoryActivity(itemId, action, item, change, resultingStock) {
+    async function logInventoryActivity(itemId, action, item, change, resultingStock, details) {
         const { data: userData } = await sb.auth.getUser();
 
-        const { error } = await sb.from("inventory_logs").insert({
+        const row = {
             item_id: itemId,
             item_name: item.name,
             category: item.category,
@@ -116,12 +116,29 @@
             change: change,
             resulting_stock: resultingStock,
             role: getCurrentUserRole(),
-            created_by: userData && userData.user ? userData.user.id : null
-        });
+            created_by: userData && userData.user ? userData.user.id : null,
+            details: details || null
+        };
+
+        let { error } = await sb.from("inventory_logs").insert(row);
+
+        // If the "details" column hasn't been added yet, still save the
+        // log row (without details) instead of losing it.
+        if (error && /details/i.test(error.message)) {
+            delete row.details;
+            ({ error } = await sb.from("inventory_logs").insert(row));
+        }
 
         if (error) {
             console.error("Could not save inventory log:", error.message);
         }
+    }
+
+    function logPeso(n) {
+        return "₱" + (Number(n) || 0).toLocaleString("en-PH", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
     }
 
     // Normalizes a stored item so missing/legacy fields (an older item
@@ -580,7 +597,7 @@
         // link afterward. Logged unconditionally (not just when stock >
         // 0) so deleting an already-empty item still shows up in Recent
         // Activities/Reports instead of vanishing without a trace.
-        await logInventoryActivity(item.id, "Deleted", item, -item.stock, 0);
+        await logInventoryActivity(item.id, "Deleted", item, -item.stock, 0, item.category);
 
         const { error } = await sb
             .from("inventory_items")
@@ -890,6 +907,16 @@
                 return;
             }
 
+            // Work out what actually changed (before overwriting it) for the activity log.
+            const changes = [];
+            if (item.name !== name) changes.push(`name: ${item.name} → ${name}`);
+            if (item.category !== category) changes.push(`category: ${item.category} → ${category}`);
+            if (item.unit !== unit) changes.push(`unit: ${item.unit} → ${unit}`);
+            if (Number(item.price) !== price) changes.push(`price: ${logPeso(item.price)} → ${logPeso(price)}`);
+            if (netChange !== 0) changes.push(`stock: ${previousStock} → ${stock}`);
+            if (imageUrl !== previousImageUrl) changes.push(imageUrl ? "image changed" : "image removed");
+            const changeDetails = changes.join(", ");
+
             item.name = name;
             item.category = category;
             item.unit = unit;
@@ -914,6 +941,15 @@
                     );
                 } else {
                     item.stock = log.resulting_stock;
+
+                    // The RPC wrote the "Edited" log row — attach the details to it.
+                    if (log.id && changeDetails) {
+                        const { error: detailsError } = await sb
+                            .from("inventory_logs")
+                            .update({ details: changeDetails })
+                            .eq("id", log.id);
+                        if (detailsError) console.error("Could not save log details:", detailsError.message);
+                    }
                 }
             } else {
                 // Stock didn't change, but name/category/unit/price still
@@ -922,7 +958,7 @@
                 // above when there's an actual stock delta. Without this,
                 // editing a product's details while leaving its quantity
                 // untouched (a very normal edit) never got logged at all.
-                await logInventoryActivity(editingItemId, "Edited", item, 0, item.stock);
+                await logInventoryActivity(editingItemId, "Edited", item, 0, item.stock, changeDetails);
             }
 
         } else {
@@ -953,7 +989,7 @@
             // product added with 0 starting stock still shows up in
             // Recent Activities/Reports instead of vanishing without
             // a trace.
-            await logInventoryActivity(newItem.id, "Added", newItem, stock, stock);
+            await logInventoryActivity(newItem.id, "Added", newItem, stock, stock, `${stock} ${unit}, ${category}`);
         }
 
         saveProductBtn.disabled = false;

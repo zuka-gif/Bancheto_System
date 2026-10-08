@@ -268,145 +268,340 @@ async function editUser(index) {
     const user = loadedUsers[index];
 
     if (!user) {
-        alert("User not found.");
+        showUserToast("User not found.", true);
         return;
     }
 
+    openEditUserModal(user);
+}
 
-    const newFullname = prompt(
-        "Enter new fullname:",
-        user.fullname
-    );
 
-    if (newFullname === null) {
-        return;
+// ---------- EDIT USER POP-UP ----------
+// Owner is intentionally excluded from the roles — Owner accounts never
+// load into loadedUsers, and this form shouldn't offer a way to promote
+// someone to Owner either.
+const EDITABLE_ROLES = ["Manager", "Cashier"];
+
+function injectEditUserStyles() {
+    if (document.getElementById("editUserStyles")) return;
+
+    const style = document.createElement("style");
+    style.id = "editUserStyles";
+    style.textContent = `
+        .edit-user-overlay {
+            position: fixed; inset: 0; z-index: 10000;
+            background: rgba(0, 0, 0, 0.45);
+            display: flex; align-items: center; justify-content: center;
+            padding: 16px; font-family: Arial, sans-serif;
+        }
+        .edit-user-box {
+            background: #fff; border-radius: 12px; width: 100%; max-width: 400px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3); overflow: hidden;
+            animation: editUserIn 0.18s ease;
+        }
+        .edit-user-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 20px; color: #fff;
+            background: linear-gradient(180deg, #a51414, #7a0f0f);
+        }
+        .edit-user-header h2 { margin: 0; font-size: 17px; }
+        .edit-user-close {
+            background: transparent; border: none; color: #fff;
+            font-size: 24px; cursor: pointer; line-height: 1; padding: 0 4px;
+        }
+        .edit-user-body { padding: 18px 20px 6px; }
+        .edit-user-body label {
+            display: block; margin: 0 0 5px; font-size: 12px;
+            font-weight: 700; color: #5C1D1D; text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .edit-user-body input, .edit-user-body select {
+            width: 100%; box-sizing: border-box; height: 38px; padding: 0 12px;
+            margin-bottom: 14px; border: 1px solid #ccc; border-radius: 6px;
+            font-size: 14px; background: #fff; color: #111;
+        }
+        .edit-user-body input:focus, .edit-user-body select:focus {
+            outline: none; border-color: #a51414;
+            box-shadow: 0 0 0 2px rgba(165, 20, 20, 0.15);
+        }
+        .edit-user-error {
+            display: none; margin: -4px 0 14px; padding: 9px 12px;
+            background: #fdecea; color: #b51b14; border-radius: 6px;
+            font-size: 13px; line-height: 1.4; white-space: pre-line;
+        }
+        .edit-user-error.show { display: block; }
+        .edit-user-actions {
+            display: flex; justify-content: flex-end; gap: 8px;
+            padding: 6px 20px 18px;
+        }
+        .edit-user-actions button {
+            height: 36px; padding: 0 18px; border-radius: 6px;
+            font-size: 13px; font-weight: 600; cursor: pointer;
+        }
+        .edit-user-cancel { background: #eee; color: #333; border: 1px solid #ccc; }
+        .edit-user-save { background: #3d7f37; color: #fff; border: none; }
+        .edit-user-save:hover { background: #346d2f; }
+        .edit-user-save:disabled { opacity: 0.6; cursor: not-allowed; }
+        .user-toast-overlay {
+            position: fixed; inset: 0; z-index: 10001;
+            background: rgba(0, 0, 0, 0.35);
+            display: flex; align-items: center; justify-content: center;
+            padding: 16px; font-family: Arial, sans-serif;
+        }
+        .user-toast {
+            background: #fff; border-radius: 12px; width: 100%; max-width: 320px;
+            padding: 26px 22px 20px; text-align: center;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+            animation: editUserIn 0.2s ease;
+        }
+        .user-toast-icon { font-size: 54px; line-height: 1; color: #3d7f37; }
+        .user-toast.error .user-toast-icon { color: #b51b14; }
+        .user-toast p { margin: 10px 0 16px; font-size: 14px; color: #222; line-height: 1.5; white-space: pre-line; }
+        .user-toast button {
+            height: 34px; padding: 0 28px; border: none; border-radius: 6px;
+            background: #3d7f37; color: #fff; font-size: 13px; font-weight: 600; cursor: pointer;
+        }
+        .user-toast.error button { background: #b51b14; }
+        .user-confirm-actions { display: flex; gap: 8px; justify-content: center; }
+        .user-toast .user-confirm-cancel {
+            background: #eee; color: #333; border: 1px solid #ccc;
+        }
+        .user-toast .user-confirm-yes.danger { background: #b51b14; }
+        .user-toast .user-confirm-yes.danger:hover { background: #8d100b; }
+        .user-toast .user-confirm-yes.safe:hover { background: #346d2f; }
+        .user-toast .user-confirm-icon-warn { color: #e69500; }
+        @keyframes editUserIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+function showUserToast(message, isError) {
+    injectEditUserStyles();
+
+    // Centered pop-up; closes by itself, or via OK / click outside
+    const overlay = document.createElement("div");
+    overlay.className = "user-toast-overlay";
+    overlay.innerHTML = `
+        <div class="user-toast${isError ? " error" : ""}" role="alert">
+            <i class='bx ${isError ? "bxs-error-circle" : "bxs-check-circle"} user-toast-icon'></i>
+            <p></p>
+            <button type="button">OK</button>
+        </div>
+    `;
+    overlay.querySelector("p").textContent = message;
+    document.body.appendChild(overlay);
+
+    const close = function () { overlay.remove(); };
+    overlay.querySelector("button").addEventListener("click", close);
+    overlay.addEventListener("click", function (e) { if (e.target === overlay) close(); });
+    setTimeout(close, 3000);
+}
+
+function showUserConfirm(message, yesLabel, isDanger) {
+    injectEditUserStyles();
+
+    return new Promise(function (resolve) {
+        const overlay = document.createElement("div");
+        overlay.className = "user-toast-overlay";
+        overlay.innerHTML = `
+            <div class="user-toast" role="alertdialog" aria-label="Confirm">
+                <i class='bx bxs-help-circle user-toast-icon user-confirm-icon-warn'></i>
+                <p></p>
+                <div class="user-confirm-actions">
+                    <button type="button" class="user-confirm-cancel">Cancel</button>
+                    <button type="button" class="user-confirm-yes ${isDanger ? "danger" : "safe"}"></button>
+                </div>
+            </div>
+        `;
+        overlay.querySelector("p").textContent = message;
+        overlay.querySelector(".user-confirm-yes").textContent = yesLabel;
+        document.body.appendChild(overlay);
+
+        function finish(result) {
+            document.removeEventListener("keydown", onKey);
+            overlay.remove();
+            resolve(result);
+        }
+        function onKey(e) { if (e.key === "Escape") finish(false); }
+
+        overlay.querySelector(".user-confirm-cancel").addEventListener("click", function () { finish(false); });
+        overlay.querySelector(".user-confirm-yes").addEventListener("click", function () { finish(true); });
+        overlay.addEventListener("click", function (e) { if (e.target === overlay) finish(false); });
+        document.addEventListener("keydown", onKey);
+
+        overlay.querySelector(".user-confirm-cancel").focus(); // safe default
+    });
+}
+
+function openEditUserModal(user) {
+
+    injectEditUserStyles();
+
+    const overlay = document.createElement("div");
+    overlay.className = "edit-user-overlay";
+    overlay.innerHTML = `
+        <div class="edit-user-box" role="dialog" aria-label="Edit user">
+            <div class="edit-user-header">
+                <h2>Edit User</h2>
+                <button type="button" class="edit-user-close" title="Close">&times;</button>
+            </div>
+            <form class="edit-user-form" novalidate>
+                <div class="edit-user-body">
+                    <label for="editUserFullname">Full Name</label>
+                    <input type="text" id="editUserFullname" autocomplete="off">
+
+                    <label for="editUserUsername">Username</label>
+                    <input type="text" id="editUserUsername" autocomplete="off">
+
+                    <label for="editUserRole">Role</label>
+                    <select id="editUserRole">
+                        ${EDITABLE_ROLES.map(function (r) {
+                            return `<option value="${r}">${r}</option>`;
+                        }).join("")}
+                    </select>
+
+                    <div class="edit-user-error" id="editUserError"></div>
+                </div>
+                <div class="edit-user-actions">
+                    <button type="button" class="edit-user-cancel">Cancel</button>
+                    <button type="submit" class="edit-user-save">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const fullnameInput = overlay.querySelector("#editUserFullname");
+    const usernameInput = overlay.querySelector("#editUserUsername");
+    const roleSelect = overlay.querySelector("#editUserRole");
+    const errorEl = overlay.querySelector("#editUserError");
+    const saveBtn = overlay.querySelector(".edit-user-save");
+
+    // .value (not innerHTML) so names with quotes or symbols can't break the form
+    fullnameInput.value = user.fullname || "";
+    usernameInput.value = user.username || "";
+
+    const currentRole = EDITABLE_ROLES.find(function (r) {
+        return r.toLowerCase() === String(user.role || "").toLowerCase();
+    });
+    if (currentRole) roleSelect.value = currentRole;
+
+    function showError(message) {
+        errorEl.textContent = message;
+        errorEl.classList.add("show");
     }
 
-
-    const newUsername = prompt(
-        "Enter new username:",
-        user.username
-    );
-
-    if (newUsername === null) {
-        return;
+    function close() {
+        document.removeEventListener("keydown", onKey);
+        overlay.remove();
     }
 
-
-    const newRole = prompt(
-        "Enter role (Manager or Cashier):",
-        user.role
-    );
-
-    if (newRole === null) {
-        return;
+    function onKey(e) {
+        if (e.key === "Escape") close();
     }
 
+    document.addEventListener("keydown", onKey);
+    overlay.querySelector(".edit-user-close").addEventListener("click", close);
+    overlay.querySelector(".edit-user-cancel").addEventListener("click", close);
 
-    // Validate role
-    // Owner is intentionally excluded here — since Owner accounts never
-    // load into loadedUsers in the first place, this dialog should only
-    // ever be editing a Manager or Cashier, and shouldn't offer a way to
-    // promote someone to Owner either.
-    const validRoles = [
-        "Manager",
-        "Cashier"
-    ];
+    overlay.querySelector(".edit-user-form").addEventListener("submit", async function (e) {
+        e.preventDefault();
+        errorEl.classList.remove("show");
 
-    const roleExists = validRoles.some(
-        role =>
-            role.toLowerCase() ===
-            newRole.trim().toLowerCase()
-    );
+        const newFullname = fullnameInput.value.trim();
+        const newUsername = usernameInput.value.trim();
+        const resolvedRole = roleSelect.value;
 
-    if (!roleExists) {
-
-        alert(
-            "Invalid role.\n\nPlease use:\nManager\nCashier"
-        );
-
-        return;
-    }
-
-
-    const trimmedUsername = newUsername.trim();
-
-
-    // CHECK DUPLICATE USERNAME
-    // Excludes this user's own row, since keeping their existing
-    // username unchanged shouldn't count as a duplicate against
-    // themselves.
-
-    const { data: duplicate, error: duplicateCheckError } =
-        await sb
-            .from("profiles")
-            .select("id")
-            .ilike("username", trimmedUsername)
-            .neq("id", user.id)
-            .maybeSingle();
-
-    if (duplicateCheckError) {
-        alert("Something went wrong checking that username. Please try again.");
-        return;
-    }
-
-    if (duplicate) {
-        alert("That username is already being used.");
-        return;
-    }
-
-
-    const resolvedRole =
-        validRoles.find(
-            role =>
-                role.toLowerCase() ===
-                newRole.trim().toLowerCase()
-        );
-
-
-    // Only one ACTIVE account per role: block switching to a role that
-    // another active account already holds.
-    if (!user.disabled && resolvedRole !== user.role) {
-
-        const roleInUse = loadedUsers.some(function (other) {
-            return other.id !== user.id &&
-                   other.role === resolvedRole &&
-                   !other.disabled;
-        });
-
-        if (roleInUse) {
-            alert(
-                "Can't change the role to " + resolvedRole + ".\n\n" +
-                "There is already an active " + resolvedRole + " account."
-            );
+        if (!newFullname) {
+            showError("Please enter a full name.");
             return;
         }
-    }
 
+        if (!newUsername) {
+            showError("Please enter a username.");
+            return;
+        }
 
-    const { error: updateError } =
-        await sb
-            .from("profiles")
-            .update({
-                fullname: newFullname.trim(),
-                username: trimmedUsername,
-                role: resolvedRole
-            })
-            .eq("id", user.id);
+        // Only one ACTIVE account per role: block switching to a role that
+        // another active account already holds.
+        if (!user.disabled && resolvedRole !== user.role) {
 
-    if (updateError) {
-        alert("Could not update user: " + updateError.message);
-        return;
-    }
+            const roleInUse = loadedUsers.some(function (other) {
+                return other.id !== user.id &&
+                       other.role === resolvedRole &&
+                       !other.disabled;
+            });
 
+            if (roleInUse) {
+                showError(
+                    "Can't change the role to " + resolvedRole + ".\n" +
+                    "There is already an active " + resolvedRole + " account."
+                );
+                return;
+            }
+        }
 
-    alert("User information updated successfully.");
+        saveBtn.disabled = true;
+        saveBtn.textContent = "Saving...";
 
-    if (typeof reloadUsers === "function") {
-        reloadUsers();
-    } else {
-        location.reload();
-    }
+        // CHECK DUPLICATE USERNAME
+        // Excludes this user's own row, since keeping their existing
+        // username unchanged shouldn't count as a duplicate against
+        // themselves.
+        const { data: duplicate, error: duplicateCheckError } =
+            await sb
+                .from("profiles")
+                .select("id")
+                .ilike("username", newUsername)
+                .neq("id", user.id)
+                .maybeSingle();
+
+        if (duplicateCheckError) {
+            showError("Something went wrong checking that username. Please try again.");
+            saveBtn.disabled = false;
+            saveBtn.textContent = "Save Changes";
+            return;
+        }
+
+        if (duplicate) {
+            showError("That username is already being used.");
+            saveBtn.disabled = false;
+            saveBtn.textContent = "Save Changes";
+            return;
+        }
+
+        const { error: updateError } =
+            await sb
+                .from("profiles")
+                .update({
+                    fullname: newFullname,
+                    username: newUsername,
+                    role: resolvedRole
+                })
+                .eq("id", user.id);
+
+        if (updateError) {
+            showError("Could not update user: " + updateError.message);
+            saveBtn.disabled = false;
+            saveBtn.textContent = "Save Changes";
+            return;
+        }
+
+        close();
+        showUserToast("User information updated successfully.");
+
+        if (typeof reloadUsers === "function") {
+            reloadUsers();
+        } else {
+            location.reload();
+        }
+    });
+
+    fullnameInput.focus();
+    fullnameInput.select();
 }
 
 
@@ -425,7 +620,7 @@ async function toggleUserStatus(index) {
     const user = loadedUsers[index];
 
     if (!user) {
-        alert("User not found.");
+        showUserToast("User not found.", true);
         return;
     }
 
@@ -443,19 +638,22 @@ async function toggleUserStatus(index) {
         });
 
         if (roleInUse) {
-            alert(
+            showUserToast(
                 "Can't re-enable this account.\n\n" +
                 "There is already an active " + user.role + " account. " +
-                "Disable that account first, then try again."
+                "Disable that account first, then try again.",
+                true
             );
             return;
         }
     }
 
-    const confirmation = confirm(
+    const confirmation = await showUserConfirm(
         nowDisabling
             ? `Disable ${user.fullname}'s account? They won't be able to sign in until re-enabled.`
-            : `Re-enable ${user.fullname}'s account?`
+            : `Re-enable ${user.fullname}'s account?`,
+        nowDisabling ? "Yes, Disable" : "Yes, Re-enable",
+        nowDisabling
     );
 
     if (!confirmation) {
@@ -470,12 +668,12 @@ async function toggleUserStatus(index) {
             .eq("id", user.id);
 
     if (error) {
-        alert("Could not update account status: " + error.message);
+        showUserToast("Could not update account status: " + error.message, true);
         return;
     }
 
 
-    alert(
+    showUserToast(
         nowDisabling
             ? "User account disabled."
             : "User account re-enabled."

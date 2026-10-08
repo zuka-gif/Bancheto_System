@@ -156,7 +156,7 @@
             // to fall back on either) — otherwise leave the cached
             // menu showing and fail quietly.
             if (menuItems.length === 0) {
-                alert("Could not load the menu from the database. Please refresh the page.");
+                showSalesMessage("Could not load the menu from the database. Please refresh the page.", "error");
             }
             return;
         }
@@ -271,10 +271,167 @@
         });
     }
 
+    // ---------- MESSAGE POP-UP (replaces every browser alert()) ----------
+    // type: "success" (green check), "warn" (orange, for things the user
+    // can fix like a missing field) or "error" (red, for failures).
+    function injectSalesMessageStyles() {
+        if (document.getElementById("salesMessageStyles")) return;
+        const style = document.createElement("style");
+        style.id = "salesMessageStyles";
+        style.textContent = `
+            .sales-msg-overlay {
+                position: fixed; inset: 0; z-index: 10001;
+                background: rgba(0, 0, 0, 0.35);
+                display: flex; align-items: center; justify-content: center;
+                padding: 16px;
+            }
+            .sales-msg-box {
+                background: #fff; border-radius: 12px; width: 100%; max-width: 340px;
+                padding: 26px 22px 20px; text-align: center;
+                box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+                animation: salesMsgIn 0.18s ease;
+            }
+            .sales-msg-icon { font-size: 54px; line-height: 1; }
+            .sales-msg-box.success .sales-msg-icon { color: #2E7D32; }
+            .sales-msg-box.warn .sales-msg-icon { color: #e69500; }
+            .sales-msg-box.error .sales-msg-icon { color: #cc292d; }
+            .sales-msg-box p {
+                margin: 10px 0 16px; font-size: 14px; color: #222;
+                line-height: 1.5; white-space: pre-line; word-break: break-word;
+            }
+            .sales-msg-ok {
+                height: 34px; padding: 0 30px; border: none; border-radius: 6px;
+                color: #fff; font-size: 13px; font-weight: 600; cursor: pointer;
+            }
+            .sales-msg-box.success .sales-msg-ok { background: #2E7D32; }
+            .sales-msg-box.warn .sales-msg-ok { background: #e69500; }
+            .sales-msg-box.error .sales-msg-ok { background: #cc292d; }
+            @keyframes salesMsgIn {
+                from { opacity: 0; transform: scale(0.94); }
+                to { opacity: 1; transform: scale(1); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    function showSalesMessage(message, type) {
+        injectSalesMessageStyles();
+        type = type || "warn";
+
+        const icons = { success: "bxs-check-circle", warn: "bxs-error", error: "bxs-error-circle" };
+
+        const overlay = document.createElement("div");
+        overlay.className = "sales-msg-overlay";
+        overlay.innerHTML = `
+            <div class="sales-msg-box ${type}" role="alert">
+                <i class='bx ${icons[type] || icons.warn} sales-msg-icon'></i>
+                <p></p>
+                <button type="button" class="sales-msg-ok">OK</button>
+            </div>
+        `;
+        overlay.querySelector("p").textContent = message; // plain text only
+        document.body.appendChild(overlay);
+
+        const close = () => {
+            document.removeEventListener("keydown", onKey);
+            overlay.remove();
+        };
+        const onKey = (e) => { if (e.key === "Escape" || e.key === "Enter") close(); };
+
+        overlay.querySelector(".sales-msg-ok").addEventListener("click", close);
+        overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+        document.addEventListener("keydown", onKey);
+        overlay.querySelector(".sales-msg-ok").focus();
+
+        // Success messages dismiss themselves; problems wait for OK
+        if (type === "success") setTimeout(close, 2500);
+    }
+
+    // ---------- DELETE CONFIRMATION POP-UP ----------
+    // Custom in-page dialog (replaces the browser's confirm(), which can be
+    // silently blocked by "Prevent this page from creating more dialogs").
+    // Resolves true only when the user presses "Yes, Delete".
+    function injectDeleteConfirmStyles() {
+        if (document.getElementById("deleteConfirmStyles")) return;
+        const style = document.createElement("style");
+        style.id = "deleteConfirmStyles";
+        style.textContent = `
+            .delete-confirm-overlay {
+                position: fixed; inset: 0; z-index: 10000;
+                background: rgba(0, 0, 0, 0.45);
+                display: none; align-items: center; justify-content: center;
+                padding: 16px;
+            }
+            .delete-confirm-overlay.show { display: flex; }
+            .delete-confirm-box {
+                background: #fff; border-radius: 12px; width: 100%; max-width: 360px;
+                padding: 26px 22px 18px; text-align: center;
+                box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+                animation: deleteConfirmIn 0.18s ease;
+            }
+            .delete-confirm-icon { font-size: 50px; color: #cc292d; line-height: 1; }
+            .delete-confirm-box h3 { margin: 8px 0 6px; font-size: 18px; color: #222; }
+            .delete-confirm-box p { margin: 0 0 18px; font-size: 13px; color: #666; line-height: 1.5; }
+            .delete-confirm-box p strong { color: #8b0000; }
+            .delete-confirm-actions { display: flex; gap: 8px; justify-content: center; }
+            .delete-confirm-actions button {
+                height: 36px; padding: 0 20px; border-radius: 6px;
+                font-size: 13px; font-weight: 600; cursor: pointer;
+            }
+            .delete-confirm-cancel { background: #eee; color: #333; border: 1px solid #ccc; }
+            .delete-confirm-yes { background: #cc292d; color: #fff; border: none; }
+            .delete-confirm-yes:hover { background: #a81f23; }
+            @keyframes deleteConfirmIn {
+                from { opacity: 0; transform: scale(0.94); }
+                to { opacity: 1; transform: scale(1); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    function confirmDeleteMenu(item) {
+        injectDeleteConfirmStyles();
+
+        return new Promise(resolve => {
+            const overlay = document.createElement("div");
+            overlay.className = "delete-confirm-overlay";
+            overlay.innerHTML = `
+                <div class="delete-confirm-box" role="alertdialog" aria-label="Confirm delete">
+                    <i class='bx bx-trash delete-confirm-icon'></i>
+                    <h3>Delete Menu Item?</h3>
+                    <p>Are you sure you want to delete <strong class="delete-confirm-name"></strong>
+                       from the menu? This can't be undone.</p>
+                    <div class="delete-confirm-actions">
+                        <button type="button" class="delete-confirm-cancel">Cancel</button>
+                        <button type="button" class="delete-confirm-yes">Yes, Delete</button>
+                    </div>
+                </div>
+            `;
+            // textContent so a menu name can never inject HTML
+            overlay.querySelector(".delete-confirm-name").textContent = `"${item.name}"`;
+            document.body.appendChild(overlay);
+
+            const finish = (result) => {
+                document.removeEventListener("keydown", onKey);
+                overlay.remove();
+                resolve(result);
+            };
+            const onKey = (e) => { if (e.key === "Escape") finish(false); };
+
+            overlay.querySelector(".delete-confirm-cancel").addEventListener("click", () => finish(false));
+            overlay.querySelector(".delete-confirm-yes").addEventListener("click", () => finish(true));
+            overlay.addEventListener("click", (e) => { if (e.target === overlay) finish(false); });
+            document.addEventListener("keydown", onKey);
+
+            overlay.classList.add("show");
+            overlay.querySelector(".delete-confirm-cancel").focus(); // safe default
+        });
+    }
+
     async function deleteMenuItem(item) {
         if (isCashier) return; // cashiers can't delete menu items
 
-        const confirmed = confirm(`Delete "${item.name}" from the menu? This can't be undone.`);
+        const confirmed = await confirmDeleteMenu(item);
         if (!confirmed) return;
 
         const { error } = await sb
@@ -283,11 +440,14 @@
             .eq("id", item.id);
 
         if (error) {
-            alert("Could not delete menu item: " + error.message);
+            showSalesMessage("Could not delete menu item: " + error.message, "error");
             return;
         }
 
-        logMenuAction("Deleted", item.name, "was " + peso(item.price));
+        logMenuAction(
+            "Deleted", item.name,
+            "was " + peso(item.price) + (item.description ? ", " + item.description : "")
+        );
 
         menuItems = menuItems.filter(m => m.id !== item.id);
         saveCachedMenuItems(menuItems);
@@ -424,7 +584,7 @@
 
     async function recordTransaction() {
         if (currentOrder.length === 0) {
-            alert("Add at least one item to the order before recording a transaction.");
+            showSalesMessage("Add at least one item to the order before recording a transaction.", "warn");
             return;
         }
 
@@ -434,7 +594,7 @@
         const cash = parseCurrencyInput(cashReceivedInput.value);
 
         if (cash < total) {
-            alert("Cash received is less than the total amount.");
+            showSalesMessage("Cash received is less than the total amount.", "warn");
             return;
         }
 
@@ -465,12 +625,12 @@
         recordBtn.disabled = false;
 
         if (error) {
-            alert("Could not record transaction: " + error.message);
+            showSalesMessage("Could not record transaction: " + error.message, "error");
             return;
         }
 
         clearOrder();
-        alert("Transaction recorded successfully.");
+        showSalesMessage("Transaction recorded successfully.", "success");
     }
 
     // ---------- IMAGE STORAGE (Supabase Storage bucket "images") ----------
@@ -603,7 +763,7 @@
         if (!file) return;
 
         if (!file.type.startsWith("image/")) {
-            alert("Please choose an image file.");
+            showSalesMessage("Please choose an image file.", "warn");
             return;
         }
 
@@ -616,7 +776,7 @@
             pendingPreviewUrl = URL.createObjectURL(pendingImageBlob);
             showImagePreview(pendingPreviewUrl);
         } catch (err) {
-            alert(err.message);
+            showSalesMessage(err.message, "error");
         }
     }
 
@@ -630,7 +790,7 @@
         const description = menuDescriptionInput.value.trim();
 
         if (!name || isNaN(price) || price < 0) {
-            alert("Please enter a valid menu name and price.");
+            showSalesMessage("Please enter a valid menu name and price.", "warn");
             return;
         }
 
@@ -664,7 +824,7 @@
             }
         } catch (err) {
             saveMenuBtn.disabled = false;
-            alert("Could not upload image: " + err.message);
+            showSalesMessage("Could not upload image: " + err.message, "error");
             return;
         }
 
@@ -685,7 +845,7 @@
             if (error) {
                 // DB write failed — don't leave an orphaned upload behind.
                 await deleteMenuImage(uploadedNewUrl);
-                alert("Could not update menu item: " + error.message);
+                showSalesMessage("Could not update menu item: " + error.message, "error");
                 return;
             }
 
@@ -701,8 +861,11 @@
                 if (item.name !== name) changes.push(`name: ${item.name} → ${name}`);
                 if (Number(item.price) !== price) changes.push(`price: ${peso(item.price)} → ${peso(price)}`);
                 if ((item.description || "") !== description) changes.push("description updated");
-                if ((item.image || "") !== (finalImageUrl || "")) {
-                    changes.push(finalImageUrl ? "image changed" : "image removed");
+                // Only count a real user change — not the silent base64 -> file conversion of legacy items.
+                if (pendingImageBlob) {
+                    changes.push("image changed");
+                } else if (!finalImageUrl && (item.image || "")) {
+                    changes.push("image removed");
                 }
                 if (changes.length) logMenuAction("Edited", name, changes.join(", "));
 
@@ -729,11 +892,11 @@
 
             if (error) {
                 await deleteMenuImage(uploadedNewUrl);
-                alert("Could not add menu item: " + error.message);
+                showSalesMessage("Could not add menu item: " + error.message, "error");
                 return;
             }
 
-            logMenuAction("Added", name, peso(price));
+            logMenuAction("Added", name, peso(price) + (description ? ", " + description : ""));
 
             menuItems.push(mapMenuRow(inserted));
         }
