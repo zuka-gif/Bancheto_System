@@ -1061,6 +1061,46 @@
         }
     }
 
+    // Marks every currently-unread alert as read in one go (the
+    // "Mark all as read" button in the notification dropdown).
+    async function markAllNotificationsDismissed() {
+        const signatures = lastKnownItems
+            .filter(i => getStock(i) <= LOW_STOCK_THRESHOLD)
+            .map(i => notificationSignature(i))
+            .filter(sig => !dismissedToday.has(sig));
+
+        if (signatures.length === 0) return;
+
+        const role = getCurrentUserRole();
+
+        // Show them all as read right away on this screen...
+        signatures.forEach(sig => dismissedToday.set(sig, role));
+        renderNotifications(lastKnownItems);
+
+        // ...then save them so every other account sees them as read too.
+        try {
+            const { data: { user } } = await sb.auth.getUser();
+
+            const rows = signatures.map(sig => {
+                const cut = sig.lastIndexOf(":");
+                return {
+                    item_id: sig.slice(0, cut),
+                    stock: Number(sig.slice(cut + 1)),
+                    dismissed_on: todayKey(),
+                    dismissed_by: user ? user.id : null,
+                    dismissed_role: role
+                };
+            });
+
+            const { error } = await sb.from("dismissed_alerts")
+                .upsert(rows, { onConflict: "item_id,stock,dismissed_on", ignoreDuplicates: true });
+
+            if (error) console.error("Could not save dismissed alerts:", error.message);
+        } catch (e) {
+            console.error("Could not save dismissed alerts:", e);
+        }
+    }
+
     function isDismissedToday(signature) {
         return dismissedToday.has(signature);
     }
@@ -1431,6 +1471,17 @@
                 toggleNotificationDropdown(false);
             }
         });
+
+        // "Mark all as read" button in the dropdown header
+        const markAllBtn = document.getElementById("notificationMarkAll")
+            || document.querySelector(".notification-mark-all");
+        if (markAllBtn) {
+            markAllBtn.addEventListener("click", (e) => {
+                e.preventDefault();
+                e.stopPropagation(); // keep the dropdown open
+                markAllNotificationsDismissed();
+            });
+        }
 
         if (notificationViewAllEl) {
             notificationViewAllEl.addEventListener("click", () => {
