@@ -817,6 +817,12 @@
         return String(getCurrentUserRole()).trim().toLowerCase() !== "cashier";
     }
 
+    // Only Owner and Manager (the ones who manage inventory) may mark
+    // low-stock / out-of-stock alerts as read. Cashiers can only view them.
+    function canMarkNotificationsRead() {
+        return canOpenInventory();
+    }
+
     function injectAccessDeniedStyles() {
         if (document.getElementById("accessDeniedStyles")) return;
         const style = document.createElement("style");
@@ -1031,6 +1037,9 @@
     }
 
     async function markNotificationDismissed(signature) {
+        // Cashiers can only view alerts — only Owner / Manager can mark them read
+        if (!canMarkNotificationsRead()) return;
+
         // Already marked read (by anyone) — keep the original reader's name
         if (dismissedToday.has(signature)) return;
 
@@ -1064,6 +1073,9 @@
     // Marks every currently-unread alert as read in one go (the
     // "Mark all as read" button in the notification dropdown).
     async function markAllNotificationsDismissed() {
+        // Cashiers can only view alerts — only Owner / Manager can mark them read
+        if (!canMarkNotificationsRead()) return;
+
         const signatures = lastKnownItems
             .filter(i => getStock(i) <= LOW_STOCK_THRESHOLD)
             .map(i => notificationSignature(i))
@@ -1393,7 +1405,7 @@
                         <span>${message}</span>
                         ${readLabel}
                     </div>
-                    ${isRead ? "" : `
+                    ${(isRead || !canMarkNotificationsRead()) ? "" : `
                     <button type="button" class="notification-dismiss-btn" title="Mark as read">
                         <i class='bx bx-check'></i>
                     </button>`}
@@ -1475,7 +1487,10 @@
         // "Mark all as read" button in the dropdown header
         const markAllBtn = document.getElementById("notificationMarkAll")
             || document.querySelector(".notification-mark-all");
-        if (markAllBtn) {
+        if (markAllBtn && !canMarkNotificationsRead()) {
+            // Cashier: no "Mark all as read" button at all
+            markAllBtn.style.display = "none";
+        } else if (markAllBtn) {
             markAllBtn.addEventListener("click", (e) => {
                 e.preventDefault();
                 e.stopPropagation(); // keep the dropdown open
