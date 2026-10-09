@@ -491,7 +491,7 @@
                 <div class="inventory-info">
                     <div class="inventory-name" title="${item.name}">${highlightMatch(item.name)}</div>
                     <div class="inventory-qty">${item.stock} ${item.unit}</div>
-                    <div class="inventory-price">${formatPrice(item.price)} / ${item.unit}</div>
+                    <div class="inventory-price">${formatPrice(item.price)}</div>
                     <div class="status-tag ${status.className}">${status.label}</div>
                 </div>
             </div>
@@ -535,7 +535,7 @@
             // Price is derived fresh from item.price every time (never
             // cleared or skipped), so it can't go missing on a stock click.
             const priceEl = card.querySelector(".inventory-price");
-            if (priceEl) priceEl.textContent = `${formatPrice(item.price)} / ${item.unit}`;
+            if (priceEl) priceEl.textContent = formatPrice(item.price);
 
             const statusTagEl = card.querySelector(".status-tag");
             if (statusTagEl) {

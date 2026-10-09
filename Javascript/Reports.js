@@ -59,7 +59,8 @@
             itemName: row.item_name,
             category: row.category,
             change: row.change,
-            resultingStock: row.resulting_stock
+            resultingStock: row.resulting_stock,
+            details: row.details       // e.g. "price: ₱50.00 → ₱55.00, stock: 5 → 25" (nullable)
         }));
     }
 
@@ -300,36 +301,75 @@
     }
 
     // ---------- RENDER: INVENTORY ----------
-    // Mirrors the Inventory page's own table (Product Name / Category /
-    // Stock / Unit / Price / Status) and reads straight from the same
-    // localStorage items the Inventory page manages, so this report
-    // always reflects the live inventory. Only items that had at least
-    // one recorded stock movement within the selected date range are
-    // included, so the date filter still means something here.
-    //
-    // Footer total row: Stock totals the Stock column, and Price totals
-    // just the Price column (sum of each item's unit price) — not
-    // stock × price — so the footer always adds up to what's shown
-    // above it.
+    // Activity report: one row per inventory log entry in the selected
+    // date range — new products, restocks and stock outs — instead of one row per product.
+    // Price shows the old → new price when that entry changed it,
+    // otherwise the product's current price. Details comes straight
+    // from the log's "details" text.
+
+    function esc(v) {
+        return String(v ?? "").replace(/[&<>"']/g, c => ({
+            "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+        }[c]));
+    }
+
+    // Action names written by Inventory.js: Added, Stock In, Stock Out,
+    // Edited, Deleted. The report only covers three kinds of activity:
+    // New Product, Restock and Stock Out. Deleted and detail-only edits
+    // are left out. An edit that changed the quantity is logged as
+    // "Edited" with a stock change, so it counts as a restock (stock
+    // went up) or a stock out (stock went down).
+    function getActivityType(log) {
+        const a = String(log.action || "").toLowerCase().trim();
+        const change = Number(log.change) || 0;
+
+        if (a === "added") return "New Product";
+        if (a === "stock in") return "Restock";
+        if (a === "stock out") return "Stock Out";
+        if (a === "edited") {
+            if (change > 0) return "Restock";
+            if (change < 0) return "Stock Out";
+        }
+        return null; // Deleted, or an edit with no stock change
+    }
+
+    // Pulls "price: ₱50.00 → ₱55.00" out of the log's details text.
+    function getPriceChange(details) {
+        const m = /price:\s*([^,]+?)\s*→\s*([^,]+)/i.exec(details || "");
+        return m ? `${m[1].trim()} → ${m[2].trim()}` : null;
+    }
+
+    function formatDateTime(d) {
+        return d.toLocaleString("en-US", {
+            month: "short", day: "numeric", year: "numeric"
+        });
+    }
+
+    function signed(n) {
+        return (n > 0 ? "+" : "") + n;
+    }
 
     async function renderInventoryTable(tabId) {
         const { start, end } = computeRange(tabId);
         const items = await loadInventoryItems();
         const allLogs = await loadInventoryLogs();
-        const logs = allLogs.filter(l => inRange(new Date(l.date), start, end));
 
-        const activeNames = new Set(logs.map(l => l.itemName));
-        const isAllTime = state[tabId].mode === "all";
+        const itemsByName = {};
+        items.forEach(i => { itemsByName[i.name] = i; });
 
-        const rows = isAllTime
-            ? items
-            : items.filter(i => activeNames.has(i.name));
+        const logs = allLogs
+            .filter(l => inRange(new Date(l.date), start, end))
+            .filter(l => getActivityType(l) !== null)
+            .sort((a, b) => new Date(a.date) - new Date(b.date));
 
         document.getElementById(`${tabId}-reportTableHead`).innerHTML = `
             <tr>
+                <th>Date</th>
                 <th>Product Name</th>
                 <th>Category</th>
-                <th>Stock</th>
+                <th>Activity</th>
+                <th>Stock Change</th>
+                <th>Stock After</th>
                 <th>Unit</th>
                 <th>Price</th>
                 <th>Status</th>
@@ -339,36 +379,56 @@
         const bodyEl = document.getElementById(`${tabId}-reportTableBody`);
         const footEl = document.getElementById(`${tabId}-reportTableFoot`);
 
-        if (rows.length === 0) {
-            bodyEl.innerHTML = `<tr><td colspan="6" class="empty-row">No inventory activity for this range.</td></tr>`;
+        if (logs.length === 0) {
+            bodyEl.innerHTML = `<tr><td colspan="9" class="empty-row">No inventory activity for this range.</td></tr>`;
             footEl.innerHTML = "";
             return;
         }
 
-        bodyEl.innerHTML = rows.map(item => {
-            const stock = Number(item.stock) || 0;
-            const price = Number(item.price) || 0;
-            const status = getStatus(stock);
+        let netChange = 0;
+        let totalPrice = 0;
+
+        bodyEl.innerHTML = logs.map(l => {
+            const current = itemsByName[l.itemName] || {};
+            const change = Number(l.change) || 0;
+            netChange += change;
+
+            const stockAfter = (l.resultingStock !== null && l.resultingStock !== undefined)
+                ? Number(l.resultingStock)
+                : (Number(current.stock) || 0);
+
+            const priceText = getPriceChange(l.details) || currency(Number(current.price) || 0);
+
+            // Numeric price for the Total row: the new price when this
+            // entry changed it ("old → new"), otherwise the current price.
+            const priceNum = parseFloat(String(priceText).split("→").pop().replace(/[^0-9.\-]/g, "")) || 0;
+            totalPrice += priceNum;
+
+            const status = getStatus(stockAfter);
+
             return `
                 <tr>
-                    <td>${item.name}</td>
-                    <td>${item.category}</td>
-                    <td>${stock}</td>
-                    <td>${item.unit}</td>
-                    <td>${currency(price)}</td>
+                    <td>${formatDateTime(new Date(l.date))}</td>
+                    <td>${esc(l.itemName)}</td>
+                    <td>${esc(l.category || current.category)}</td>
+                    <td>${esc(getActivityType(l))}</td>
+                    <td>${change === 0 ? "—" : signed(change)}</td>
+                    <td>${stockAfter}</td>
+                    <td>${esc(current.unit)}</td>
+                    <td>${esc(priceText)}</td>
                     <td class="status-cell ${status.className}">${status.label}</td>
                 </tr>
             `;
         }).join("");
 
-        const totalStock = rows.reduce((s, i) => s + (Number(i.stock) || 0), 0);
-        const totalPrice = rows.reduce((s, i) => s + (Number(i.price) || 0), 0);
-
         footEl.innerHTML = `
             <tr class="total-row">
-                <td>Total</td>
+                <td>Total (${logs.length} ${logs.length === 1 ? "entry" : "entries"})</td>
                 <td></td>
-                <td>${totalStock}</td>
+                <td></td>
+                <td></td>
+                <td>${signed(netChange)}</td>
+                <td></td>
                 <td></td>
                 <td>${currency(totalPrice)}</td>
                 <td></td>

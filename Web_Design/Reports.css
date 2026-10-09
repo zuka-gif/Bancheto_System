@@ -353,6 +353,14 @@
     text-align: center;
 }
  
+/* Inventory report: Stock Change (5th) and Stock After (6th) centered */
+#inventory-reportTable th:nth-child(5),
+#inventory-reportTable td:nth-child(5),
+#inventory-reportTable th:nth-child(6),
+#inventory-reportTable td:nth-child(6) {
+    text-align: center;
+}
+
 .report-table tbody tr:nth-child(even) {
     background: #fff8f5;
 }
@@ -597,6 +605,51 @@
 
     .report-table-card {
         box-shadow: none;
+    }
+
+    /* Printed page is narrow, so tighten the table: smaller text and
+       padding, and keep headers, dates, statuses and the Total label
+       on ONE line instead of wrapping into two. Product Name is the
+       only column allowed to wrap if a name is very long. */
+    .report-table {
+        table-layout: auto;
+    }
+
+    .report-table thead th {
+        height: 38px !important;
+        padding: 0 6px !important;
+        font-size: 10px !important;
+        letter-spacing: 0.2px !important;
+        white-space: nowrap !important;
+    }
+
+    .report-table tbody td {
+        height: 34px !important;
+        padding: 0 6px !important;
+        font-size: 11px !important;
+        white-space: nowrap !important;
+    }
+
+    .report-table tfoot .total-row td {
+        height: 38px !important;
+        padding: 0 6px !important;
+        font-size: 12px !important;
+        white-space: nowrap !important;
+    }
+
+    .report-table .status-cell {
+        font-size: 11px !important;
+        white-space: nowrap !important;
+    }
+
+    .report-table .status-cell::before {
+        width: 6px;
+        height: 6px;
+        margin-right: 4px;
+    }
+
+    #inventory-reportTable tbody td:nth-child(2) {
+        white-space: normal !important;
     }
 
     .report-table thead th,
