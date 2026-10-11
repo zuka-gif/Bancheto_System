@@ -268,7 +268,7 @@
                 <th>Date</th>
                 <th>Transaction Number</th>
                 <th>Product Name</th>
-                <th>Price Order</th>
+                <th>Order Price</th>
                 <th>Pax</th>
                 <th>Sales</th>
             </tr>
