@@ -5,6 +5,155 @@
 
 
 // =====================================================
+// POPUP MESSAGE (replaces the plain browser alert box)
+// showPopup("message") shows a styled popup instead of the
+// "yesunim.vercel.app says" dialog. Icon/title are picked
+// from the wording (success / error / notice).
+// =====================================================
+(function installPopup() {
+        const queue = [];
+        let showing = false;
+
+        function injectPopupStyles() {
+            if (document.getElementById("appPopupStyles")) return;
+            const style = document.createElement("style");
+            style.id = "appPopupStyles";
+            style.textContent = `
+                .app-popup-overlay {
+                    position: fixed; inset: 0; z-index: 100000;
+                    display: flex; align-items: center; justify-content: center;
+                    background: rgba(0, 0, 0, 0.55);
+                    animation: appPopupFade 0.2s ease;
+                }
+                .app-popup-box {
+                    width: 360px; max-width: calc(100vw - 40px);
+                    padding: 28px 24px 22px; box-sizing: border-box;
+                    background: #ffffff; border-radius: 14px; text-align: center;
+                    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+                    animation: appPopupPop 0.25s ease;
+                }
+                .app-popup-icon {
+                    width: 64px; height: 64px; margin: 0 auto 14px;
+                    border-radius: 50%; display: flex;
+                    align-items: center; justify-content: center;
+                    font-size: 38px;
+                }
+                .app-popup-box.success .app-popup-icon { background: #e6f4ea; color: #1b7a34; }
+                .app-popup-box.error   .app-popup-icon { background: #fdeaea; color: #cc292d; }
+                .app-popup-box.info    .app-popup-icon { background: #fff4de; color: #f0a500; }
+                .app-popup-title { margin: 0 0 6px; font-size: 18px; font-weight: 700; color: #222; }
+                .app-popup-message {
+                    margin: 0 0 20px; font-size: 14px; line-height: 1.5;
+                    color: #555; white-space: pre-line; word-break: break-word;
+                }
+                .app-popup-btn {
+                    min-width: 110px; padding: 10px 26px; border: none;
+                    border-radius: 8px; font-size: 14px; font-weight: 700;
+                    color: #fff; cursor: pointer; transition: filter 0.15s ease;
+                }
+                .app-popup-btn:hover { filter: brightness(1.1); }
+                .app-popup-box.success .app-popup-btn { background: #1b7a34; }
+                .app-popup-box.error   .app-popup-btn { background: #cc292d; }
+                .app-popup-box.info    .app-popup-btn { background: #b8860b; }
+                .app-popup-overlay.leaving { opacity: 0; transition: opacity 0.2s ease; }
+                @keyframes appPopupFade { from { opacity: 0; } to { opacity: 1; } }
+                @keyframes appPopupPop {
+                    from { opacity: 0; transform: scale(0.9) translateY(10px); }
+                    to   { opacity: 1; transform: scale(1) translateY(0); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        function detectType(msg) {
+            const m = msg.toLowerCase();
+            if (/(fail|error|could not|couldn't|unable|invalid|denied|not allowed|wrong|incorrect|required|please)/.test(m)) {
+                return /please/.test(m) && !/(fail|error|could not|invalid|denied)/.test(m) ? "info" : "error";
+            }
+            if (/(success|saved|updated|created|added|deleted|removed|backup|done|complete)/.test(m)) return "success";
+            return "info";
+        }
+
+        function showNext() {
+            if (showing || !queue.length) return;
+            showing = true;
+            injectPopupStyles();
+
+            const message = queue.shift();
+            const type = detectType(message);
+            const titles = { success: "Success", error: "Something went wrong", info: "Notice" };
+            const icons = { success: "bxs-check-circle", error: "bxs-x-circle", info: "bxs-info-circle" };
+
+            const overlay = document.createElement("div");
+            overlay.className = "app-popup-overlay";
+            overlay.setAttribute("role", "alertdialog");
+            overlay.setAttribute("aria-modal", "true");
+
+            const box = document.createElement("div");
+            box.className = "app-popup-box " + type;
+
+            const iconWrap = document.createElement("div");
+            iconWrap.className = "app-popup-icon";
+            const icon = document.createElement("i");
+            icon.className = "bx " + icons[type];
+            iconWrap.appendChild(icon);
+
+            const title = document.createElement("h3");
+            title.className = "app-popup-title";
+            title.textContent = titles[type];
+
+            const text = document.createElement("p");
+            text.className = "app-popup-message";
+            text.textContent = message;
+
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "app-popup-btn";
+            btn.textContent = "OK";
+
+            box.appendChild(iconWrap);
+            box.appendChild(title);
+            box.appendChild(text);
+            box.appendChild(btn);
+            overlay.appendChild(box);
+            document.body.appendChild(overlay);
+            btn.focus();
+
+            let closed = false;
+            function close() {
+                if (closed) return;
+                closed = true;
+                document.removeEventListener("keydown", onKey, true);
+                overlay.classList.add("leaving");
+                setTimeout(() => {
+                    overlay.remove();
+                    showing = false;
+                    showNext();
+                }, 200);
+            }
+            function onKey(e) {
+                if (e.key === "Escape" || e.key === "Enter") {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    close();
+                }
+            }
+
+            btn.addEventListener("click", close);
+            overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+            document.addEventListener("keydown", onKey, true);
+        }
+
+        window.showPopup = function (message) {
+            queue.push(message === undefined || message === null ? "" : String(message));
+            if (document.body) showNext();
+            else document.addEventListener("DOMContentLoaded", showNext, { once: true });
+        };
+    })();
+
+
+
+// =====================================================
 // CACHED SESSION (fast, synchronous — written by script.js
 // at Sign In, kept up to date by saveProfile() below)
 // Used for things that don't need a guaranteed-fresh read,
@@ -133,7 +282,7 @@ if (profilePictureInput) {
         if (!file) return;
 
         if (!file.type.startsWith("image/")) {
-            alert("Please select an image.");
+            showPopup("Please select an image.");
             this.value = "";
             return;
         }
@@ -141,7 +290,7 @@ if (profilePictureInput) {
         const key = getProfilePictureKey();
 
         if (!key) {
-            alert("No logged-in user found.");
+            showPopup("No logged-in user found.");
             this.value = "";
             return;
         }
@@ -190,7 +339,7 @@ async function openProfilePopup() {
     const result = await getCurrentProfile();
 
     if (!result) {
-        alert("No logged-in user found.");
+        showPopup("No logged-in user found.");
         return;
     }
 
@@ -226,7 +375,7 @@ async function saveProfile() {
     const result = await getCurrentProfile();
 
     if (!result) {
-        alert("No logged-in user found.");
+        showPopup("No logged-in user found.");
         return;
     }
 
@@ -237,7 +386,7 @@ async function saveProfile() {
     const emailOrPhone = document.getElementById("profileEmailPhone").value.trim();
 
     if (!fullname || !username || !emailOrPhone) {
-        alert("Please complete all profile fields.");
+        showPopup("Please complete all profile fields.");
         return;
     }
 
@@ -253,12 +402,12 @@ async function saveProfile() {
             .maybeSingle();
 
     if (duplicateCheckError) {
-        alert("Something went wrong checking that username. Please try again.");
+        showPopup("Something went wrong checking that username. Please try again.");
         return;
     }
 
     if (duplicate) {
-        alert("That username is already being used.");
+        showPopup("That username is already being used.");
         return;
     }
 
@@ -275,7 +424,7 @@ async function saveProfile() {
             .eq("id", profile.id);
 
     if (updateError) {
-        alert("Could not update profile: " + updateError.message);
+        showPopup("Could not update profile: " + updateError.message);
         return;
     }
 
@@ -288,7 +437,7 @@ async function saveProfile() {
             await sb.auth.updateUser({ email: emailOrPhone });
 
         if (emailError) {
-            alert(
+            showPopup(
                 "Profile saved, but the email/phone could not be updated: " +
                 emailError.message
             );
@@ -324,7 +473,7 @@ async function saveProfile() {
     }
 
 
-    alert("Profile updated successfully.");
+    showPopup("Profile updated successfully.");
 
     closeProfilePopup();
 
@@ -399,7 +548,7 @@ async function changePassword() {
     const result = await getCurrentProfile();
 
     if (!result) {
-        alert("No logged-in user found.");
+        showPopup("No logged-in user found.");
         return;
     }
 
@@ -410,17 +559,17 @@ async function changePassword() {
     const confirmPassword = document.getElementById("confirmNewPassword").value;
 
     if (!currentPassword || !newPassword || !confirmPassword) {
-        alert("Please complete all password fields.");
+        showPopup("Please complete all password fields.");
         return;
     }
 
     if (newPassword.length < 8) {
-        alert("Password must contain at least 8 characters.");
+        showPopup("Password must contain at least 8 characters.");
         return;
     }
 
     if (newPassword !== confirmPassword) {
-        alert("New passwords do not match.");
+        showPopup("New passwords do not match.");
         return;
     }
 
@@ -438,7 +587,7 @@ async function changePassword() {
         await sb.auth.signInWithPassword(verifyCredentials);
 
     if (verifyError) {
-        alert("Current password is incorrect.");
+        showPopup("Current password is incorrect.");
         return;
     }
 
@@ -449,11 +598,11 @@ async function changePassword() {
         await sb.auth.updateUser({ password: newPassword });
 
     if (updateError) {
-        alert("Could not change password: " + updateError.message);
+        showPopup("Could not change password: " + updateError.message);
         return;
     }
 
-    alert("Password changed successfully.");
+    showPopup("Password changed successfully.");
 
     closePasswordPopup();
 }
@@ -527,7 +676,7 @@ function saveSettings() {
     // bring back the old value
     saveNotificationSettingToDb(settings.notifications);
 
-    alert("System settings saved successfully.");
+    showPopup("System settings saved successfully.");
 
     closeSettingsPopup();
 }
@@ -550,7 +699,7 @@ async function backupDatabase() {
         await sb.from("login_history").select("*");
 
     if (usersError || historyError) {
-        alert(
+        showPopup(
             "Could not create backup: " +
             (usersError?.message || historyError?.message)
         );
@@ -593,7 +742,7 @@ async function backupDatabase() {
 
     loadSettings();
 
-    alert("Database backup created successfully.");
+    showPopup("Database backup created successfully.");
 }
 
 
