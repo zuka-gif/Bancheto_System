@@ -615,7 +615,7 @@
 
         clearOrder();
         const txnLabel = savedTxn && savedTxn.transaction_no != null
-            ? " (T_N-" + String(savedTxn.transaction_no).padStart(5, "0") + ")"
+            ? " (ORD-" + String(savedTxn.transaction_no).padStart(5, "0") + ")"
             : "";
         showSalesMessage("Transaction recorded successfully" + txnLabel + ".", "success");
     }

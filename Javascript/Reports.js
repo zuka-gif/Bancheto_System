@@ -153,10 +153,10 @@
         return true;
     }
 
-    // e.g. 12 -> "T_N-00012"
+    // e.g. 12 -> "ORD-00012"
     function formatTransactionNo(n) {
         if (n == null || n === "") return "—";
-        return "T_N-" + String(n).padStart(5, "0");
+        return "ORD-" + String(n).padStart(5, "0");
     }
 
     function currency(n) {
