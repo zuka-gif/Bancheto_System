@@ -1,17 +1,17 @@
 /* =====================================================
 
-   Owner   -> full access
-   Manager -> everything except Users
-   Cashier -> only Dashboard and Sales
+   Owner   -> everything except Sales
+   Manager -> everything except Sales and Users
+   Cashier -> only Sales
 
 ===================================================== */
 
 (function () {
 
     const ROLE_PAGE_ACCESS = {
-        "owner":   ["dashboard", "sales", "inventory", "reports", "analytics", "user"],
-        "manager": ["dashboard", "sales", "inventory", "reports", "analytics"],
-        "cashier": ["dashboard", "sales"]
+        "owner":   ["dashboard", "inventory", "reports", "analytics", "user"],
+        "manager": ["dashboard", "inventory", "reports", "analytics"],
+        "cashier": ["sales"]
     };
 
     const ALL_PAGES = ["dashboard", "sales", "inventory", "reports", "analytics", "user"];
@@ -46,13 +46,13 @@
     const roleKey = (user.role || "").trim().toLowerCase();
     const allowedPages = ROLE_PAGE_ACCESS[roleKey] || ROLE_PAGE_ACCESS["owner"];
 
-  
+
     if (currentPage && !allowedPages.includes(currentPage)) {
         window.location.replace("/" + allowedPages[0]);
         return;
     }
 
-    
+
     const disallowed = ALL_PAGES.filter(p => !allowedPages.includes(p));
 
     if (disallowed.length > 0) {

@@ -24,14 +24,6 @@
     const PAX_STEP = 2; // clicking a menu card adds this many pax at a time
     const MIN_PAX = 1;  // pax can never go below this — use the trash icon to remove the line instead
 
-    // ---------- ROLE ----------
-    // Cashiers can record sales but must not be able to add, edit, or
-    // delete menu items. getCurrentUserRole() is the same helper already
-    // used below when recording a transaction (defined globally, e.g. by
-    // sidebar.js), so this stays in sync with whatever role the person
-    // logged in as.
-    const isCashier = (getCurrentUserRole() || "").trim().toLowerCase() === "cashier";
-
     // ---------- ELEMENTS ----------
     const menuGrid = document.getElementById("menuGrid");
     const orderList = document.getElementById("orderList");
@@ -206,11 +198,7 @@
                 ? `<div class="menu-card-qty-badge">${qty}</div>`
                 : "";
 
-            // Cashiers can only place orders — no edit/delete controls on
-            // the card at all for that role.
-            const cardActionsHtml = isCashier
-                ? ""
-                : `
+            const cardActionsHtml = `
                 <div class="card-actions">
                     <button type="button" class="edit-menu-btn" title="Edit"><i class='bx bx-edit'></i></button>
                     <button type="button" class="delete-menu-btn" title="Delete"><i class='bx bx-trash'></i></button>
@@ -226,17 +214,15 @@
 
             card.addEventListener("click", () => addToOrder(item));
 
-            if (!isCashier) {
-                card.querySelector(".edit-menu-btn").addEventListener("click", (e) => {
-                    e.stopPropagation();
-                    openEditMenuPopup(item);
-                });
+            card.querySelector(".edit-menu-btn").addEventListener("click", (e) => {
+                e.stopPropagation();
+                openEditMenuPopup(item);
+            });
 
-                card.querySelector(".delete-menu-btn").addEventListener("click", (e) => {
-                    e.stopPropagation();
-                    deleteMenuItem(item);
-                });
-            }
+            card.querySelector(".delete-menu-btn").addEventListener("click", (e) => {
+                e.stopPropagation();
+                deleteMenuItem(item);
+            });
 
             menuGrid.appendChild(card);
         });
@@ -429,8 +415,6 @@
     }
 
     async function deleteMenuItem(item) {
-        if (isCashier) return; // cashiers can't delete menu items
-
         const confirmed = await confirmDeleteMenu(item);
         if (!confirmed) return;
 
@@ -602,7 +586,7 @@
 
         const { data: userData } = await sb.auth.getUser();
 
-        const { error } = await sb.from("transactions").insert({
+        const { data: savedTxn, error } = await sb.from("transactions").insert({
             role: getCurrentUserRole(),
             created_by: userData && userData.user ? userData.user.id : null,
             // menu_id is kept alongside name/price/pax so this line item
@@ -620,7 +604,7 @@
             total: total,
             cash_received: cash,
             change: cash - total
-        });
+        }).select("transaction_no").single();
 
         recordBtn.disabled = false;
 
@@ -630,7 +614,10 @@
         }
 
         clearOrder();
-        showSalesMessage("Transaction recorded successfully.", "success");
+        const txnLabel = savedTxn && savedTxn.transaction_no != null
+            ? " (T_N-" + String(savedTxn.transaction_no).padStart(5, "0") + ")"
+            : "";
+        showSalesMessage("Transaction recorded successfully" + txnLabel + ".", "success");
     }
 
     // ---------- IMAGE STORAGE (Supabase Storage bucket "images") ----------
@@ -720,8 +707,6 @@
     // ---------- ADD / EDIT MENU POPUP ----------
 
     function openAddMenuPopup() {
-        if (isCashier) return; // cashiers can't add menu items
-
         editingItemId = null;
         popupTitle.textContent = "Add Menu Item";
         saveMenuBtn.textContent = "Save Menu";
@@ -736,8 +721,6 @@
     }
 
     function openEditMenuPopup(item) {
-        if (isCashier) return; // cashiers can't edit menu items
-
         editingItemId = item.id;
         popupTitle.textContent = "Edit Menu Item";
         saveMenuBtn.textContent = "Update Menu";
@@ -782,8 +765,6 @@
 
     async function handleAddMenuSubmit(e) {
         e.preventDefault();
-
-        if (isCashier) return; // cashiers can't add/update menu items
 
         const name = menuNameInput.value.trim();
         const price = parseFloat(menuPriceInput.value);
@@ -998,12 +979,6 @@
             menuItems = cached;
         }
 
-        // Cashiers get a search box and menu grid only — no way to add,
-        // edit, or delete menu items.
-        if (isCashier) {
-            openAddMenuBtn.style.display = "none";
-        }
-
         renderMenuGrid("");
         renderOrderList();
 
@@ -1065,4 +1040,4 @@
         init();
     }
 
-})();s
+})();

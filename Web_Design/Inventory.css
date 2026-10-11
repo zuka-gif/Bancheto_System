@@ -703,8 +703,9 @@
 .inventory-qty {
     color: #ffd873;
 
-    font-size: 12.5px;
-    font-weight: 700;
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1.2;
 
     font-variant-numeric: tabular-nums;
 
@@ -716,7 +717,7 @@
 .inventory-price {
     color: #f0d9d9;
 
-    font-size: 11.5px;
+    font-size: 13px;
     font-weight: 600;
 
     font-variant-numeric: tabular-nums;
@@ -1497,4 +1498,290 @@
         padding: 12px;
         gap: 8px;
     }
+}
+
+
+/* ========================================
+   STOCK ADJUST POPUP (+ / - confirmation)
+======================================== */
+
+.stock-adjust-popup {
+    width: 340px;
+    max-width: calc(100vw - 40px);
+
+    background: #ffffff;
+    border-radius: 14px;
+    overflow: hidden;
+
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+}
+
+.stock-adjust-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    height: 54px;
+    padding: 0 18px;
+
+    background: linear-gradient(135deg, #9c1010, #7a0000);
+}
+
+.stock-adjust-title {
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.stock-adjust-close {
+    border: none;
+    background: transparent;
+    color: #ffffff;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.stock-adjust-body {
+    padding: 20px;
+}
+
+.stock-adjust-product {
+    font-size: 16px;
+    font-weight: 700;
+    color: #3a0a0a;
+}
+
+.stock-adjust-current {
+    margin: 4px 0 16px;
+    font-size: 13px;
+    color: #777;
+}
+
+.stock-adjust-label {
+    display: block;
+    margin-bottom: 6px;
+
+    font-size: 12px;
+    font-weight: 600;
+    color: #333;
+}
+
+.stock-adjust-stepper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.stock-adjust-step {
+    width: 40px;
+    height: 40px;
+
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #f7f2f0;
+
+    font-size: 20px;
+    font-weight: 700;
+    color: #7a0000;
+
+    cursor: pointer;
+    transition: background 0.12s ease;
+}
+
+.stock-adjust-step:hover:not(:disabled) {
+    background: #f0e2de;
+}
+
+.stock-adjust-step:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.stock-adjust-input {
+    flex: 1;
+    min-width: 0;
+    height: 40px;
+
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    outline: none;
+
+    text-align: center;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: inherit;
+}
+
+.stock-adjust-input:focus {
+    border-color: #c46e6e;
+}
+
+.stock-adjust-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+
+    margin-top: 16px;
+    padding: 12px 14px;
+
+    border-radius: 10px;
+    background: #f7f2f0;
+}
+
+.stock-adjust-change {
+    font-size: 16px;
+    font-weight: 800;
+}
+
+.stock-adjust-popup.is-add .stock-adjust-change {
+    color: #267526;
+}
+
+.stock-adjust-popup.is-remove .stock-adjust-change {
+    color: #b01212;
+}
+
+.stock-adjust-result {
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+}
+
+.stock-adjust-error {
+    min-height: 16px;
+    margin-top: 8px;
+
+    font-size: 12px;
+    color: #b01212;
+}
+
+.stock-adjust-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+
+    padding: 0 20px 20px;
+}
+
+.stock-adjust-cancel,
+.stock-adjust-save {
+    height: 38px;
+    padding: 0 18px;
+
+    border-radius: 8px;
+
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+
+    cursor: pointer;
+}
+
+.stock-adjust-cancel {
+    background: #f2f2f2;
+    color: #333;
+    border: 1px solid #ddd;
+}
+
+.stock-adjust-cancel:hover {
+    background: #e6e6e6;
+}
+
+.stock-adjust-save {
+    color: #ffffff;
+    border: none;
+}
+
+.stock-adjust-popup.is-add .stock-adjust-save {
+    background: linear-gradient(135deg, #3fa33f, #267526);
+    box-shadow: 0 4px 12px rgba(38, 117, 38, 0.3);
+}
+
+.stock-adjust-popup.is-remove .stock-adjust-save {
+    background: linear-gradient(135deg, #c41818, #8f0b0b);
+    box-shadow: 0 4px 12px rgba(143, 11, 11, 0.3);
+}
+
+.stock-adjust-save:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+
+/* ---------- NOTICE POPUP (replaces browser alert on Inventory) ---------- */
+
+.stock-notice-overlay {
+    z-index: 10000;
+}
+
+.stock-notice-popup {
+    width: 340px;
+    max-width: calc(100vw - 40px);
+
+    padding: 26px 24px 22px;
+
+    background: #ffffff;
+    border-radius: 14px;
+
+    text-align: center;
+
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+}
+
+.stock-notice-icon {
+    width: 54px;
+    height: 54px;
+
+    margin: 0 auto 12px;
+
+    border-radius: 50%;
+    background: #fdeaea;
+    color: #b01212;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 30px;
+}
+
+.stock-notice-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #3a0a0a;
+}
+
+.stock-notice-message {
+    margin: 8px 0 20px;
+
+    font-size: 13px;
+    line-height: 1.5;
+    color: #555;
+}
+
+.stock-notice-ok {
+    min-width: 96px;
+    height: 38px;
+
+    padding: 0 22px;
+
+    border: none;
+    border-radius: 8px;
+
+    background: linear-gradient(135deg, #c41818, #8f0b0b);
+    color: #ffffff;
+
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+
+    cursor: pointer;
+
+    box-shadow: 0 4px 12px rgba(143, 11, 11, 0.3);
+}
+
+.stock-notice-ok:hover {
+    filter: brightness(1.08);
 }

@@ -502,8 +502,8 @@
             </div>
         `;
 
-        card.querySelector(".minus-btn").addEventListener("click", () => changeStock(item.id, -1));
-        card.querySelector(".plus-btn").addEventListener("click", () => changeStock(item.id, 1));
+        card.querySelector(".minus-btn").addEventListener("click", () => openStockAdjustPopup(item.id, -1));
+        card.querySelector(".plus-btn").addEventListener("click", () => openStockAdjustPopup(item.id, 1));
 
         card.querySelector(".edit-product-btn").addEventListener("click", (e) => {
             e.stopPropagation();
@@ -563,12 +563,12 @@
 
     async function changeStock(itemId, delta) {
         const item = items.find(i => i.id === itemId);
-        if (!item) return;
+        if (!item) return false;
 
         // Guard against going below 0 up front so a rejected RPC call
         // (adjust_inventory_stock also refuses this server-side) doesn't
         // even need a round trip for the common "already at 0" case.
-        if (delta < 0 && item.stock <= 0) return;
+        if (delta < 0 && item.stock + delta < 0) return false;
 
         const { data: log, error } = await sb.rpc("adjust_inventory_stock", {
             p_item_id: itemId,
@@ -577,13 +577,236 @@
         });
 
         if (error) {
-            alert("Could not update stock: " + error.message);
-            return;
+            showStockNotice("Could not update stock", error.message);
+            return false;
         }
 
         item.stock = log.resulting_stock;
         updateItemInDOM(item);
         updateStats();
+        return true;
+    }
+
+    // ---------- NOTICE POPUP (replaces the browser alert) ----------
+    // Small styled message box in the same look as the other popups.
+    let noticeEls = null;
+
+    function showStockNotice(title, message) {
+        if (!noticeEls) {
+            const overlay = document.createElement("div");
+            overlay.className = "popup-overlay stock-notice-overlay";
+            overlay.innerHTML = `
+                <div class="stock-notice-popup" role="alertdialog" aria-modal="true">
+                    <div class="stock-notice-icon"><i class='bx bx-error-circle'></i></div>
+                    <h2 class="stock-notice-title"></h2>
+                    <p class="stock-notice-message"></p>
+                    <button type="button" class="stock-notice-ok">OK</button>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+
+            noticeEls = {
+                overlay,
+                title: overlay.querySelector(".stock-notice-title"),
+                message: overlay.querySelector(".stock-notice-message"),
+                ok: overlay.querySelector(".stock-notice-ok")
+            };
+
+            const close = () => overlay.classList.remove("show");
+            noticeEls.ok.addEventListener("click", close);
+            overlay.addEventListener("click", (e) => {
+                if (e.target === overlay) close();
+            });
+            document.addEventListener("keydown", (e) => {
+                if (!overlay.classList.contains("show")) return;
+                if (e.key === "Escape" || e.key === "Enter") {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    close();
+                }
+            }, true);
+        }
+
+        noticeEls.title.textContent = title;
+        noticeEls.message.textContent = message;
+        noticeEls.overlay.classList.add("show");
+        noticeEls.ok.focus();
+    }
+
+    // ---------- STOCK ADJUST POPUP (confirm before saving) ----------
+    // Clicking + or - on a card no longer saves straight away. It opens
+    // this popup showing the item, the current stock, how many are being
+    // added/removed (adjustable, starts at 1) and the resulting stock.
+    // Nothing is written until the person presses Save.
+
+    let stockAdjust = null;      // { itemId, direction, amount }
+    let stockAdjustEls = null;   // cached popup elements
+
+    function ensureStockAdjustPopup() {
+        if (stockAdjustEls) return stockAdjustEls;
+
+        const overlay = document.createElement("div");
+        overlay.className = "popup-overlay stock-adjust-overlay";
+        overlay.innerHTML = `
+            <div class="stock-adjust-popup" role="dialog" aria-modal="true">
+                <div class="stock-adjust-header">
+                    <h2 class="stock-adjust-title"></h2>
+                    <button type="button" class="stock-adjust-close" aria-label="Close">&times;</button>
+                </div>
+                <div class="stock-adjust-body">
+                    <div class="stock-adjust-product"></div>
+                    <div class="stock-adjust-current"></div>
+
+                    <label class="stock-adjust-label">Quantity</label>
+                    <div class="stock-adjust-stepper">
+                        <button type="button" class="stock-adjust-step stock-adjust-dec">&minus;</button>
+                        <input type="number" class="stock-adjust-input" min="1" step="1" inputmode="numeric">
+                        <button type="button" class="stock-adjust-step stock-adjust-inc">+</button>
+                    </div>
+
+                    <div class="stock-adjust-summary">
+                        <span class="stock-adjust-change"></span>
+                        <span class="stock-adjust-result"></span>
+                    </div>
+                    <div class="stock-adjust-error"></div>
+                </div>
+                <div class="stock-adjust-actions">
+                    <button type="button" class="stock-adjust-cancel">Cancel</button>
+                    <button type="button" class="stock-adjust-save">Save</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        const q = (sel) => overlay.querySelector(sel);
+        stockAdjustEls = {
+            overlay,
+            popup: q(".stock-adjust-popup"),
+            title: q(".stock-adjust-title"),
+            product: q(".stock-adjust-product"),
+            current: q(".stock-adjust-current"),
+            input: q(".stock-adjust-input"),
+            dec: q(".stock-adjust-dec"),
+            inc: q(".stock-adjust-inc"),
+            change: q(".stock-adjust-change"),
+            result: q(".stock-adjust-result"),
+            error: q(".stock-adjust-error"),
+            cancel: q(".stock-adjust-cancel"),
+            save: q(".stock-adjust-save"),
+            close: q(".stock-adjust-close")
+        };
+
+        const els = stockAdjustEls;
+
+        els.close.addEventListener("click", closeStockAdjustPopup);
+        els.cancel.addEventListener("click", closeStockAdjustPopup);
+        overlay.addEventListener("click", (e) => {
+            if (e.target === overlay) closeStockAdjustPopup();
+        });
+
+        els.dec.addEventListener("click", () => setStockAdjustAmount((stockAdjust ? stockAdjust.amount : 1) - 1));
+        els.inc.addEventListener("click", () => setStockAdjustAmount((stockAdjust ? stockAdjust.amount : 1) + 1));
+        els.input.addEventListener("input", () => {
+            const n = parseInt(els.input.value, 10);
+            if (Number.isFinite(n)) setStockAdjustAmount(n, true);
+        });
+        els.input.addEventListener("blur", () => {
+            if (stockAdjust) els.input.value = stockAdjust.amount;
+        });
+        els.save.addEventListener("click", confirmStockAdjust);
+
+        document.addEventListener("keydown", (e) => {
+            if (!stockAdjust) return;
+            if (e.key === "Escape") closeStockAdjustPopup();
+            if (e.key === "Enter") {
+                e.preventDefault();
+                confirmStockAdjust();
+            }
+        });
+
+        return els;
+    }
+
+    function openStockAdjustPopup(itemId, direction) {
+        const item = items.find(i => i.id === itemId);
+        if (!item) return;
+
+        if (direction < 0 && item.stock <= 0) {
+            showStockNotice("Nothing to remove", `"${item.name}" is already at 0 ${item.unit}, so there is nothing to remove.`);
+            return;
+        }
+
+        const els = ensureStockAdjustPopup();
+        stockAdjust = { itemId, direction, amount: 1 };
+
+        const adding = direction > 0;
+        els.popup.classList.toggle("is-add", adding);
+        els.popup.classList.toggle("is-remove", !adding);
+        els.title.textContent = adding ? "Add Stock" : "Remove Stock";
+        els.product.textContent = item.name;
+        els.current.textContent = `Current stock: ${item.stock} ${item.unit}`;
+        els.save.textContent = adding ? "Save (Add)" : "Save (Remove)";
+        els.save.disabled = false;
+        els.error.textContent = "";
+
+        setStockAdjustAmount(1);
+        els.overlay.classList.add("show");
+        els.input.focus();
+        els.input.select();
+    }
+
+    // Keeps the amount within 1 .. (current stock when removing) and
+    // refreshes the "+3  →  8 kg" preview. `keepTyping` leaves the
+    // input's own text alone while the person is still typing.
+    function setStockAdjustAmount(value, keepTyping) {
+        if (!stockAdjust) return;
+        const item = items.find(i => i.id === stockAdjust.itemId);
+        if (!item) return;
+        const els = stockAdjustEls;
+
+        let amount = Math.max(1, Math.floor(Number(value)) || 1);
+        const max = stockAdjust.direction < 0 ? item.stock : Infinity;
+        els.error.textContent = "";
+        if (amount > max) {
+            amount = max;
+            els.error.textContent = `You can only remove up to ${item.stock} ${item.unit}.`;
+        }
+
+        stockAdjust.amount = amount;
+        if (!keepTyping || String(amount) !== els.input.value) els.input.value = amount;
+
+        const sign = stockAdjust.direction > 0 ? "+" : "\u2212";
+        const newStock = item.stock + stockAdjust.direction * amount;
+        els.change.textContent = `${sign}${amount} ${item.unit}`;
+        els.result.textContent = `${item.stock} \u2192 ${newStock} ${item.unit}`;
+        els.dec.disabled = amount <= 1;
+        els.inc.disabled = stockAdjust.direction < 0 && amount >= item.stock;
+    }
+
+    function closeStockAdjustPopup() {
+        if (stockAdjustEls) stockAdjustEls.overlay.classList.remove("show");
+        stockAdjust = null;
+    }
+
+    async function confirmStockAdjust() {
+        if (!stockAdjust) return;
+        const els = stockAdjustEls;
+        if (els.save.disabled) return;
+
+        const { itemId, direction, amount } = stockAdjust;
+        els.save.disabled = true;
+        els.save.textContent = "Saving...";
+
+        const ok = await changeStock(itemId, direction * amount);
+
+        if (ok) {
+            closeStockAdjustPopup();
+        } else if (stockAdjust) {
+            // Save failed (message already shown) — keep the popup open so
+            // nothing is lost and the person can retry or cancel.
+            els.save.disabled = false;
+            els.save.textContent = direction > 0 ? "Save (Add)" : "Save (Remove)";
+        }
     }
 
     async function deleteProduct(item) {

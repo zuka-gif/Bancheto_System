@@ -343,14 +343,35 @@
     z-index: 2;
 }
 
-/* Total Orders (3rd column) and Total Pax (4th column) on the Sales
-   report are centered — applies on screen and when printed, since
-   there's no separate print override for it */
-#sales-reportTable th:nth-child(3),
-#sales-reportTable td:nth-child(3),
+/* Sales report: Price Order (4th) and Sales (6th) are left-aligned,
+   same as Date, Transaction Number and Product Name — header, rows
+   and total all start at the same left edge. Pax (5th) is centered.
+   Applies on screen and when printed */
 #sales-reportTable th:nth-child(4),
-#sales-reportTable td:nth-child(4) {
+#sales-reportTable td:nth-child(4),
+#sales-reportTable th:nth-child(6),
+#sales-reportTable td:nth-child(6) {
+    text-align: left;
+}
+
+#sales-reportTable th:nth-child(5),
+#sales-reportTable td:nth-child(5) {
     text-align: center;
+}
+
+/* Screen only: fixed column widths so the columns are spread evenly
+   instead of the number columns being squeezed against the right
+   edge. Print keeps its own auto layout. */
+@media screen {
+    #sales-reportTable {
+        table-layout: fixed;
+    }
+    #sales-reportTable th:nth-child(1) { width: 16%; }
+    #sales-reportTable th:nth-child(2) { width: 18%; }
+    #sales-reportTable th:nth-child(3) { width: 28%; }
+    #sales-reportTable th:nth-child(4) { width: 14%; }
+    #sales-reportTable th:nth-child(5) { width: 10%; }
+    #sales-reportTable th:nth-child(6) { width: 14%; }
 }
  
 /* Inventory report: Stock Change (5th) and Stock After (6th) centered */

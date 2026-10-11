@@ -873,13 +873,21 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
 
-            // DASHBOARD
+            // WHERE TO GO AFTER LOGIN
+            // Cashiers only have access to the Sales page, so send them
+            // straight there instead of /dashboard (which Access-guard.js
+            // would just bounce them away from).
             
+
+            const landingPage =
+                String(profile.role || "").trim().toLowerCase() === "cashier"
+                    ? "/sales"
+                    : "/dashboard";
 
             setTimeout(function () {
 
                 window.location.href =
-                    "/dashboard";
+                    landingPage;
 
             }, 1000);
 

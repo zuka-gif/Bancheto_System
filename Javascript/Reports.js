@@ -32,6 +32,7 @@
 
         return (data || []).map(row => ({
             id: row.id,
+            transactionNo: row.transaction_no,
             date: row.created_at,
             role: row.role,
             items: row.items || [],
@@ -152,6 +153,12 @@
         return true;
     }
 
+    // e.g. 12 -> "T_N-00012"
+    function formatTransactionNo(n) {
+        if (n == null || n === "") return "—";
+        return "T_N-" + String(n).padStart(5, "0");
+    }
+
     function currency(n) {
         return "₱" + (isNaN(n) ? 0 : n).toLocaleString("en-PH", {
             minimumFractionDigits: 2,
@@ -235,30 +242,35 @@
         const allTransactions = await loadTransactions();
         const transactions = allTransactions.filter(t => inRange(new Date(t.date), start, end));
 
-        const grouped = {};
+        // One row per product sold on each transaction:
+        // Date | Transaction Number | Product Name | Price Order | Pax | Sales
+        // "Orders" = pax for that line item (pax IS the order count in this app).
+        const rows = [];
         transactions.forEach(t => {
-            const key = dateKey(new Date(t.date));
-            if (!grouped[key]) grouped[key] = { key, totalSales: 0, totalOrders: 0, totalPax: 0 };
-            grouped[key].totalSales += t.total;
-
-            // "Orders" = how many individual orders/pax were actually placed,
-            // not "1 per receipt". A single receipt with 2 pax on one item
-            // (or several items) now adds that many, matching Total Pax —
-            // pax IS the order count for each line item in this app.
-            const transactionPax = (t.items || []).reduce((sum, item) => sum + (item.pax || 0), 0);
-            grouped[key].totalOrders += transactionPax;
-            grouped[key].totalPax += transactionPax;
+            (t.items || []).forEach(item => {
+                const pax = item.pax || 0;
+                rows.push({
+                    date: new Date(t.date),
+                    transactionNo: t.transactionNo,
+                    productName: item.name || "Unnamed item",
+                    price: Number(item.price) || 0,
+                    sales: item.lineTotal != null ? Number(item.lineTotal) : (Number(item.price) || 0) * pax,
+                    orders: pax,
+                    pax: pax
+                });
+            });
         });
 
-        const rows = Object.values(grouped).sort((a, b) => a.key.localeCompare(b.key));
+        rows.sort((a, b) => (a.date - b.date) || ((a.transactionNo || 0) - (b.transactionNo || 0)));
 
         document.getElementById(`${tabId}-reportTableHead`).innerHTML = `
             <tr>
                 <th>Date</th>
-                <th>Total Sales</th>
-                <th>Total Orders</th>
-                <th>Total Pax</th>
-                <th>Average Sale</th>
+                <th>Transaction Number</th>
+                <th>Product Name</th>
+                <th>Price Order</th>
+                <th>Pax</th>
+                <th>Sales</th>
             </tr>
         `;
 
@@ -266,36 +278,33 @@
         const footEl = document.getElementById(`${tabId}-reportTableFoot`);
 
         if (rows.length === 0) {
-            bodyEl.innerHTML = `<tr><td colspan="5" class="empty-row">No sales recorded for this range.</td></tr>`;
+            bodyEl.innerHTML = `<tr><td colspan="6" class="empty-row">No sales recorded for this range.</td></tr>`;
             footEl.innerHTML = "";
             return;
         }
 
-        bodyEl.innerHTML = rows.map(r => {
-            const avg = r.totalOrders ? r.totalSales / r.totalOrders : 0;
-            return `
-                <tr>
-                    <td>${formatDateDisplay(new Date(r.key))}</td>
-                    <td>${currency(r.totalSales)}</td>
-                    <td>${r.totalOrders}</td>
-                    <td>${r.totalPax}</td>
-                    <td>${currency(avg)}</td>
-                </tr>
-            `;
-        }).join("");
+        bodyEl.innerHTML = rows.map(r => `
+            <tr>
+                <td>${formatDateDisplay(r.date)}</td>
+                <td>${formatTransactionNo(r.transactionNo)}</td>
+                <td>${esc(r.productName)}</td>
+                <td>${currency(r.price)}</td>
+                <td>${r.pax}</td>
+                <td>${currency(r.sales)}</td>
+            </tr>
+        `).join("");
 
-        const totalSales = rows.reduce((s, r) => s + r.totalSales, 0);
-        const totalOrders = rows.reduce((s, r) => s + r.totalOrders, 0);
-        const totalPax = rows.reduce((s, r) => s + r.totalPax, 0);
-        const avgAll = totalOrders ? totalSales / totalOrders : 0;
+        const totalSales = rows.reduce((s, r) => s + r.sales, 0);
+        const totalPax = rows.reduce((s, r) => s + r.pax, 0);
 
         footEl.innerHTML = `
             <tr class="total-row">
                 <td>Total</td>
-                <td>${currency(totalSales)}</td>
-                <td>${totalOrders}</td>
+                <td></td>
+                <td></td>
+                <td></td>
                 <td>${totalPax}</td>
-                <td>${currency(avgAll)}</td>
+                <td>${currency(totalSales)}</td>
             </tr>
         `;
     }

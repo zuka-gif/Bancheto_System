@@ -1255,10 +1255,12 @@
             removeToast();
         });
 
-        // Clicking the popup opens the bell so the alert can be acted on
+        // Clicking the popup takes the user to the Inventory page
+        // (goToInventory shows the access-denied pop-up for roles that can't open it)
+        toast.style.cursor = "pointer";
         toast.addEventListener("click", () => {
-            toggleNotificationDropdown(true);
             removeToast();
+            goToInventory();
         });
 
         setTimeout(removeToast, 7000);
